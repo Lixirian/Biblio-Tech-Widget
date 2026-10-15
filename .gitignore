@@ -1,0 +1,14 @@
+# Livrables (publiés comme assets des releases GitHub, pas dans le dépôt)
+dist/
+Archives/
+*.zip
+
+# Fichiers runtime (vivent dans %LOCALAPPDATA%\BiblioTech-Widget)
+*.log
+state.json
+
+# Divers
+.remember/
+Thumbs.db
+desktop.ini
+*.tmp

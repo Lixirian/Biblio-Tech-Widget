@@ -1,0 +1,25 @@
+﻿BIBLIO-TECH WIDGET - Recherche dans la base de connaissances KM (Confluence)
+===========================================================================
+
+INSTALLATION (une seule fois)
+  1. Extraire ce dossier n'importe ou (ex. Bureau).
+  2. Double-cliquer sur "Biblio-Tech.cmd".
+     -> la derniere version est telechargee depuis GitHub, installee dans
+        %LOCALAPPDATA%\BiblioTech-Widget\app, puis lancee.
+     -> un raccourci "Biblio-Tech Widget" est cree dans le menu Demarrer
+        et sur le Bureau.
+
+UTILISATION
+  - Barre ancree en haut de l'ecran (ou a gauche/droite : bouton de position).
+  - Ctrl+Alt+K depuis n'importe quelle application : ouvre la recherche.
+  - Clic sur un resultat : lecteur integre ; Ctrl+clic : navigateur.
+  - Connexion : session SSO SNCF (aucun mot de passe stocke). Au premier
+    lancement, une fenetre Confluence peut s'ouvrir pour valider la connexion.
+
+MISES A JOUR
+  Automatiques : quand une nouvelle version est publiee, une pastille jaune
+  "Mise a jour" apparait dans la barre. Cliquer -> nouveautes -> confirmer.
+
+DEPANNAGE
+  - Reinstaller : "Biblio-Tech.cmd /repair"
+  - Journal : %LOCALAPPDATA%\BiblioTech-Widget\app_debug.log

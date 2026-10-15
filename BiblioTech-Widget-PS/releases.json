@@ -1,0 +1,7 @@
+{
+    "1.0.0":  [
+                  "Première version : recherche par mots-clés dans la base de connaissances KM (Confluence) via la session SSO, sans aucun identifiant stocké.",
+                  "Barre ancrée (haut / gauche / droite), raccourci global Ctrl+Alt+K, filtres espace / type / tri, extraits surlignés.",
+                  "Lecteur intégré avec mode lecture, pages épinglées, historique des recherches, mises à jour automatiques depuis GitHub."
+              ]
+}
