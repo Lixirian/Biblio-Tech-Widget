@@ -1,0 +1,12 @@
+{
+    "version":  "1.0.0",
+    "zip":  "BiblioTech-Widget_version1.0.0.zip",
+    "url":  "https://github.com/Lixirian/Biblio-Tech-Widget/releases/download/v1.0.0/BiblioTech-Widget_version1.0.0.zip",
+    "sha256":  "DC38AD025E568EA028B3A7AA810A1D04F1CF7A1E8F53F09F58FCB56EB86516C8",
+    "date":  "2026-10-15",
+    "notes":  [
+                  "Première version : recherche par mots-clés dans la base de connaissances KM (Confluence) via la session SSO, sans aucun identifiant stocké.",
+                  "Barre ancrée (haut / gauche / droite), raccourci global Ctrl+Alt+K, filtres espace / type / tri, extraits surlignés.",
+                  "Lecteur intégré avec mode lecture, pages épinglées, historique des recherches, mises à jour automatiques depuis GitHub."
+              ]
+}
