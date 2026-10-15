@@ -7,14 +7,17 @@
 $Config = @{
     # Version de l'application. À INCRÉMENTER à chaque publication (build-release.ps1
     # lit cette valeur pour nommer le zip, la release GitHub et latest.json).
-    Version            = '1.0.0'
+    Version            = '1.1.0'
 
     # ----- Confluence -----
-    # URL de l'instance (sans slash final) + espace de la base de connaissances.
+    # URL de l'instance (sans slash final).
     BaseUrl            = 'https://confluence.apps.eul.sncf.fr'
-    SpaceKey           = 'KM'
-    # Page d'atterrissage (sert aussi à déclencher le SSO au démarrage).
-    HomePath           = '/spaces/KM/overview'
+    # Vide = recherche dans tout Biblio-Tech. Une clé d'espace (ex. 'KM') ajoute un
+    # filtre « Espace <clé> » et limite l'accueil « Mis à jour récemment » à cet espace.
+    SpaceKey           = ''
+    # Page d'accueil Biblio-Tech : atterrissage du SSO au démarrage et lien
+    # « Ouvrir Biblio-Tech dans le navigateur ».
+    HomePath           = '/'
     # Domaines autorisés pour le SSO Windows intégré (Kerberos/Negotiate).
     AuthAllowlist      = '*.sncf.fr'
 
@@ -33,15 +36,18 @@ $Config = @{
     # Vérification périodique de la session (minutes).
     SessionCheckMin    = 20
 
-    # ----- Disposition -----
-    # 'top' : barre fine en haut + panneau déroulant ; 'left' / 'right' : barre latérale.
-    Mode               = 'top'
-    BarHeight          = 48      # hauteur de la barre en mode 'top' (px logiques)
-    Thickness          = 440     # largeur de la barre en mode latéral
-    PanelWidth         = 800     # largeur du panneau déroulant (mode 'top')
-    PanelHeight        = 620     # hauteur du panneau déroulant (mode 'top')
-    # Raccourci global pour ouvrir la recherche depuis n'importe où.
+    # ----- Fenêtre -----
+    # Taille au premier lancement (ensuite : taille/position mémorisées dans state.json).
+    WindowWidth        = 980
+    WindowHeight       = 740
+    # Raccourci global pour afficher la fenêtre, recherche prête à la saisie.
     Hotkey             = 'Ctrl+Alt+K'
+
+    # ----- Agent Microsoft 365 Copilot (utilisateurs licenciés) -----
+    # Lien de l'agent « Biblio-Tech » une fois publié par l'admin M365 (voir
+    # copilot-agent\LISEZMOI-DSI.md). Vide = bouton masqué ; les utilisateurs sans
+    # licence utilisent l'assistant local (lib\BtAssist.ps1), toujours actif.
+    CopilotAgentUrl    = ''
 
     # ----- Mise à jour automatique (GitHub) -----
     # Dépôt PUBLIC 'propriétaire/nom' : lecture anonyme, AUCUN jeton stocké.

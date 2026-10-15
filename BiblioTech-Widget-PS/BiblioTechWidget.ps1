@@ -1,6 +1,6 @@
 ﻿# ============================================================================
 #  Biblio-Tech Widget - point d'entrée (PowerShell + WPF + WebView2).
-#  Recherche par mots-clés dans la base de connaissances Confluence (espace KM)
+#  Recherche par mots-clés dans la base de connaissances Confluence (Biblio-Tech)
 #  via la session SSO en cours : WebView2 authentifié + requêtes same-origin
 #  exécutées DANS la page (aucun jeton, aucun identifiant stocké, aucun .exe).
 #  Lancement : Start-BiblioTech.cmd / .vbs   (BT_DEMO=1 : données fictives)
@@ -16,8 +16,8 @@ Add-Type -AssemblyName PresentationFramework, PresentationCore, WindowsBase, Sys
 try { $cw = [BtNative]::GetConsoleWindow(); if ($cw -ne [IntPtr]::Zero) { [void][BtNative]::ShowWindow($cw, 0) } } catch { }
 . (Join-Path $root 'lib\BtState.ps1')
 . (Join-Path $root 'lib\BtNet.ps1')
-. (Join-Path $root 'lib\BtAppBar.ps1')
 . (Join-Path $root 'lib\BtSearch.ps1')
+. (Join-Path $root 'lib\BtAssist.ps1')
 . (Join-Path $root 'lib\BtUi.ps1')
 . (Join-Path $root 'lib\BtWindow.ps1')
 . (Join-Path $root 'lib\BtReader.ps1')
@@ -27,12 +27,17 @@ try { $cw = [BtNative]::GetConsoleWindow(); if ($cw -ne [IntPtr]::Zero) { [void]
 try { [void][BtNative]::SetCurrentProcessExplicitAppUserModelID('SNCF.BiblioTechWidget') } catch { }
 
 # --- Garde mono-instance ---
+# Une 2e instance (raccourci relancé alors que l'appli est masquée dans la zone de
+# notification) signale simplement à la 1re de réafficher sa fenêtre, puis s'arrête.
 $createdNew = $false
 $script:BtMutex = New-Object System.Threading.Mutex($true, 'Global\BiblioTechWidgetSingleton', [ref]$createdNew)
 if (-not $createdNew) {
-    [System.Windows.Forms.MessageBox]::Show('Biblio-Tech Widget est déjà en cours d''exécution (raccourci : ' + $Config.Hotkey + ').', 'Biblio-Tech Widget') | Out-Null
+    $shown = $false
+    try { $ev = [System.Threading.EventWaitHandle]::OpenExisting('Global\BiblioTechWidgetShow'); $shown = $ev.Set(); $ev.Dispose() } catch { }
+    if (-not $shown) { [System.Windows.Forms.MessageBox]::Show('Biblio-Tech est déjà en cours d''exécution (raccourci : ' + $Config.Hotkey + ').', 'Biblio-Tech') | Out-Null }
     return
 }
+$script:BtShowEvent = New-Object System.Threading.EventWaitHandle($false, [System.Threading.EventResetMode]::AutoReset, 'Global\BiblioTechWidgetShow')
 
 $dataDir = Get-BtDataDir
 Initialize-BtLog (Join-Path $dataDir 'app_debug.log')
@@ -45,7 +50,6 @@ $script:Ctx = @{
     DataDir    = $dataDir
     AppRoot    = $root
     State      = (New-BtState (Join-Path $dataDir 'state.json'))
-    Mode       = $Config.Mode
     ConfHost   = ([uri]$Config.BaseUrl).Host
     HomeUrl    = $Config.BaseUrl.TrimEnd('/') + $Config.HomePath
     Demo       = ($env:BT_DEMO -eq '1')
@@ -61,7 +65,7 @@ $script:Ctx = @{
     NetRetryAt = $null
     Search     = @{
         Probe = (New-BtProbe 'search'); Pending = $null; Active = $null
-        Typed = ''; DebounceAt = $null; ShownQuery = ''; Fresh = $false
+        Typed = ''; DebounceAt = $null; ShownQuery = ''; Fresh = $false; Analysis = $null; Relaxed = $false
         Results = @(); Total = 0; More = $false; Error = $null; LastVia = ''; LastMs = 0
         Recent = @(); RecentError = $null
     }
@@ -73,11 +77,8 @@ $script:Ctx = @{
     StatusText = 'Démarrage…'
     FlashText  = ''
     FlashUntil = $null
-    DockBounds = ''
-    Rebuilding = $false
     Quitting   = $false
 }
-if ($script:Ctx.State.Mode -in @('top', 'left', 'right')) { $script:Ctx.Mode = $script:Ctx.State.Mode }
 if ($script:Ctx.State.Version -ne $Config.Version) {
     Write-BtLog "[VERSION] $($script:Ctx.State.Version) -> $($Config.Version)"
     $script:Ctx.State.Version = $Config.Version
@@ -209,7 +210,7 @@ function Complete-BtInfo {
         $first = -not $Ctx.Ready
         $Ctx.Ready = $true
         $Ctx.UserName = [string]$R.fullName
-        if ($R.space) { $Ctx.SpaceName = [string]$R.space; try { $Ctx.Ui.SubTitle.Text = $Ctx.SpaceName } catch { } }
+        if ($R.space) { $Ctx.SpaceName = [string]$R.space; try { Render-BtFilters $Ctx } catch { } }
         Hide-BtAuthWindow
         Set-BtAuthState $Ctx 'ok'
         Write-BtLog "[AUTH] Session valide ($($R.user)) - espace : $($R.space)"
@@ -260,8 +261,17 @@ function Request-BtSearch {
         $s.ShownQuery = $q
         if ($Start -eq 0) { $s.Results = @(); $s.Error = $null; $s.Fresh = $true; $s.More = $false; $s.LastVia = '' }
     } else { $s.RecentError = $null }
-    $cql = if ($Kind -eq 'recent') { Get-BtCql $Ctx '' -Recent } else { Get-BtCql $Ctx $q }
-    $s.Pending = @{ Id = [guid]::NewGuid().ToString('N'); Query = $q; Start = $Start; Kind = $Kind; Cql = $cql }
+    $an = $null; $relax = $false
+    if ($Kind -eq 'recent') { $cql = Get-BtCql $Ctx $null -Recent }
+    else {
+        # Pagination (« Afficher plus ») : on garde l'analyse et le niveau (strict / élargi) en cours.
+        $relax = ($Start -gt 0 -and $s.Relaxed)
+        if ($Start -eq 0) { $s.Analysis = Resolve-BtQuery $q; $s.Relaxed = $false }
+        $an = $s.Analysis
+        $cql = Get-BtCql $Ctx $an -Relaxed:$relax
+    }
+    $kw = if ($an -and $an.Keywords) { $an.Keywords } else { $q }
+    $s.Pending = @{ Id = [guid]::NewGuid().ToString('N'); Query = $q; Keywords = $kw; Start = $Start; Kind = $Kind; Cql = $cql; Relaxed = $relax }
     if (-not $Ctx.Ready -and -not $Ctx.Demo) { Set-BtStatus $Ctx 'busy' 'En attente de la connexion…' }
     Render-BtResults $Ctx
 }
@@ -274,8 +284,8 @@ function Step-BtSearch {
         if (-not $Ctx.Demo -and -not ($Ctx.Ready -and $Ctx.WebView -and $Ctx.WebView.CoreWebView2)) { return }
         $job = $s.Pending; $s.Pending = $null; $s.Active = $job
         Write-BtLog "[SEARCH] $($job.Kind) start=$($job.Start) CQL : $($job.Cql)"
-        if ($Ctx.Demo) { Complete-BtSearch $Ctx $job (Get-BtDemoResult $job.Query $job.Start -Recent:($job.Kind -eq 'recent')); return }
-        Start-BtProbe $Ctx $s.Probe (Get-BtSearchKickJS $Ctx $job.Id $job.Cql $job.Query $job.Start) 'window.__btSearch' ([int]$Ctx.Config.FetchTimeoutSec * 3 + 5) $job.Id
+        if ($Ctx.Demo) { Complete-BtSearch $Ctx $job (Get-BtDemoResult $job.Keywords $job.Start -Recent:($job.Kind -eq 'recent')); return }
+        Start-BtProbe $Ctx $s.Probe (Get-BtSearchKickJS $Ctx $job.Id $job.Cql $job.Keywords $job.Start) 'window.__btSearch' ([int]$Ctx.Config.FetchTimeoutSec * 3 + 5) $job.Id
         return
     }
     $r = Step-BtProbe $Ctx $s.Probe
@@ -292,6 +302,14 @@ function Complete-BtSearch {
     switch ([string]$R.state) {
         'OK' {
             $items = @($R.items | Where-Object { $_ })
+            # Langage courant : aucune fiche ne réunit toutes les notions -> relance élargie.
+            $an = $s.Analysis
+            if ($Job.Kind -eq 'search' -and $Job.Start -eq 0 -and -not $Job.Relaxed -and -not $items.Count -and $an -and (@($an.Groups).Count + @($an.Phrases).Count) -ge 2) {
+                Write-BtLog '[SEARCH] 0 résultat en strict : relance élargie (au moins une notion).'
+                $s.Relaxed = $true
+                $s.Pending = @{ Id = [guid]::NewGuid().ToString('N'); Query = $Job.Query; Keywords = $Job.Keywords; Start = 0; Kind = 'search'; Cql = (Get-BtCql $Ctx $an -Relaxed); Relaxed = $true }
+                return
+            }
             if ($Job.Kind -eq 'recent') {
                 $s.Recent = @($items | Select-Object -First ([int]$Ctx.Config.RecentCount))
             } else {
@@ -340,12 +358,8 @@ function Step-BtPump {
         if ($c.NetRetryAt -and (Get-Date) -ge $c.NetRetryAt) { $c.NetRetryAt = $null; Invoke-BtReconnect $c }
         # Fin du message temporaire du pied de panneau.
         if ($c.FlashUntil -and (Get-Date) -ge $c.FlashUntil) { $c.FlashUntil = $null; Update-BtFooter $c }
-        # Changement d'écran / de résolution -> ré-ancrage.
-        if (((Get-Date).Second % 3) -eq 0 -and $c.Window) {
-            $hwnd = (New-Object System.Windows.Interop.WindowInteropHelper $c.Window).Handle
-            $b = [System.Windows.Forms.Screen]::FromHandle($hwnd).Bounds
-            if ($c.DockBounds -and "$($b.Left),$($b.Top),$($b.Width),$($b.Height)" -ne $c.DockBounds) { Write-BtLog '[DOCK] Écran modifié : ré-ancrage.'; Set-BtDock $c }
-        }
+        # Raccourci relancé alors que l'appli tourne déjà -> réafficher la fenêtre.
+        if ($script:BtShowEvent -and $script:BtShowEvent.WaitOne(0)) { Write-BtLog '[UI] Relance détectée : affichage de la fenêtre.'; Show-BtSearch $c }
     } catch { Write-BtLog "[PUMP] $($_.Exception.Message)" }
 }
 
@@ -355,10 +369,11 @@ function Stop-BtApp {
     $Ctx.Quitting = $true
     Write-BtLog '[INIT] Arrêt de l''application.'
     try { $script:BtPump.Stop() } catch { }
+    try { if ($script:BtShowEvent) { $script:BtShowEvent.Dispose() } } catch { }
     try { Save-BtState $Ctx.State } catch { }
     try { if ($Ctx.Hotkey) { $Ctx.Hotkey.Dispose() } } catch { }
     try { if ($Ctx.Tray) { $Ctx.Tray.Visible = $false; $Ctx.Tray.Dispose() } } catch { }
-    try { if ($Ctx.Window) { Remove-BtAppBar ((New-Object System.Windows.Interop.WindowInteropHelper $Ctx.Window).Handle) } } catch { }
+    try { if ($Ctx.Window -and $Ctx.Window.IsVisible) { Save-BtWindowBounds $Ctx } } catch { }
     foreach ($w in @($Ctx.Reader.Window, $Ctx.AuthWindow, $Ctx.Window)) { try { if ($w) { $w.Close() } } catch { } }
     try { $script:App.Shutdown() } catch { }
 }
@@ -369,7 +384,6 @@ Initialize-BtTray $script:Ctx
 Initialize-BtHotkey $script:Ctx
 if ($script:Ctx.Demo) {
     $script:Ctx.Ready = $true
-    $script:Ctx.SpaceName = 'Base de connaissances KM (démo)'
     Set-BtStatus $script:Ctx 'ok' 'Mode démonstration'
     Request-BtSearch $script:Ctx '' 0 'recent'
     # BT_TEST_QUERY : pré-remplit la recherche (test visuel).

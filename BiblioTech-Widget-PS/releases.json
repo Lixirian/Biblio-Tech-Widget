@@ -1,4 +1,10 @@
 {
+    "1.1.0":  [
+                  "Biblio-Tech devient une application fenêtrée (redimensionnable, taille et position mémorisées) : fini le bandeau ancré à l\u0027écran, qui cohabitait mal avec le SNOW Widget.",
+                  "Recherche en langage courant : décrivez votre besoin (« mon VPN se coupe sans arrêt ») ; l\u0027appli comprend l\u0027intention, ajoute les synonymes et élargit automatiquement si rien ne correspond.",
+                  "La recherche porte désormais sur tout Biblio-Tech (plus seulement l\u0027espace KM) ; nouvelle icône ; fermer la fenêtre la garde disponible dans la zone de notification.",
+                  "Utilisateurs avec licence Microsoft 365 Copilot : bouton « Demander à Copilot » vers l\u0027agent Biblio-Tech (une fois publié par la DSI)."
+              ],
     "1.0.0":  [
                   "Première version : recherche par mots-clés dans la base de connaissances KM (Confluence) via la session SSO, sans aucun identifiant stocké.",
                   "Barre ancrée (haut / gauche / droite), raccourci global Ctrl+Alt+K, filtres espace / type / tri, extraits surlignés.",

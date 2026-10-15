@@ -1,5 +1,18 @@
 # Historique des versions
 
+## 1.1.0 — 2026-10-15
+
+- **Application fenêtrée** au lieu de la barre ancrée (AppBar) : barre de titre intégrée,
+  redimensionnement et ancrage Windows natifs, taille/position mémorisées. Fermer (X) masque
+  la fenêtre dans la zone de notification ; relancer le raccourci la réaffiche.
+- **Accueil Biblio-Tech** : la page d'atterrissage est la racine de Confluence et la recherche
+  porte sur tout Biblio-Tech (`SpaceKey` vide ; filtre d'espace optionnel).
+- **Recherche en langage courant** (`lib/BtAssist.ps1`, local, sans IA externe) : intention,
+  mots vides, synonymes métier, racines, période (« cette semaine »), bandeau « Compris : … »,
+  relance élargie automatique si aucune fiche ne réunit toutes les notions.
+- **Agent Microsoft 365 Copilot** (`copilot-agent/`) pour les utilisateurs licenciés : paquet
+  d'agent déclaratif + connecteur Confluence On-premises ; bouton « Demander à Copilot ».
+- Icône de l'application (`icone app.ico` / `.png`).
 ## 1.0.0 — 2026-10-15
 
 Première version.

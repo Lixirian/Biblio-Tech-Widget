@@ -43,7 +43,7 @@ function New-Shortcut([string]$Lnk) {
     $sc.WorkingDirectory = $appDir
     $ico = Join-Path $appDir 'icone app.ico'
     $sc.IconLocation = if (Test-Path $ico) { "$ico,0" } else { "$env:WINDIR\System32\imageres.dll,186" }
-    $sc.Description = 'Biblio-Tech Widget - recherche dans la base de connaissances KM'
+    $sc.Description = 'Biblio-Tech - recherche dans la base de connaissances'
     $sc.Save()
 }
 

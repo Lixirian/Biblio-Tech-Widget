@@ -66,8 +66,8 @@ function New-BtReaderWindow {
     $r.Window = $win
     $r.Ui = @{}
     foreach ($n in @('BackBtn', 'FwdBtn', 'ReloadBtn', 'ReadBtn', 'ReadIcon', 'ReadText', 'PinBtn', 'PinIcon', 'CopyBtn', 'WebBtn', 'TitleText', 'SubText', 'Host')) { $r.Ui[$n] = $win.FindName($n) }
-    $ico = Get-BtAppIconPath 'png'
-    if ($ico) { try { $win.Icon = [System.Windows.Media.Imaging.BitmapFrame]::Create([uri]$ico) } catch { } }
+    $ico = New-BtImageSource (Get-BtAppIconPath 'png') 64
+    if ($ico) { $win.Icon = $ico }
 
     $wv = New-BtWebView $Ctx
     $r.WebView = $wv
@@ -113,7 +113,6 @@ function Open-BtReader {
     $url = [string]$Item.url
     if (-not (Test-BtHttpUrl $url)) { return }
     if (-not $script:BtWebView2Ok) { Open-BtExternal $url; return }
-    if ($Ctx.Mode -eq 'top') { Set-BtPanelOpen $Ctx $false }
     $r = $Ctx.Reader
     if (-not $r.Window) { New-BtReaderWindow $Ctx | Out-Null }
     $r.Item = $Item

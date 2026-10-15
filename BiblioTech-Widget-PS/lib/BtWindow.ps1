@@ -1,8 +1,8 @@
 ﻿# ============================================================================
-#  Fenêtre principale : XAML (barre haute + panneau déroulant, ou barre latérale),
-#  ancrage AppBar, rendu des résultats, filtres, statut, menu, raccourci global.
-#  Les deux dispositions exposent les MÊMES noms d'éléments (SearchBox,
-#  ResultsPanel, FilterHost, StatusDot...) : le code de rendu est commun.
+#  Fenêtre principale : application fenêtrée classique (barre de titre intégrée
+#  via WindowChrome : déplacement, redimensionnement, ancrage Windows natifs),
+#  rendu des résultats, filtres, statut, menu, raccourci global.
+#  Fermer (X) masque la fenêtre dans la zone de notification ; « Quitter » arrête.
 # ============================================================================
 
 $script:BtXamlResources = @'
@@ -92,6 +92,42 @@ $script:BtXamlResources = @'
       </Setter.Value>
     </Setter>
   </Style>
+  <Style x:Key="CaptionBtn" TargetType="Button">
+    <Setter Property="Foreground" Value="#C9D4E5"/>
+    <Setter Property="Width" Value="46"/>
+    <Setter Property="Height" Value="44"/>
+    <Setter Property="FontFamily" Value="Segoe Fluent Icons, Segoe MDL2 Assets"/>
+    <Setter Property="FontSize" Value="10"/>
+    <Setter Property="Focusable" Value="False"/>
+    <Setter Property="Template">
+      <Setter.Value>
+        <ControlTemplate TargetType="Button">
+          <Border x:Name="bd" Background="Transparent">
+            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+          </Border>
+          <ControlTemplate.Triggers>
+            <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="bd" Property="Background" Value="#1FFFFFFF"/><Setter Property="Foreground" Value="#FFFFFF"/></Trigger>
+            <Trigger Property="IsPressed" Value="True"><Setter TargetName="bd" Property="Background" Value="#33FFFFFF"/></Trigger>
+          </ControlTemplate.Triggers>
+        </ControlTemplate>
+      </Setter.Value>
+    </Setter>
+  </Style>
+  <Style x:Key="CloseBtn" TargetType="Button" BasedOn="{StaticResource CaptionBtn}">
+    <Setter Property="Template">
+      <Setter.Value>
+        <ControlTemplate TargetType="Button">
+          <Border x:Name="bd" Background="Transparent">
+            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+          </Border>
+          <ControlTemplate.Triggers>
+            <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="bd" Property="Background" Value="#C42B1C"/><Setter Property="Foreground" Value="#FFFFFF"/></Trigger>
+            <Trigger Property="IsPressed" Value="True"><Setter TargetName="bd" Property="Background" Value="#A3261A"/></Trigger>
+          </ControlTemplate.Triggers>
+        </ControlTemplate>
+      </Setter.Value>
+    </Setter>
+  </Style>
   <Style TargetType="ScrollBar">
     <Setter Property="Width" Value="8"/>
     <Setter Property="MinWidth" Value="8"/>
@@ -124,28 +160,31 @@ $script:BtXamlResources = @'
 </Window.Resources>
 '@
 
-# Bloc logo (réutilisé par les deux dispositions).
+# Bloc logo (zone de la barre de titre : sert aussi de poignée de déplacement).
 $script:BtXamlLogo = @'
-<StackPanel Orientation="Horizontal" VerticalAlignment="Center" x:Name="LogoArea" Cursor="Hand" Background="Transparent">
-  <Border Width="30" Height="30" CornerRadius="8">
-    <Border.Background>
-      <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
-        <GradientStop Color="#0088CE" Offset="0"/>
-        <GradientStop Color="#6D5BD0" Offset="1"/>
-      </LinearGradientBrush>
-    </Border.Background>
-    <TextBlock Text="&#xE8F1;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="15" Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-  </Border>
+<StackPanel Orientation="Horizontal" VerticalAlignment="Center" x:Name="LogoArea">
+  <Grid Width="30" Height="30">
+    <Border x:Name="LogoBadge" CornerRadius="8">
+      <Border.Background>
+        <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+          <GradientStop Color="#0088CE" Offset="0"/>
+          <GradientStop Color="#6D5BD0" Offset="1"/>
+        </LinearGradientBrush>
+      </Border.Background>
+      <TextBlock Text="&#xE8F1;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="15" Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+    </Border>
+    <Image x:Name="LogoImg" Visibility="Collapsed" RenderOptions.BitmapScalingMode="HighQuality"/>
+  </Grid>
   <StackPanel Margin="9,0,0,0" VerticalAlignment="Center">
     <TextBlock Text="Biblio-Tech" FontSize="14" FontWeight="Bold" Foreground="#E6EDF7"/>
-    <TextBlock x:Name="SubTitle" Text="Base de connaissances KM" FontSize="10" Foreground="#8193B2"/>
+    <TextBlock x:Name="SubTitle" Text="Base de connaissances" FontSize="10" Foreground="#8193B2"/>
   </StackPanel>
 </StackPanel>
 '@
 
 # Champ de recherche (réutilisé).
 $script:BtXamlSearch = @'
-<Border x:Name="SearchShell" Height="34" CornerRadius="8" Background="#16213A" BorderBrush="#2B3A5C" BorderThickness="1">
+<Border x:Name="SearchShell" Height="40" CornerRadius="10" Background="#16213A" BorderBrush="#2B3A5C" BorderThickness="1">
   <Grid>
     <Grid.ColumnDefinitions>
       <ColumnDefinition Width="34"/>
@@ -154,7 +193,7 @@ $script:BtXamlSearch = @'
       <ColumnDefinition Width="Auto"/>
     </Grid.ColumnDefinitions>
     <TextBlock Text="&#xE721;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="13" Foreground="#8193B2" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-    <TextBlock x:Name="SearchHint" Grid.Column="1" Text="Rechercher dans la base de connaissances…" Foreground="#5D6F8F" FontSize="13" VerticalAlignment="Center" IsHitTestVisible="False"/>
+    <TextBlock x:Name="SearchHint" Grid.Column="1" Text="Décrivez votre besoin ou tapez des mots-clés…" Foreground="#5D6F8F" FontSize="13" VerticalAlignment="Center" IsHitTestVisible="False"/>
     <TextBox x:Name="SearchBox" Grid.Column="1" Background="Transparent" BorderThickness="0" Foreground="#E6EDF7" CaretBrush="#FFFFFF" SelectionBrush="#0088CE" FontSize="13.5" VerticalAlignment="Center" Padding="0"/>
     <Button x:Name="ClearBtn" Grid.Column="2" Style="{StaticResource IconBtn}" Width="24" Height="24" FontSize="9" Content="&#xE711;" ToolTip="Effacer (Échap)" Visibility="Collapsed"/>
     <Border Grid.Column="3" CornerRadius="4" Background="#1F2C47" Margin="4,0,7,0" Padding="6,1" VerticalAlignment="Center">
@@ -177,7 +216,7 @@ $script:BtXamlBody = @'
   <WrapPanel x:Name="FilterHost" DockPanel.Dock="Top" Margin="14,12,10,4"/>
   <Border DockPanel.Dock="Bottom" BorderBrush="#1E2A44" BorderThickness="0,1,0,0" Padding="14,7,10,8">
     <DockPanel>
-      <Button x:Name="OpenSpaceBtn" DockPanel.Dock="Right" Style="{StaticResource LinkBtn}" Content="Ouvrir l'espace KM ↗"/>
+      <Button x:Name="OpenHomeBtn" DockPanel.Dock="Right" Style="{StaticResource LinkBtn}" Content="Ouvrir Biblio-Tech dans le navigateur ↗"/>
       <TextBlock x:Name="FooterText" FontSize="11" Foreground="#5D6F8F" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
     </DockPanel>
   </Border>
@@ -188,77 +227,67 @@ $script:BtXamlBody = @'
 '@
 
 $script:BtXamlButtons = @'
-<StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-  <Button x:Name="UpdateBtn" Style="{StaticResource UpdateBtn}" Margin="0,0,8,0" Visibility="Collapsed" ToolTip="Une nouvelle version est disponible : cliquer pour voir les nouveautés"/>
-  <Button x:Name="PanelBtn" Style="{StaticResource IconBtn}" Content="&#xE70D;" ToolTip="Afficher / masquer les résultats"/>
-  <Button x:Name="PosBtn" Style="{StaticResource IconBtn}" Content="&#xE8AB;" ToolTip="Changer de position (haut / droite / gauche)"/>
-  <Button x:Name="MenuBtn" Style="{StaticResource IconBtn}" Content="&#xE712;" ToolTip="Menu"/>
+<StackPanel Orientation="Horizontal" VerticalAlignment="Top" WindowChrome.IsHitTestVisibleInChrome="True">
+  <Button x:Name="UpdateBtn" Style="{StaticResource UpdateBtn}" Margin="0,11,8,0" VerticalAlignment="Top" Visibility="Collapsed" ToolTip="Une nouvelle version est disponible : cliquer pour voir les nouveautés"/>
+  <Button x:Name="MenuBtn" Style="{StaticResource IconBtn}" Margin="0,6,10,0" VerticalAlignment="Top" Content="&#xE712;" ToolTip="Menu"/>
+  <Button x:Name="MinBtn" Style="{StaticResource CaptionBtn}" Content="&#xE921;" ToolTip="Réduire"/>
+  <Button x:Name="MaxBtn" Style="{StaticResource CaptionBtn}" Content="&#xE922;" ToolTip="Agrandir"/>
+  <Button x:Name="CloseBtn" Style="{StaticResource CloseBtn}" Content="&#xE8BB;" ToolTip="Fermer (Biblio-Tech reste disponible dans la zone de notification)"/>
 </StackPanel>
 '@
 
 function Get-BtWindowXaml {
     param($Ctx)
-    $head = '<Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" Title="Biblio-Tech" WindowStyle="None" AllowsTransparency="True" Background="Transparent" ResizeMode="NoResize" ShowInTaskbar="False" Topmost="True" UseLayoutRounding="True" FontFamily="Segoe UI" FontSize="13" TextOptions.TextFormattingMode="Display">'
-    if ($Ctx.Mode -eq 'top') {
-        $body = @"
-<Grid>
-  <Grid.RowDefinitions><RowDefinition Height="$($Ctx.Config.BarHeight)"/><RowDefinition Height="*"/></Grid.RowDefinitions>
-  <Border x:Name="Bar" Background="#0B1220" BorderBrush="#0088CE" BorderThickness="0,0,0,2" Padding="12,0,8,0">
-    <Grid>
-      <Grid.ColumnDefinitions>
-        <ColumnDefinition Width="Auto"/><ColumnDefinition Width="520"/><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/>
-      </Grid.ColumnDefinitions>
-      $script:BtXamlLogo
-      <Grid Grid.Column="1" Margin="22,0,0,0" VerticalAlignment="Center">$script:BtXamlSearch</Grid>
-      <Grid Grid.Column="3" Margin="0,0,14,0">$script:BtXamlStatus</Grid>
-      <Grid Grid.Column="4">$script:BtXamlButtons</Grid>
-    </Grid>
-  </Border>
-  <Border x:Name="Panel" Grid.Row="1" Width="$($Ctx.Config.PanelWidth)" Height="$($Ctx.Config.PanelHeight)" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="12,6,0,0" CornerRadius="12" Background="#0F172A" BorderBrush="#22314F" BorderThickness="1" Visibility="Collapsed">
-    <Border.Effect><DropShadowEffect BlurRadius="22" ShadowDepth="3" Opacity="0.5" Color="#000000"/></Border.Effect>
-    $script:BtXamlBody
-  </Border>
-</Grid>
-"@
-    } else {
-        $bt = if ($Ctx.Mode -eq 'left') { '0,0,2,0' } else { '2,0,0,0' }
-        $body = @"
-<Border x:Name="Panel" Background="#0F172A" BorderBrush="#0088CE" BorderThickness="$bt">
-  <DockPanel>
-    <Border x:Name="Bar" DockPanel.Dock="Top" Background="#0B1220" Padding="14,10,8,10">
-      <StackPanel>
-        <DockPanel>
-          <Grid DockPanel.Dock="Right">$script:BtXamlButtons</Grid>
+    $w = [int]$Ctx.Config.WindowWidth; $h = [int]$Ctx.Config.WindowHeight
+    return @"
+<Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Biblio-Tech" Width="$w" Height="$h" MinWidth="620" MinHeight="440" WindowStartupLocation="CenterScreen"
+        Background="#0F172A" ShowInTaskbar="True" UseLayoutRounding="True" FontFamily="Segoe UI" FontSize="13" TextOptions.TextFormattingMode="Display">
+  <WindowChrome.WindowChrome>
+    <WindowChrome CaptionHeight="44" ResizeBorderThickness="6" GlassFrameThickness="0" CornerRadius="0" UseAeroCaptionButtons="False"/>
+  </WindowChrome.WindowChrome>
+  $script:BtXamlResources
+  <Border x:Name="Root" BorderBrush="#22314F" BorderThickness="1">
+    <DockPanel>
+      <Border x:Name="Bar" DockPanel.Dock="Top" Background="#0B1220" Height="56" Padding="14,0,0,0">
+        <Grid>
+          <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
           $script:BtXamlLogo
-        </DockPanel>
-        <Grid Margin="0,12,6,0">$script:BtXamlSearch</Grid>
-        <Grid Margin="2,9,0,0">$script:BtXamlStatus</Grid>
-      </StackPanel>
-    </Border>
-    $script:BtXamlBody
-  </DockPanel>
-</Border>
+          <Grid Grid.Column="2" Margin="0,0,16,0" WindowChrome.IsHitTestVisibleInChrome="True">$script:BtXamlStatus</Grid>
+          <Grid Grid.Column="3">$script:BtXamlButtons</Grid>
+        </Grid>
+      </Border>
+      <Border DockPanel.Dock="Top" Background="#0B1220" BorderBrush="#0088CE" BorderThickness="0,0,0,2" Padding="18,4,18,14">
+        <Grid MaxWidth="900" HorizontalAlignment="Stretch">$script:BtXamlSearch</Grid>
+      </Border>
+      $script:BtXamlBody
+    </DockPanel>
+  </Border>
+</Window>
 "@
-    }
-    return $head + $script:BtXamlResources + $body + '</Window>'
 }
 
 # Construit la fenêtre, collecte les éléments nommés dans $Ctx.Ui et câble les événements.
 function New-BtWindow {
     param($Ctx)
     $win = [System.Windows.Markup.XamlReader]::Parse((Get-BtWindowXaml $Ctx))
-    $ui = @{ PanelOpen = $false; Suppress = $false }
-    foreach ($n in @('Bar', 'Panel', 'LogoArea', 'SubTitle', 'SearchShell', 'SearchHint', 'SearchBox', 'ClearBtn', 'HotkeyText', 'BusyBar',
-            'StatusArea', 'StatusDot', 'StatusText', 'FilterHost', 'ResultsScroll', 'ResultsPanel', 'FooterText', 'OpenSpaceBtn',
-            'UpdateBtn', 'PanelBtn', 'PosBtn', 'MenuBtn')) {
+    $ui = @{ Suppress = $false; LastState = [System.Windows.WindowState]::Normal; TrayTipShown = $false }
+    foreach ($n in @('Root', 'Bar', 'LogoArea', 'SubTitle', 'SearchShell', 'SearchHint', 'SearchBox', 'ClearBtn', 'HotkeyText', 'BusyBar',
+            'StatusArea', 'StatusDot', 'StatusText', 'FilterHost', 'ResultsScroll', 'ResultsPanel', 'FooterText', 'OpenHomeBtn',
+            'UpdateBtn', 'MenuBtn', 'MinBtn', 'MaxBtn', 'CloseBtn')) {
         $ui[$n] = $win.FindName($n)
     }
     $Ctx.Ui = $ui
     $Ctx.Window = $win
     $ui.HotkeyText.Text = [string]$Ctx.Config.Hotkey
-    $ui.SubTitle.Text = if ($Ctx.SpaceName) { $Ctx.SpaceName } else { "Espace $($Ctx.Config.SpaceKey)" }
-    $ui.OpenSpaceBtn.Content = "Ouvrir l'espace $($Ctx.Config.SpaceKey) ↗"
-    if ($Ctx.Mode -ne 'top') { $ui.PanelBtn.Visibility = [System.Windows.Visibility]::Collapsed }
+    # Icône de l'application (repli : pastille dégradée + glyphe).
+    $logo = New-BtImageSource (Get-BtAppIconPath 'png') 64
+    if ($logo) {
+        $win.Icon = $logo
+        $img = $win.FindName('LogoImg'); $img.Source = $logo; $img.Visibility = [System.Windows.Visibility]::Visible
+        $win.FindName('LogoBadge').Visibility = [System.Windows.Visibility]::Collapsed
+    }
+    Restore-BtWindowBounds $Ctx
 
     $ui.SearchBox.Add_TextChanged({ param($s, $e)
         $u = $script:Ctx.Ui
@@ -267,8 +296,10 @@ function New-BtWindow {
         $u.ClearBtn.Visibility = if ($has) { [System.Windows.Visibility]::Visible } else { [System.Windows.Visibility]::Collapsed }
         if ($u.Suppress) { return }
         $script:Ctx.Search.Typed = $s.Text
-        $script:Ctx.Search.DebounceAt = (Get-Date).AddMilliseconds($script:Ctx.Config.SearchDebounceMs)
-        Set-BtPanelOpen $script:Ctx $true
+        # Une phrase (4 mots et plus) laisse un peu plus de temps pour finir de taper.
+        $ms = [int]$script:Ctx.Config.SearchDebounceMs
+        if (@(([string]$s.Text).Trim() -split '\s+').Count -ge 4) { $ms = [Math]::Max($ms, 900) }
+        $script:Ctx.Search.DebounceAt = (Get-Date).AddMilliseconds($ms)
     })
     $ui.SearchBox.Add_PreviewKeyDown({ param($s, $e)
         if ($e.Key -eq [System.Windows.Input.Key]::Enter) {
@@ -278,126 +309,78 @@ function New-BtWindow {
             Add-BtHistory $script:Ctx.State $s.Text $script:Ctx.Config.HistoryMax
         } elseif ($e.Key -eq [System.Windows.Input.Key]::Escape) {
             $e.Handled = $true
-            if ($s.Text) { $s.Text = '' } else { Set-BtPanelOpen $script:Ctx $false }
+            if ($s.Text) { $s.Text = '' }
         }
     })
-    $ui.SearchBox.Add_GotKeyboardFocus({ param($s, $e)
-        $script:Ctx.Ui.SearchShell.BorderBrush = Get-BtBrush 'Accent'
-        Set-BtPanelOpen $script:Ctx $true
-    })
+    $ui.SearchBox.Add_GotKeyboardFocus({ param($s, $e) $script:Ctx.Ui.SearchShell.BorderBrush = Get-BtBrush 'Accent' })
     $ui.SearchBox.Add_LostKeyboardFocus({ param($s, $e) $script:Ctx.Ui.SearchShell.BorderBrush = Get-BtBrush '#2B3A5C' })
     $ui.ClearBtn.Add_Click({ $script:Ctx.Ui.SearchBox.Text = ''; $script:Ctx.Ui.SearchBox.Focus() | Out-Null })
-    $ui.LogoArea.Add_MouseLeftButtonUp({ Set-BtPanelOpen $script:Ctx (-not $script:Ctx.Ui.PanelOpen) })
     $ui.StatusArea.Add_MouseLeftButtonUp({ if (-not $script:Ctx.Ready) { Show-BtAuthWindow -Force } })
-    $ui.PanelBtn.Add_Click({ Set-BtPanelOpen $script:Ctx (-not $script:Ctx.Ui.PanelOpen) })
-    $ui.PosBtn.Add_Click({
-        $next = switch ($script:Ctx.Mode) { 'top' { 'right' } 'right' { 'left' } default { 'top' } }
-        Set-BtMode $script:Ctx $next
-    })
     $ui.MenuBtn.Add_Click({ try { $script:Ctx.TrayMenu.Show([System.Windows.Forms.Cursor]::Position) } catch { } })
-    $ui.OpenSpaceBtn.Add_Click({ Open-BtExternal $script:Ctx.HomeUrl })
+    $ui.OpenHomeBtn.Add_Click({ Open-BtExternal $script:Ctx.HomeUrl })
     $ui.UpdateBtn.Add_Click({ Invoke-BtPromptAndUpdate $script:Ctx })
+    $ui.MinBtn.Add_Click({ $script:Ctx.Window.WindowState = [System.Windows.WindowState]::Minimized })
+    $ui.MaxBtn.Add_Click({
+        $w = $script:Ctx.Window
+        $w.WindowState = if ($w.WindowState -eq [System.Windows.WindowState]::Maximized) { [System.Windows.WindowState]::Normal } else { [System.Windows.WindowState]::Maximized }
+    })
+    $ui.CloseBtn.Add_Click({ Hide-BtMainWindow $script:Ctx })
 
-    # Mode haut : le panneau se replie quand on clique ailleurs (comme une liste déroulante).
-    $win.Add_Deactivated({ if ($script:Ctx.Mode -eq 'top' -and -not $script:Ctx.Ui.KeepOpen) { Set-BtPanelOpen $script:Ctx $false } })
-    $win.Add_Closing({ param($s, $e) if (-not $script:Ctx.Quitting -and $s -eq $script:Ctx.Window) { $e.Cancel = $true } })
-    $win.Add_SourceInitialized({ param($s, $e) try { Set-BtDock $script:Ctx } catch { Write-BtLog "[DOCK] $($_.Exception.Message)" } })
+    $win.Add_StateChanged({ param($s, $e) Update-BtWindowState $script:Ctx })
+    # Fermer (X, Alt+F4) = masquer dans la zone de notification ; seul « Quitter » arrête l'appli.
+    $win.Add_Closing({ param($s, $e)
+        if (-not $script:Ctx.Quitting -and $s -eq $script:Ctx.Window) { $e.Cancel = $true; Hide-BtMainWindow $script:Ctx }
+    })
 
     Render-BtFilters $Ctx
+    Update-BtWindowState $Ctx
     return $win
 }
 
-# Bascule le panneau (mode haut : agrandit la fenêtre sous la barre réservée).
-function Set-BtPanelOpen {
-    param($Ctx, [bool]$Open)
-    $ui = $Ctx.Ui
-    if (-not $ui) { return }
-    if ($Ctx.Mode -ne 'top') { $ui.PanelOpen = $true; return }
-    if ($ui.PanelOpen -eq $Open -and $ui.Panel.Visibility -eq $(if ($Open) { [System.Windows.Visibility]::Visible } else { [System.Windows.Visibility]::Collapsed })) { return }
-    $ui.PanelOpen = $Open
-    $ui.Panel.Visibility = if ($Open) { [System.Windows.Visibility]::Visible } else { [System.Windows.Visibility]::Collapsed }
-    $ui.PanelBtn.Content = if ($Open) { [string][char]0xE70E } else { [string][char]0xE70D }
-    $extra = if ($Open) { [double]$Ctx.Config.PanelHeight + 30 } else { 0 }
-    try { $Ctx.Window.Height = [double]$Ctx.Config.BarHeight + $extra } catch { }
+# Agrandie, une fenêtre WindowChrome déborde de l'écran de l'épaisseur du cadre :
+# on compense par une marge. Met aussi à jour le glyphe Agrandir / Restaurer.
+function Update-BtWindowState {
+    param($Ctx)
+    $w = $Ctx.Window; $ui = $Ctx.Ui
+    if (-not $w -or -not $ui) { return }
+    $max = $w.WindowState -eq [System.Windows.WindowState]::Maximized
+    $ui.Root.Margin = if ($max) { New-BtThickness 7 } else { New-BtThickness 0 }
+    $ui.Root.BorderThickness = if ($max) { New-BtThickness 0 } else { New-BtThickness 1 }
+    $ui.MaxBtn.Content = if ($max) { [string][char]0xE923 } else { [string][char]0xE922 }
+    $ui.MaxBtn.ToolTip = if ($max) { 'Restaurer' } else { 'Agrandir' }
+    if ($w.WindowState -ne [System.Windows.WindowState]::Minimized) { $ui.LastState = $w.WindowState }
 }
 
-# --- Ancrage AppBar ----------------------------------------------------------
-function Get-BtDpi {
-    param($Win)
-    try {
-        $src = [System.Windows.PresentationSource]::FromVisual($Win)
-        if ($src -and $src.CompositionTarget) { $m = $src.CompositionTarget.TransformToDevice; return @{ X = $m.M11; Y = $m.M22 } }
-    } catch { }
-    return @{ X = 1.0; Y = 1.0 }
+# --- Taille / position mémorisées (state.json) --------------------------------
+function Restore-BtWindowBounds {
+    param($Ctx)
+    $win = $Ctx.Window
+    $b = @(([string]$Ctx.State.Bounds) -split ',' | ForEach-Object { $d = 0.0; if ([double]::TryParse($_, [System.Globalization.NumberStyles]::Float, [System.Globalization.CultureInfo]::InvariantCulture, [ref]$d)) { $d } })
+    if ($b.Count -eq 4 -and $b[2] -ge 400 -and $b[3] -ge 300) {
+        # Ne restaure que si la barre de titre reste visible sur un écran actuel
+        # (écran débranché, changement de résolution...).
+        $vs = New-Object System.Windows.Rect ([System.Windows.SystemParameters]::VirtualScreenLeft), ([System.Windows.SystemParameters]::VirtualScreenTop), ([System.Windows.SystemParameters]::VirtualScreenWidth), ([System.Windows.SystemParameters]::VirtualScreenHeight)
+        $title = New-Object System.Windows.Rect $b[0], $b[1], $b[2], 40
+        if ($vs.IntersectsWith($title) -and [System.Windows.Rect]::Intersect($vs, $title).Width -ge 120) {
+            $win.WindowStartupLocation = [System.Windows.WindowStartupLocation]::Manual
+            $win.Left = $b[0]; $win.Top = $b[1]; $win.Width = $b[2]; $win.Height = $b[3]
+        }
+    }
+    if ($Ctx.State.Maximized) { $win.WindowState = [System.Windows.WindowState]::Maximized }
 }
 
-function Set-BtDock {
+function Save-BtWindowBounds {
     param($Ctx)
     $win = $Ctx.Window
     if (-not $win) { return }
-    $hwnd = (New-Object System.Windows.Interop.WindowInteropHelper $win).Handle
-    if ($hwnd -eq [IntPtr]::Zero) { return }
-    if (-not $script:BtAppBarRegistered) { Register-BtAppBar $hwnd | Out-Null }
-    $screen = [System.Windows.Forms.Screen]::FromHandle($hwnd)
-    if (-not $screen) { $screen = [System.Windows.Forms.Screen]::PrimaryScreen }
-    $b = $screen.Bounds
-    $wa = $screen.WorkingArea
-    $dpi = Get-BtDpi $win
-    $mode = $Ctx.Mode
-    $thickDip = if ($mode -eq 'top') { $Ctx.Config.BarHeight } else { $Ctx.Config.Thickness }
-    $thick = [int][math]::Round($thickDip * $(if ($mode -eq 'top') { $dpi.Y } else { $dpi.X }))
-    $g = $null
-    switch ($mode) {
-        'top'   { $g = Reserve-BtAppBar $hwnd 'top'   $b.Left $b.Top $b.Right ($b.Top + $thick) $thick }
-        'left'  { $g = Reserve-BtAppBar $hwnd 'left'  $b.Left $b.Top ($b.Left + $thick) $b.Bottom $thick }
-        'right' { $g = Reserve-BtAppBar $hwnd 'right' ($b.Right - $thick) $b.Top $b.Right $b.Bottom $thick }
-    }
-    if ($g) {
-        $win.Left = [double]$g[0] / $dpi.X
-        $win.Top = [double]$g[1] / $dpi.Y
-        $win.Width = [double]($g[2] - $g[0]) / $dpi.X
-        if ($mode -ne 'top') { $win.Height = [double]($g[3] - $g[1]) / $dpi.Y }
-    } else {
-        # Repli sans AppBar : on colle quand même la fenêtre au bord.
-        switch ($mode) {
-            'top'   { $win.Left = $b.Left / $dpi.X; $win.Top = $b.Top / $dpi.Y; $win.Width = $b.Width / $dpi.X }
-            'left'  { $win.Left = $b.Left / $dpi.X; $win.Top = $wa.Top / $dpi.Y; $win.Width = $Ctx.Config.Thickness; $win.Height = $wa.Height / $dpi.Y }
-            'right' { $win.Left = ($b.Right / $dpi.X) - $Ctx.Config.Thickness; $win.Top = $wa.Top / $dpi.Y; $win.Width = $Ctx.Config.Thickness; $win.Height = $wa.Height / $dpi.Y }
-        }
-    }
-    if ($mode -eq 'top') { $o = $Ctx.Ui.PanelOpen; $Ctx.Ui.PanelOpen = -not $o; Set-BtPanelOpen $Ctx $o }
-    $Ctx.DockBounds = "$($b.Left),$($b.Top),$($b.Width),$($b.Height)"
-}
-
-# Ré-ancrages échelonnés : le shell corrige parfois la 1re réservation au 2e passage.
-function Invoke-BtDockSoon {
-    foreach ($ms in @(250, 1500)) {
-        $t = New-Object System.Windows.Threading.DispatcherTimer
-        $t.Interval = [TimeSpan]::FromMilliseconds($ms)
-        $t.Add_Tick({ param($s, $e) $s.Stop(); try { Set-BtDock $script:Ctx } catch { } })
-        $t.Start()
-    }
-}
-
-# Change de disposition : nouvelle fenêtre, puis fermeture de l'ancienne.
-function Set-BtMode {
-    param($Ctx, [string]$NewMode)
-    if ($NewMode -notin @('top', 'left', 'right') -or $Ctx.Rebuilding) { return }
-    $Ctx.Rebuilding = $true
     try {
-        $old = $Ctx.Window
-        $text = if ($Ctx.Ui) { $Ctx.Ui.SearchBox.Text } else { '' }
-        try { if ($old) { Remove-BtAppBar ((New-Object System.Windows.Interop.WindowInteropHelper $old).Handle) } } catch { }
-        $Ctx.Mode = $NewMode
-        $Ctx.State.Mode = $NewMode
+        $r = $win.RestoreBounds
+        if ($r.IsEmpty -or $r.Width -lt 100) { $r = New-Object System.Windows.Rect $win.Left, $win.Top, $win.ActualWidth, $win.ActualHeight }
+        $inv = [System.Globalization.CultureInfo]::InvariantCulture
+        $Ctx.State.Bounds = (@($r.Left, $r.Top, $r.Width, $r.Height) | ForEach-Object { ([math]::Round($_)).ToString($inv) }) -join ','
+        $Ctx.State.Maximized = ($Ctx.Ui.LastState -eq [System.Windows.WindowState]::Maximized)
         Save-BtState $Ctx.State
-        Show-BtMainWindow $Ctx
-        $Ctx.Ui.Suppress = $true
-        $Ctx.Ui.SearchBox.Text = $text
-        $Ctx.Ui.Suppress = $false
-        if ($old -and $old -ne $Ctx.Window) { try { $old.Close() } catch { } }
-        Write-BtLog "[UI] Position : $NewMode"
-    } finally { $Ctx.Rebuilding = $false }
+    } catch { Write-BtLog "[UI] Mémorisation de la fenêtre : $($_.Exception.Message)" }
 }
 
 function Show-BtMainWindow {
@@ -407,17 +390,30 @@ function Show-BtMainWindow {
     Set-BtStatus $Ctx $Ctx.StatusKind $Ctx.StatusText
     Update-BtUpdateBadge $Ctx
     Render-BtResults $Ctx
-    Invoke-BtDockSoon
 }
 
-# Ouvre la recherche (raccourci global, icône de notification).
+# Masque la fenêtre dans la zone de notification (session SSO conservée).
+function Hide-BtMainWindow {
+    param($Ctx)
+    $w = $Ctx.Window
+    if (-not $w) { return }
+    Save-BtWindowBounds $Ctx
+    $w.Hide()
+    if (-not $Ctx.Ui.TrayTipShown -and $Ctx.Tray) {
+        $Ctx.Ui.TrayTipShown = $true
+        try { $Ctx.Tray.ShowBalloonTip(4000, 'Biblio-Tech reste disponible', ("Rouvrez-le avec {0} ou en cliquant sur cette icône. « Quitter » est dans son menu." -f $Ctx.Config.Hotkey), [System.Windows.Forms.ToolTipIcon]::Info) } catch { }
+    }
+}
+
+# Affiche la fenêtre au premier plan, recherche prête à la saisie (raccourci global,
+# icône de notification, relance du raccourci alors que l'appli tourne déjà).
 function Show-BtSearch {
     param($Ctx)
     try {
         $w = $Ctx.Window
         if (-not $w.IsVisible) { $w.Show() }
+        if ($w.WindowState -eq [System.Windows.WindowState]::Minimized) { $w.WindowState = $Ctx.Ui.LastState }
         $w.Activate() | Out-Null
-        Set-BtPanelOpen $Ctx $true
         $Ctx.Ui.SearchBox.Focus() | Out-Null
         $Ctx.Ui.SearchBox.SelectAll()
     } catch { Write-BtLog "[UI] Show-BtSearch : $($_.Exception.Message)" }
@@ -476,6 +472,13 @@ function Invoke-BtAction {
         'retry'   { if ($Ctx.Search.ShownQuery) { Request-BtSearch $Ctx $Ctx.Search.ShownQuery 0 'search' -Force } else { Request-BtSearch $Ctx '' 0 'recent' } }
         'scopeAll' { $Ctx.State.Scope = 'all'; Save-BtState $Ctx.State; Render-BtFilters $Ctx; Request-BtSearch $Ctx $Ctx.Search.ShownQuery 0 'search' -Force }
         'more'    { Request-BtSearch $Ctx $Ctx.Search.ShownQuery (@($Ctx.Search.Results).Count) 'search' -Force }
+        'copilot' {
+            # Pas d'API : on ouvre l'agent dans le navigateur (SSO Microsoft 365 de l'utilisateur)
+            # et la question est placée dans le presse-papiers.
+            try { [System.Windows.Clipboard]::SetText([string]$Ctx.Search.ShownQuery) } catch { }
+            Open-BtExternal ([string]$Ctx.Config.CopilotAgentUrl)
+            Show-BtFlash $Ctx 'Question copiée : collez-la dans Copilot avec Ctrl+V.'
+        }
         'clearHistory' { $Ctx.State.History = @(); Save-BtState $Ctx.State; Render-BtResults $Ctx }
     }
 }
@@ -488,10 +491,13 @@ function Render-BtFilters {
     $host_.Children.Clear()
     $st = $Ctx.State
     $groups = @(
-        @{ Key = 'Scope'; Items = @(@('space', "Espace $($Ctx.Config.SpaceKey)", [string][char]0xE8F1), @('all', 'Tout Confluence', [string][char]0xE774)) },
         @{ Key = 'Type'; Items = @(@('all', 'Tout', ''), @('page', 'Pages', ''), @('blogpost', 'Blogs', ''), @('attachment', 'Pièces jointes', '')) },
         @{ Key = 'Sort'; Items = @(@('relevance', 'Pertinence', ''), @('recent', 'Plus récents', [string][char]0xE823)) }
     )
+    # Filtre d'espace proposé uniquement si un espace est configuré (sinon : tout Biblio-Tech).
+    if ($Ctx.Config.SpaceKey) {
+        $groups = @(@{ Key = 'Scope'; Items = @(@('space', "Espace $($Ctx.Config.SpaceKey)", [string][char]0xE8F1), @('all', 'Tout Biblio-Tech', [string][char]0xE774)) }) + $groups
+    }
     $first = $true
     foreach ($g in $groups) {
         if (-not $first) {
@@ -536,6 +542,12 @@ function Render-BtResults {
 
     $q = [string]$s.ShownQuery
     if ($q) {
+        $an = $s.Analysis
+        $copilot = [bool]($Ctx.State.CopilotLicensed -and $Ctx.Config.CopilotAgentUrl)
+        $hasSyn = $an -and @($an.Groups | Where-Object { @($_).Count -gt 1 }).Count
+        if ($an -and ($an.Natural -or $an.IntentLabel -or $hasSyn -or $copilot)) {
+            [void]$list.Children.Add((New-BtUnderstandingCard $Ctx (Get-BtUnderstanding $an ([bool]$s.Relaxed)) $copilot))
+        }
         if ($busy -and $s.Fresh) { for ($i = 0; $i -lt 4; $i++) { [void]$list.Children.Add((New-BtSkeletonCard)) }; return }
         if ($s.Error) {
             [void]$list.Children.Add((New-BtMessageCard $Ctx ([string][char]0xE783) 'La recherche a échoué' $s.Error 'Réessayer' 'retry' 'Error'))
@@ -543,8 +555,9 @@ function Render-BtResults {
         }
         $res = @($s.Results)
         if (-not $res.Count) {
-            $hint = if ($Ctx.State.Scope -eq 'space') { "Aucune page de l'espace $($Ctx.Config.SpaceKey) ne correspond. Élargissez à tout Confluence ou essayez d'autres mots-clés." } else { 'Essayez des mots-clés plus courts ou différents.' }
-            $act = if ($Ctx.State.Scope -eq 'space') { 'Chercher dans tout Confluence' } else { '' }
+            $inSpace = $Ctx.Config.SpaceKey -and $Ctx.State.Scope -eq 'space'
+            $hint = if ($inSpace) { "Aucune page de l'espace $($Ctx.Config.SpaceKey) ne correspond. Élargissez à tout Biblio-Tech ou essayez d'autres mots-clés." } else { 'Essayez des mots-clés plus courts ou différents.' }
+            $act = if ($inSpace) { 'Chercher dans tout Biblio-Tech' } else { '' }
             [void]$list.Children.Add((New-BtMessageCard $Ctx ([string][char]0xE721) "Aucun résultat pour « $q »" $hint $act 'scopeAll' 'Muted'))
             return
         }
@@ -565,7 +578,7 @@ function Render-BtResults {
         return
     }
 
-    # --- Accueil : épinglés, recherches récentes, mises à jour de l'espace ---
+    # --- Accueil : épinglés, recherches récentes, dernières mises à jour ---
     $pins = @($Ctx.State.Pins)
     if ($pins.Count) {
         [void]$list.Children.Add((New-BtSectionHeader 'Épinglés' ([string][char]0xE840)))
@@ -597,7 +610,7 @@ function Render-BtResults {
         }
         [void]$list.Children.Add($wp)
     }
-    $label = if ($Ctx.SpaceName) { "Mis à jour récemment · $($Ctx.SpaceName)" } else { "Mis à jour récemment · $($Ctx.Config.SpaceKey)" }
+    $label = if (-not $Ctx.Config.SpaceKey) { 'Mis à jour récemment · Biblio-Tech' } elseif ($Ctx.SpaceName) { "Mis à jour récemment · $($Ctx.SpaceName)" } else { "Mis à jour récemment · $($Ctx.Config.SpaceKey)" }
     [void]$list.Children.Add((New-BtSectionHeader $label ([string][char]0xE823)))
     if ($s.RecentError) {
         [void]$list.Children.Add((New-BtMessageCard $Ctx ([string][char]0xE783) 'Chargement impossible' $s.RecentError 'Réessayer' 'retry' 'Error'))
@@ -613,7 +626,7 @@ function Initialize-BtTray {
     param($Ctx)
     $ni = New-Object System.Windows.Forms.NotifyIcon
     $ico = Get-BtAppIconPath 'ico'
-    try { $ni.Icon = if ($ico) { New-Object System.Drawing.Icon $ico } else { [System.Drawing.SystemIcons]::Information } } catch { $ni.Icon = [System.Drawing.SystemIcons]::Information }
+    try { $ni.Icon = if ($ico) { New-Object System.Drawing.Icon $ico, ([System.Windows.Forms.SystemInformation]::SmallIconSize) } else { [System.Drawing.SystemIcons]::Information } } catch { $ni.Icon = [System.Drawing.SystemIcons]::Information }
     $ni.Text = 'Biblio-Tech Widget'
     $m = New-Object System.Windows.Forms.ContextMenuStrip
     $m.ShowImageMargin = $false
@@ -624,18 +637,17 @@ function Initialize-BtTray {
         [void]$m.Items.Add($it)
         return $it
     }
-    $null = & $add ("Rechercher`t" + $Ctx.Config.Hotkey) { Show-BtSearch $script:Ctx }
+    $open = & $add ("Ouvrir Biblio-Tech`t" + $Ctx.Config.Hotkey) { Show-BtSearch $script:Ctx }
+    $open.Font = New-Object System.Drawing.Font($open.Font, [System.Drawing.FontStyle]::Bold)
+    $null = & $add 'Ouvrir Biblio-Tech dans le navigateur' { Open-BtExternal $script:Ctx.HomeUrl }
     [void]$m.Items.Add((New-Object System.Windows.Forms.ToolStripSeparator))
-    $pos = New-Object System.Windows.Forms.ToolStripMenuItem 'Position'
-    foreach ($p in @(@('top', 'En haut'), @('right', 'À droite'), @('left', 'À gauche'))) {
-        $pi = New-Object System.Windows.Forms.ToolStripMenuItem $p[1]
-        $pi.Tag = $p[0]
-        $pi.Add_Click({ param($s, $e) Set-BtMode $script:Ctx ([string]$s.Tag) })
-        [void]$pos.DropDownItems.Add($pi)
-    }
-    [void]$m.Items.Add($pos)
     $auto = & $add 'Lancer au démarrage de Windows' { param($s, $e) $s.Checked = Set-BtAutoStart (-not $s.Checked) }
     $auto.Checked = Test-BtAutoStartEnabled
+    $cop = & $add 'J''ai une licence Microsoft 365 Copilot' { param($s, $e)
+        $script:Ctx.State.CopilotLicensed = -not $script:Ctx.State.CopilotLicensed; Save-BtState $script:Ctx.State; $s.Checked = $script:Ctx.State.CopilotLicensed
+        Render-BtResults $script:Ctx }
+    $cop.Checked = [bool]$Ctx.State.CopilotLicensed
+    if (-not $Ctx.Config.CopilotAgentUrl) { $cop.Enabled = $false; $cop.Text += ' (agent pas encore publié)' }
     $null = & $add 'Mode lecture dans le lecteur' { param($s, $e)
         $script:Ctx.State.ReaderMode = -not $script:Ctx.State.ReaderMode; Save-BtState $script:Ctx.State; $s.Checked = $script:Ctx.State.ReaderMode
         Update-BtReaderMode $script:Ctx }
@@ -650,6 +662,7 @@ function Initialize-BtTray {
     $null = & $add 'Quitter' { Stop-BtApp $script:Ctx }
     $ni.ContextMenuStrip = $m
     $ni.Add_MouseClick({ param($s, $e) if ($e.Button -eq [System.Windows.Forms.MouseButtons]::Left) { Show-BtSearch $script:Ctx } })
+    $ni.Add_BalloonTipClicked({ Show-BtSearch $script:Ctx })
     $ni.Visible = $true
     $Ctx.Tray = $ni
     $Ctx.TrayMenu = $m

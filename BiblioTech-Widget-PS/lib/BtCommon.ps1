@@ -98,7 +98,7 @@ function Set-BtAutoStart {
     param([bool]$Enabled)
     $lnk = Get-BtStartupLnkPath
     try {
-        if ($Enabled) { New-BtShortcut $lnk 'Biblio-Tech Widget - recherche KM Confluence'; Write-BtLog '[INIT] Démarrage auto activé.' }
+        if ($Enabled) { New-BtShortcut $lnk 'Biblio-Tech - recherche dans la base de connaissances'; Write-BtLog '[INIT] Démarrage auto activé.' }
         elseif (Test-Path -LiteralPath $lnk) { Remove-Item -LiteralPath $lnk -Force; Write-BtLog '[INIT] Démarrage auto désactivé.' }
     } catch { Write-BtLog "[INIT] Démarrage auto : échec ($($_.Exception.Message))" }
     return (Test-BtAutoStartEnabled)

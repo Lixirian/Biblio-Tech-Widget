@@ -207,8 +207,7 @@ function Show-BtUpdateDialog {
     $w.FindName('LaterBtn').Add_Click({ param($s, $e) [System.Windows.Window]::GetWindow($s).Close() })
     $w.FindName('OkBtn').Add_Click({ param($s, $e) $win = [System.Windows.Window]::GetWindow($s); $win.Tag.Ok = $true; $win.Close() })
     $w.Add_MouseLeftButtonDown({ param($s, $e) try { $s.DragMove() } catch { } })
-    $Ctx.Ui.KeepOpen = $true
-    try { [void]$w.ShowDialog() } finally { $Ctx.Ui.KeepOpen = $false }
+    [void]$w.ShowDialog()
     return [bool]$res.Ok
 }
 

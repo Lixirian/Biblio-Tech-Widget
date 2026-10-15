@@ -24,6 +24,22 @@ $script:BtTheme = @{
 }
 $script:BtIconFont = 'Segoe Fluent Icons, Segoe MDL2 Assets'
 
+# Image chargée entièrement en mémoire (CacheOption OnLoad) : aucun verrou ne reste
+# sur le fichier, sinon l'updater ne pourrait pas remplacer la copie locale.
+function New-BtImageSource {
+    param([string]$Path, [int]$DecodeWidth = 0)
+    if (-not $Path -or -not (Test-Path -LiteralPath $Path)) { return $null }
+    try {
+        $bi = New-Object System.Windows.Media.Imaging.BitmapImage
+        $bi.BeginInit()
+        $bi.CacheOption = [System.Windows.Media.Imaging.BitmapCacheOption]::OnLoad
+        $bi.UriSource = New-Object System.Uri $Path
+        if ($DecodeWidth -gt 0) { $bi.DecodePixelWidth = $DecodeWidth }
+        $bi.EndInit(); $bi.Freeze()
+        return $bi
+    } catch { Write-BtLog "[ERREUR UI] Icône illisible : $($_.Exception.Message)"; return $null }
+}
+
 $script:BtBrushCache = @{}
 function Get-BtBrush {
     param([string]$Hex)
@@ -302,6 +318,46 @@ function New-BtSkeletonCard {
     $anim.AutoReverse = $true
     $anim.RepeatBehavior = [System.Windows.Media.Animation.RepeatBehavior]::Forever
     $card.BeginAnimation([System.Windows.UIElement]::OpacityProperty, $anim)
+    return $card
+}
+
+# Bandeau « Compris : … » : ce que l'assistant local a retenu de la demande
+# (intention, notions + synonymes, période). Bouton « Demander à Copilot »
+# uniquement pour les utilisateurs déclarés licenciés Microsoft 365 Copilot.
+function New-BtUnderstandingCard {
+    param($Ctx, [string]$Text, [bool]$ShowCopilot)
+    $card = New-Object System.Windows.Controls.Border
+    $card.CornerRadius = New-Object System.Windows.CornerRadius 10
+    $card.Background = Get-BtBrush 'AccentSoft'
+    $card.BorderBrush = Get-BtBrush '#330088CE'
+    $card.BorderThickness = New-BtThickness 1
+    $card.Padding = New-BtThickness 12 8 8 8
+    $card.Margin = New-BtThickness 0 4 0 6
+    $dp = New-Object System.Windows.Controls.DockPanel
+    if ($ShowCopilot) {
+        $b = New-Object System.Windows.Controls.Button
+        try { $b.Style = $Ctx.Window.Resources['PrimaryBtn'] } catch { }
+        $b.Content = 'Demander à Copilot ↗'
+        $b.Padding = New-BtThickness 12 5 12 5
+        $b.Margin = New-BtThickness 10 0 0 0
+        $b.ToolTip = 'Ouvre l''agent Copilot Biblio-Tech (votre question est copiée : collez-la avec Ctrl+V)'
+        $b.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
+        [System.Windows.Controls.DockPanel]::SetDock($b, [System.Windows.Controls.Dock]::Right)
+        $b.Add_Click({ param($s, $e) Invoke-BtAction $script:Ctx 'copilot' })
+        [void]$dp.Children.Add($b)
+    }
+    $g = New-BtText -Text ([string][char]0xE945) -Size 14 -Color 'Accent' -Icon
+    $g.Margin = New-BtThickness 0 0 9 0
+    [System.Windows.Controls.DockPanel]::SetDock($g, [System.Windows.Controls.Dock]::Left)
+    [void]$dp.Children.Add($g)
+    $t = New-BtText -Size 12 -Color 'Body' -Wrap
+    $r1 = New-Object System.Windows.Documents.Run 'Compris : '
+    $r1.FontWeight = [System.Windows.FontWeights]::SemiBold
+    $r1.Foreground = Get-BtBrush 'Text'
+    [void]$t.Inlines.Add($r1)
+    [void]$t.Inlines.Add((New-Object System.Windows.Documents.Run $Text))
+    [void]$dp.Children.Add($t)
+    $card.Child = $dp
     return $card
 }
 

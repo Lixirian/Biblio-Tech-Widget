@@ -12,3 +12,5 @@ state.json
 Thumbs.db
 desktop.ini
 *.tmp
+# Paquet de l'agent Copilot (régénéré par copilot-agent\build-agent.ps1)
+copilot-agent/build/

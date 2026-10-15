@@ -9,21 +9,25 @@ function New-BtState {
     $st = @{
         Path       = $Path
         Version    = ''
-        Mode       = ''
-        Scope      = 'space'      # 'space' (espace KM) | 'all' (tout Confluence)
+        Bounds     = ''           # taille/position de la fenêtre 'gauche,haut,largeur,hauteur'
+        Maximized  = $false
+        Scope      = 'all'        # 'all' (tout Biblio-Tech) | 'space' (espace Config.SpaceKey, si configuré)
         Type       = 'all'        # 'all' | 'page' | 'blogpost' | 'attachment'
         Sort       = 'relevance'  # 'relevance' | 'recent'
         ReaderMode = $true        # mode lecture (chrome Confluence masqué) dans le lecteur
+        CopilotLicensed = $false  # l'utilisateur a une licence M365 Copilot -> bouton « Demander à Copilot »
         History    = @()
         Pins       = @()
     }
     if (Test-Path -LiteralPath $Path) {
         try {
             $j = Get-Content -LiteralPath $Path -Raw -Encoding UTF8 | ConvertFrom-Json
-            foreach ($k in @('Version', 'Mode', 'Scope', 'Type', 'Sort')) {
+            foreach ($k in @('Version', 'Bounds', 'Scope', 'Type', 'Sort')) {
                 if ($j.PSObject.Properties.Name -contains $k -and $j.$k) { $st[$k] = [string]$j.$k }
             }
             if ($j.PSObject.Properties.Name -contains 'ReaderMode') { $st.ReaderMode = [bool]$j.ReaderMode }
+            if ($j.PSObject.Properties.Name -contains 'Maximized') { $st.Maximized = [bool]$j.Maximized }
+            if ($j.PSObject.Properties.Name -contains 'CopilotLicensed') { $st.CopilotLicensed = [bool]$j.CopilotLicensed }
             if ($j.History) { $st.History = @($j.History | ForEach-Object { [string]$_ } | Where-Object { $_ }) }
             if ($j.Pins) {
                 $st.Pins = @($j.Pins | ForEach-Object {
@@ -41,7 +45,7 @@ function Save-BtState {
     param($State)
     try {
         $o = [ordered]@{}
-        foreach ($k in @('Version', 'Mode', 'Scope', 'Type', 'Sort', 'ReaderMode', 'History', 'Pins')) { $o[$k] = $State[$k] }
+        foreach ($k in @('Version', 'Bounds', 'Maximized', 'Scope', 'Type', 'Sort', 'ReaderMode', 'CopilotLicensed', 'History', 'Pins')) { $o[$k] = $State[$k] }
         $json = $o | ConvertTo-Json -Depth 5
         $tmp = $State.Path + '.tmp'
         [System.IO.File]::WriteAllText($tmp, $json, (New-Object System.Text.UTF8Encoding $false))

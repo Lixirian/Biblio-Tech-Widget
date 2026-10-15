@@ -1,0 +1,52 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/copilot/declarative-agent/v1.8/schema.json",
+  "version": "v1.8",
+  "name": "Biblio-Tech",
+  "description": "Assistant de la base de connaissances Biblio-Tech (Confluence). Décrivez votre besoin en langage courant : il retrouve les fiches, procédures et FAQ pertinentes, en résume les étapes et donne les liens vers les pages sources.",
+  "instructions": "__INSTRUCTIONS__",
+  "capabilities": [
+    {
+      "name": "GraphConnectors",
+      "connections": [
+        {
+          "connection_id": "__CONFLUENCE_CONNECTION_ID__"
+        }
+      ]
+    }
+  ],
+  "conversation_starters": [
+    {
+      "title": "Un problème à résoudre",
+      "text": "Mon VPN se déconnecte toutes les 10 minutes depuis ce matin, que dois-je faire ?"
+    },
+    {
+      "title": "Trouver une procédure",
+      "text": "Quelle est la procédure pour installer une imprimante réseau sur un poste ?"
+    },
+    {
+      "title": "Comprendre un message d'erreur",
+      "text": "Outlook affiche « Impossible de se connecter au serveur », que faut-il vérifier ?"
+    },
+    {
+      "title": "Préparer une intervention",
+      "text": "Je dois préparer le poste d'un nouvel arrivant : quelles fiches dois-je suivre et dans quel ordre ?"
+    },
+    {
+      "title": "Quoi de neuf ?",
+      "text": "Quelles fiches de la base de connaissances ont été mises à jour cette semaine ?"
+    },
+    {
+      "title": "Comparer des solutions",
+      "text": "Quelle différence entre la réinitialisation du profil Windows et la reconstruction du poste, et quand utiliser l'une ou l'autre ?"
+    }
+  ],
+  "behavior_overrides": {
+    "special_instructions": {
+      "discourage_model_knowledge": true
+    },
+    "default_response_mode": "Auto"
+  },
+  "disclaimer": {
+    "text": "Biblio-Tech répond uniquement à partir des pages Confluence auxquelles vous avez accès. Vérifiez toujours la fiche source (lien fourni) avant d'appliquer une procédure."
+  }
+}

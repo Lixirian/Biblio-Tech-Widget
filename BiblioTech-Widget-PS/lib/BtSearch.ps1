@@ -17,24 +17,15 @@ function ConvertTo-BtCqlString {
     return (([string]$Value) -replace '\\', '\\' -replace '"', '\"')
 }
 
-# Construit la clause « mots-clés » de la requête CQL à partir de la saisie.
-# C'est ELLE qui décide de ce que « correspondre à la recherche » veut dire.
-function Format-BtKeywordClause {
-    param([string]$Query)
-    $q = ([string]$Query).Trim()
-
-    # TODO (à vous) : définir la stratégie de correspondance des mots-clés.
-    # Implémentation provisoire : tous les mots, n'importe où dans le titre ou le corps.
-    return ('text ~ "{0}"' -f (ConvertTo-BtCqlString $q))
-}
-
-# Requête CQL complète selon les filtres mémorisés (State.Scope/Type/Sort).
-# -Recent : pages/blogs de l'espace triés par date de modification (accueil).
+# Requête CQL complète selon les filtres mémorisés (State.Scope/Type/Sort) et
+# l'analyse de la saisie (Resolve-BtQuery, lib\BtAssist.ps1).
+# -Recent : pages/blogs (de l'espace s'il est configuré) triés par date de modification (accueil).
+# -Relaxed : au moins une des notions au lieu de toutes (relance automatique si 0 résultat).
 function Get-BtCql {
-    param($Ctx, [string]$Query, [switch]$Recent)
+    param($Ctx, $Analysis, [switch]$Recent, [switch]$Relaxed)
     $st = $Ctx.State
     $parts = New-Object System.Collections.Generic.List[string]
-    if ($Recent -or $st.Scope -ne 'all') {
+    if ($Ctx.Config.SpaceKey -and ($Recent -or $st.Scope -ne 'all')) {
         $parts.Add(('space = "{0}"' -f (ConvertTo-BtCqlString $Ctx.Config.SpaceKey)))
     }
     if ($Recent) { $types = @('page', 'blogpost') }
@@ -47,9 +38,15 @@ function Get-BtCql {
         }
     }
     $parts.Add('type in (' + ($types -join ', ') + ')')
-    if (-not $Recent -and $Query) { $parts.Add('(' + (Format-BtKeywordClause $Query) + ')') }
+    if (-not $Recent -and $Analysis) {
+        $kc = Format-BtKeywordClause $Analysis -Relaxed:$Relaxed
+        if ($kc) { $parts.Add('(' + $kc + ')') }
+        if ($Analysis.Since) { $parts.Add(('lastmodified >= now("{0}")' -f $Analysis.Since)) }
+    }
     $cql = $parts -join ' AND '
-    if ($Recent -or $st.Sort -eq 'recent') { $cql += ' ORDER BY lastmodified DESC' }
+    # « Quoi de neuf ? » sans autre notion : tri par date, même en mode pertinence.
+    $byDate = $Recent -or $st.Sort -eq 'recent' -or ($Analysis -and $Analysis.Intent -eq 'news')
+    if ($byDate) { $cql += ' ORDER BY lastmodified DESC' }
     return $cql
 }
 
@@ -202,7 +199,7 @@ $script:BtInfoJs = @'
         return r.json();
       }).catch(function(e){ return {__err:txt(e && e.message)}; });
   }
-  Promise.all([j('/rest/api/user/current'), j('/rest/api/space/' + encodeURIComponent(P.space))]).then(function(a){
+  Promise.all([j('/rest/api/user/current'), (P.space ? j('/rest/api/space/' + encodeURIComponent(P.space)) : Promise.resolve({}))]).then(function(a){
     var u = a[0] || {}, s = a[1] || {};
     var mUser = meta('ajs-remote-user'), mName = meta('ajs-current-user-fullname');
     var logged;
@@ -255,8 +252,8 @@ function Get-BtDemoResult {
             id = [string](1000 + $Start + $i); type = $types[$i]; title = $titles[$i]
             excerpt = "Cette fiche décrit la marche à suivre lorsque $h$q$e est signalé par l'utilisateur : vérifications préalables, résolution et escalade vers le niveau 2."
             url = "https://confluence.apps.eul.sncf.fr/pages/viewpage.action?pageId=$(1000 + $Start + $i)"
-            space = 'Base de connaissances KM'; spaceKey = 'KM'; parent = 'Fiches réflexes'
-            modified = (Get-Date).AddDays(-$i * 3).ToString('o'); friendly = ''; author = 'Équipe KM'
+            space = 'Support poste de travail'; spaceKey = 'SPT'; parent = 'Fiches réflexes'
+            modified = (Get-Date).AddDays(-$i * 3).ToString('o'); friendly = ''; author = 'Équipe Biblio-Tech'
             labels = @('fiche-reflexe', 'niveau1')
         }
     }

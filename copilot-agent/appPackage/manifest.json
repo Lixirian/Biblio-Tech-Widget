@@ -1,0 +1,34 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/teams/v1.24/MicrosoftTeams.schema.json",
+  "manifestVersion": "1.24",
+  "version": "1.0.0",
+  "id": "a26e9462-53b2-4b4e-9175-81d4ea8ec721",
+  "developer": {
+    "name": "Biblio-Tech",
+    "websiteUrl": "https://github.com/Lixirian/Biblio-Tech-Widget",
+    "privacyUrl": "https://github.com/Lixirian/Biblio-Tech-Widget#confidentialit%C3%A9",
+    "termsOfUseUrl": "https://github.com/Lixirian/Biblio-Tech-Widget"
+  },
+  "icons": {
+    "color": "color.png",
+    "outline": "outline.png"
+  },
+  "name": {
+    "short": "Biblio-Tech",
+    "full": "Biblio-Tech - assistant de la base de connaissances"
+  },
+  "description": {
+    "short": "Trouvez la bonne fiche Biblio-Tech en décrivant votre besoin.",
+    "full": "Biblio-Tech comprend les demandes en langage courant (« mon VPN se coupe sans arrêt », « préparer le poste d'un nouvel arrivant »), recherche les fiches, procédures et FAQ de la base de connaissances Confluence Biblio-Tech, résume les étapes à suivre et cite les pages sources. Il ne voit que les pages auxquelles l'utilisateur a accès."
+  },
+  "accentColor": "#0088CE",
+  "copilotAgents": {
+    "declarativeAgents": [
+      {
+        "id": "biblioTechAgent",
+        "file": "declarativeAgent.json"
+      }
+    ]
+  },
+  "validDomains": []
+}
