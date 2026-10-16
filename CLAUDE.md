@@ -48,7 +48,9 @@ BiblioTech-Widget-PS/
   lib/BtWindow.ps1      fenêtre (WindowChrome), taille mémorisée, rendu, filtres, tray, hotkey
   lib/BtReader.ps1      lecteur intégré (WebView2) + mode lecture (CSS injecté)
   lib/BtUpdate.ps1      MAJ GitHub : latest.json, pastille, SHA-256, updater détaché
-launcher/               kit d'installation (Biblio-Tech.cmd + bootstrap.ps1)
+launcher/               kit d'installation (Biblio-Tech.cmd + bootstrap.ps1 + Biblio-Tech.vbs) ;
+                        aussi livré dans chaque zip et copié dans %LOCALAPPDATA%\…\launcher :
+                        les raccourcis y pointent -> MAJ / réparation auto à chaque lancement
 copilot-agent/          agent déclaratif M365 Copilot (appPackage/, build-agent.ps1, LISEZMOI-DSI.md)
 build-release.ps1       zip + release GitHub + latest.json (dans cet ordre)
 latest.json             manifeste lu par les postes (écrit UNIQUEMENT par le build)

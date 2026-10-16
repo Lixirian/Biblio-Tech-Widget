@@ -48,6 +48,9 @@ if (-not (Test-Path $dist)) { New-Item -ItemType Directory -Path $dist -Force | 
 $staging = Join-Path ([System.IO.Path]::GetTempPath()) $name
 if (Test-Path $staging) { Remove-Item -LiteralPath $staging -Recurse -Force }
 Copy-Item -LiteralPath $src -Destination $staging -Recurse
+# Le lanceur voyage avec chaque version : bootstrap.ps1 le recopie hors du dossier app
+# (et l'appli le resynchronise au démarrage après une MAJ faite depuis la pastille).
+Copy-Item -LiteralPath (Join-Path $repo 'launcher') -Destination (Join-Path $staging 'launcher') -Recurse
 $zip = Join-Path $dist "$name.zip"
 if (Test-Path $zip) { Remove-Item -LiteralPath $zip -Force }
 Compress-Archive -Path $staging -DestinationPath $zip -CompressionLevel Optimal

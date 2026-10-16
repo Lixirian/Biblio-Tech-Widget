@@ -1,5 +1,18 @@
 # Historique des versions
 
+## 1.1.1 — 2026-10-16
+
+- **Connexion manuelle** : plus de SSO automatique en boucle. Au démarrage, seule une session
+  déjà ouverte (cookie) est réutilisée en silence ; sinon l'appli s'arrête (`about:blank`) et
+  attend le clic « Se connecter » (`Start-BtInteractiveLogin`). Pendant la validation, aucune
+  renavigation automatique (`Invoke-BtReconnect` ignoré, une seule redirection `login.action`).
+- **Réparation / MAJ au lancement** : les raccourcis pointent vers
+  `%LOCALAPPDATA%\BiblioTech-Widget\launcher\Biblio-Tech.vbs` → `bootstrap.ps1`, qui compare la
+  version installée à `latest.json` (délai 5 s) et réinstalle automatiquement si la copie est
+  absente, incomplète ou plus ancienne (arrêt de l'instance en cours, SHA-256). Le lanceur est
+  livré dans chaque zip (`launcher\`) et resynchronisé par l'appli (`Sync-BtLauncher`).
+  Relancer `Biblio-Tech.cmd` met aussi à jour une installation existante (plus besoin de `/repair`).
+
 ## 1.1.0 — 2026-10-15
 
 - **Application fenêtrée** au lieu de la barre ancrée (AppBar) : barre de titre intégrée,

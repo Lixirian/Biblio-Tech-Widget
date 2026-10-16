@@ -72,9 +72,43 @@ function Open-BtExternal {
 }
 
 # --- Raccourcis : démarrage automatique + menu Démarrer / Bureau ----------
-# Cible : le .vbs de la COPIE LOCALE (pas de console). Aucun droit admin.
+# Cible : le lanceur %LOCALAPPDATA%\BiblioTech-Widget\launcher\Biblio-Tech.vbs (MAJ /
+# réparation automatique au lancement), sinon le .vbs de la copie locale. Pas de console,
+# aucun droit admin.
 function Get-BtLauncherVbs {
+    $lch = Join-Path (Get-BtDataDir) 'launcher\Biblio-Tech.vbs'
+    if (Test-Path -LiteralPath $lch) { return $lch }
     return (Join-Path (Split-Path $PSScriptRoot -Parent) 'Start-BiblioTech.vbs')
+}
+
+# Copie installée : resynchronise le lanceur (livré dans app\launcher) et repointe les
+# raccourcis existants vers lui — utile après une MAJ faite depuis la pastille.
+function Sync-BtLauncher {
+    param([string]$AppRoot)
+    $src = Join-Path $AppRoot 'launcher'
+    if (-not (Test-Path -LiteralPath (Join-Path $src 'bootstrap.ps1'))) { return }
+    $dst = Join-Path (Get-BtDataDir) 'launcher'
+    try {
+        if (-not (Test-Path $dst)) { New-Item -ItemType Directory -Path $dst -Force | Out-Null }
+        $changed = $false
+        foreach ($f in @('bootstrap.ps1', 'Biblio-Tech.vbs')) {
+            $s = Join-Path $src $f; $d = Join-Path $dst $f
+            if (-not (Test-Path $s)) { continue }
+            if (-not (Test-Path $d) -or (Get-FileHash $s).Hash -ne (Get-FileHash $d).Hash) { Copy-Item -LiteralPath $s -Destination $d -Force; $changed = $true }
+        }
+        if ($changed) { Write-BtLog '[INIT] Lanceur mis à jour.' }
+        $vbs = Join-Path $dst 'Biblio-Tech.vbs'
+        $wsh = New-Object -ComObject WScript.Shell
+        foreach ($lnk in @((Join-Path ([Environment]::GetFolderPath('Programs')) 'Biblio-Tech Widget.lnk'),
+                           (Join-Path ([Environment]::GetFolderPath('Desktop')) 'Biblio-Tech Widget.lnk'),
+                           (Get-BtStartupLnkPath))) {
+            if (-not (Test-Path -LiteralPath $lnk)) { continue }
+            if ($wsh.CreateShortcut($lnk).Arguments -notlike "*$vbs*") {
+                New-BtShortcut $lnk 'Biblio-Tech - recherche dans la base de connaissances'
+                Write-BtLog "[INIT] Raccourci repointé vers le lanceur : $lnk"
+            }
+        }
+    } catch { Write-BtLog "[INIT] Synchronisation du lanceur : échec ($($_.Exception.Message))" }
 }
 
 function New-BtShortcut {

@@ -315,7 +315,7 @@ function New-BtWindow {
     $ui.SearchBox.Add_GotKeyboardFocus({ param($s, $e) $script:Ctx.Ui.SearchShell.BorderBrush = Get-BtBrush 'Accent' })
     $ui.SearchBox.Add_LostKeyboardFocus({ param($s, $e) $script:Ctx.Ui.SearchShell.BorderBrush = Get-BtBrush '#2B3A5C' })
     $ui.ClearBtn.Add_Click({ $script:Ctx.Ui.SearchBox.Text = ''; $script:Ctx.Ui.SearchBox.Focus() | Out-Null })
-    $ui.StatusArea.Add_MouseLeftButtonUp({ if (-not $script:Ctx.Ready) { Show-BtAuthWindow -Force } })
+    $ui.StatusArea.Add_MouseLeftButtonUp({ if (-not $script:Ctx.Ready) { Start-BtInteractiveLogin $script:Ctx } })
     $ui.MenuBtn.Add_Click({ try { $script:Ctx.TrayMenu.Show([System.Windows.Forms.Cursor]::Position) } catch { } })
     $ui.OpenHomeBtn.Add_Click({ Open-BtExternal $script:Ctx.HomeUrl })
     $ui.UpdateBtn.Add_Click({ Invoke-BtPromptAndUpdate $script:Ctx })
@@ -468,7 +468,7 @@ function Invoke-BtTogglePin {
 function Invoke-BtAction {
     param($Ctx, [string]$Action)
     switch ($Action) {
-        'login'   { Show-BtAuthWindow -Force }
+        'login'   { Start-BtInteractiveLogin $Ctx }
         'retry'   { if ($Ctx.Search.ShownQuery) { Request-BtSearch $Ctx $Ctx.Search.ShownQuery 0 'search' -Force } else { Request-BtSearch $Ctx '' 0 'recent' } }
         'scopeAll' { $Ctx.State.Scope = 'all'; Save-BtState $Ctx.State; Render-BtFilters $Ctx; Request-BtSearch $Ctx $Ctx.Search.ShownQuery 0 'search' -Force }
         'more'    { Request-BtSearch $Ctx $Ctx.Search.ShownQuery (@($Ctx.Search.Results).Count) 'search' -Force }
@@ -534,7 +534,7 @@ function Render-BtResults {
     Update-BtFooter $Ctx
 
     if (-not $Ctx.Ready -and $Ctx.AuthState -eq 'login') {
-        [void]$list.Children.Add((New-BtMessageCard $Ctx ([string][char]0xE72E) 'Connexion à Confluence requise' 'La session SSO doit être ouverte une première fois. La fenêtre de connexion Confluence est affichée ; elle se fermera seule une fois connecté.' 'Afficher la connexion' 'login' 'Warn'))
+        [void]$list.Children.Add((New-BtMessageCard $Ctx ([string][char]0xE72E) 'Connexion à Confluence requise' $(if ($Ctx.LoginInteractive) { 'Terminez la validation dans la fenêtre de connexion Confluence ; elle se fermera seule une fois connecté.' } else { 'Aucune session SSO ouverte. Cliquez sur « Se connecter » pour ouvrir la page de connexion et faire la validation.' }) $(if ($Ctx.LoginInteractive) { 'Afficher la connexion' } else { 'Se connecter' }) 'login' 'Warn'))
     }
     if (-not $Ctx.Ready -and $Ctx.AuthState -eq 'offline') {
         [void]$list.Children.Add((New-BtMessageCard $Ctx ([string][char]0xE871) 'Confluence injoignable' 'Le réseau d''entreprise ou le VPN ne semble pas disponible. Nouvelle tentative automatique en cours…' '' '' 'Error'))
