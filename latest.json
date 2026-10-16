@@ -1,12 +1,10 @@
 {
-    "version":  "1.1.4",
-    "zip":  "BiblioTech-Widget_version1.1.4.zip",
-    "url":  "https://github.com/Lixirian/Biblio-Tech-Widget/releases/download/v1.1.4/BiblioTech-Widget_version1.1.4.zip",
-    "sha256":  "3A5AA4C13B1DACBBC5E6F1EFA2D18238B7598F3A615319ACC5D04A931C807444",
+    "version":  "1.1.5",
+    "zip":  "BiblioTech-Widget_version1.1.5.zip",
+    "url":  "https://github.com/Lixirian/Biblio-Tech-Widget/releases/download/v1.1.5/BiblioTech-Widget_version1.1.5.zip",
+    "sha256":  "DFB30CEDD9B0675497F9A5FDB3D25911BD1D208E7E794F292C2FE28074D1D97B",
     "date":  "2026-10-16",
     "notes":  [
-                  "L\u0027icône Biblio-Tech s\u0027affiche désormais dans la barre des tâches (fenêtre principale, lecteur et connexion).",
-                  "Nouveau tableau de bord (bouton graphique en haut) : commentaires et réponses par jour sur la période choisie, pages les plus commentées, contributeurs, consignes phares ; export Excel avec graphiques et liens (enregistré dans Téléchargements).",
-                  "Analyse des catégories (diagnostic local, menu …) : synthèse de l\u0027organisation de Biblio-Tech (rubriques, étiquettes, préfixes de titres) enregistrée sur votre poste, pour préparer le classement des résultats par catégorie."
+                  "Connexion : une seule validation suffit. Le premier essai échouait parce que l\u0027application interrompait en arrière-plan une demande de connexion SSO, puis en relançait une seconde."
               ]
 }
