@@ -1,13 +1,11 @@
 {
-    "version":  "1.1.0",
-    "zip":  "BiblioTech-Widget_version1.1.0.zip",
-    "url":  "https://github.com/Lixirian/Biblio-Tech-Widget/releases/download/v1.1.0/BiblioTech-Widget_version1.1.0.zip",
-    "sha256":  "B7A50E2B91D27751168350998A323F7EDE90496C8FA08549047E2A14063B8D02",
-    "date":  "2026-10-15",
+    "version":  "1.1.1",
+    "zip":  "BiblioTech-Widget_version1.1.1.zip",
+    "url":  "https://github.com/Lixirian/Biblio-Tech-Widget/releases/download/v1.1.1/BiblioTech-Widget_version1.1.1.zip",
+    "sha256":  "E309FD67860193A5DE58B97F0BAA78818B4E28B6F9D4092642FB86575B4960FF",
+    "date":  "2026-10-16",
     "notes":  [
-                  "Biblio-Tech devient une application fenêtrée (redimensionnable, taille et position mémorisées) : fini le bandeau ancré à l\u0027écran, qui cohabitait mal avec le SNOW Widget.",
-                  "Recherche en langage courant : décrivez votre besoin (« mon VPN se coupe sans arrêt ») ; l\u0027appli comprend l\u0027intention, ajoute les synonymes et élargit automatiquement si rien ne correspond.",
-                  "La recherche porte désormais sur tout Biblio-Tech (plus seulement l\u0027espace KM) ; nouvelle icône ; fermer la fenêtre la garde disponible dans la zone de notification.",
-                  "Utilisateurs avec licence Microsoft 365 Copilot : bouton « Demander à Copilot » vers l\u0027agent Biblio-Tech (une fois publié par la DSI)."
+                  "Connexion : l\u0027application ne lance plus le SSO toute seule en boucle. Si aucune session n\u0027est ouverte, cliquez sur « Se connecter » : la page de connexion s\u0027ouvre et n\u0027est plus rechargée pendant votre validation.",
+                  "Lancement : les raccourcis vérifient à chaque démarrage que l\u0027application est à jour et complète, et la mettent à jour ou la réparent automatiquement si besoin (plus rien à lancer à la main)."
               ]
 }
