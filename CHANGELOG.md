@@ -1,5 +1,18 @@
 # Historique des versions
 
+## 1.1.8 — 2026-10-16
+
+- **Reconnexion automatique à l'ouverture** : le cookie de session Confluence est un cookie de
+  session (perdu à la fermeture) et la vérification par API (1.1.5) ne relançait jamais le SSO
+  -> connexion manuelle à chaque ouverture. Désormais `Start-BtSilentLogin` suit le parcours
+  SSO dans la fenêtre cachée : session IdP valide -> connecté sans rien afficher ; page de
+  l'IdP stable depuis `AuthPromptSec` (6 s) -> `Show-BtLoginPrompt` montre la fenêtre SUR
+  CETTE PAGE (aucune interruption / rechargement : pas de demande SAML périmée). Confluence
+  anonyme sans redirection -> une tentative via `login.action` (`LoginNavDone`), puis fenêtre.
+  Reconnexions (réseau, session expirée) : même tentative silencieuse.
+- Validé contre un faux Confluence + faux IdP locaux (HttpListener) : 1re ouverture = fenêtre
+  à 6 s puis une seule validation ; réouverture avec session IdP valide = reconnexion < 1 s.
+
 ## 1.1.7 — 2026-10-16
 
 - Filtres de type (Pages / Blogs / Pièces jointes) et de tri (Pertinence / Plus récents)

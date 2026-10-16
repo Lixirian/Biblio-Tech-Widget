@@ -7,7 +7,7 @@
 $Config = @{
     # Version de l'application. À INCRÉMENTER à chaque publication (build-release.ps1
     # lit cette valeur pour nommer le zip, la release GitHub et latest.json).
-    Version            = '1.1.7'
+    Version            = '1.1.8'
 
     # ----- Confluence -----
     # URL de l'instance (sans slash final).
@@ -37,6 +37,7 @@ $Config = @{
     SearchStrategy     = 'auto'
     # Vérification périodique de la session (minutes).
     SessionCheckMin    = 20
+    AuthPromptSec      = 6       # SSO silencieux bloqué sur une page de l'IdP depuis N s -> fenêtre de connexion
 
     # ----- Fenêtre -----
     # Taille au premier lancement (ensuite : taille/position mémorisées dans state.json).
