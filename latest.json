@@ -1,10 +1,14 @@
 {
-    "version":  "1.1.5",
-    "zip":  "BiblioTech-Widget_version1.1.5.zip",
-    "url":  "https://github.com/Lixirian/Biblio-Tech-Widget/releases/download/v1.1.5/BiblioTech-Widget_version1.1.5.zip",
-    "sha256":  "DFB30CEDD9B0675497F9A5FDB3D25911BD1D208E7E794F292C2FE28074D1D97B",
+    "version":  "1.1.6",
+    "zip":  "BiblioTech-Widget_version1.1.6.zip",
+    "url":  "https://github.com/Lixirian/Biblio-Tech-Widget/releases/download/v1.1.6/BiblioTech-Widget_version1.1.6.zip",
+    "sha256":  "332C40BAF398B7D377511FE92B24ED7379A05FDAD6281EB113597337E4F4810D",
     "date":  "2026-10-16",
     "notes":  [
-                  "Connexion : une seule validation suffit. Le premier essai échouait parce que l\u0027application interrompait en arrière-plan une demande de connexion SSO, puis en relançait une seconde."
+                  "Accueil : aperçu des fiches les plus commentées et des nouvelles fiches des 30 derniers jours.",
+                  "Nouvel onglet « Catégories » : toutes les fiches rangées par rubrique et sous-rubrique, pour s\u0027y retrouver sans chercher.",
+                  "Tableau de bord enrichi : commentaires sans réponse, délai de première réponse, comparaison avec la période précédente, jours et heures d\u0027activité, activité éditoriale, nouvelles consignes, fiches à revoir, répartition par rubrique, « J\u0027aime » ; tout est repris dans l\u0027export Excel.",
+                  "Les catégories se mettent à jour automatiquement à chaque ouverture (seulement ce qui a changé) ; un journal liste les catégories et fiches ajoutées, retirées ou déplacées.",
+                  "La pastille de mise à jour apparaît en 2 minutes environ après la publication d\u0027une nouvelle version (avant : jusqu\u0027à 35 minutes), avec une notification."
               ]
 }
