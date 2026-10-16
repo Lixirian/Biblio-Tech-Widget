@@ -1,10 +1,10 @@
 {
-    "version":  "1.1.9",
-    "zip":  "BiblioTech-Widget_version1.1.9.zip",
-    "url":  "https://github.com/Lixirian/Biblio-Tech-Widget/releases/download/v1.1.9/BiblioTech-Widget_version1.1.9.zip",
-    "sha256":  "46CEB588795447D9E678FE921061DA86AD544CA4E9C6F9CF023EA4C72E800554",
+    "version":  "1.1.10",
+    "zip":  "BiblioTech-Widget_version1.1.10.zip",
+    "url":  "https://github.com/Lixirian/Biblio-Tech-Widget/releases/download/v1.1.10/BiblioTech-Widget_version1.1.10.zip",
+    "sha256":  "A4E22E42DF46A823A68EA91FA38DFA41B83E419DAFC5AA5CC9B1C58D6CD542BA",
     "date":  "2026-10-16",
     "notes":  [
-                  "Langage courant : les formules de demande (« donne-moi tout ce qui concerne… », « sors-moi les infos sur… », « à propos de… ») sont ignorées ; seuls les vrais mots-clés sont cherchés (ex. « bornes · evote »)."
+                  "Épingler Biblio-Tech à la barre des tâches garde désormais l\u0027icône du widget (et non celle de PowerShell) et relance bien le widget. Si vous l\u0027aviez déjà épinglé : détachez l\u0027ancienne épingle puis épinglez à nouveau."
               ]
 }
