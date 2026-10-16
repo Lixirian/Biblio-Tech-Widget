@@ -97,6 +97,10 @@ $script:Ctx = @{
     FlashUntil = $null
     Quitting   = $false
 }
+# Filtres de type et de tri retirés de l'interface : on neutralise un choix mémorisé
+# auparavant (sinon il filtrerait les recherches sans être visible).
+$script:Ctx.State.Type = 'all'
+$script:Ctx.State.Sort = 'relevance'
 if ($script:Ctx.State.Version -ne $Config.Version) {
     Write-BtLog "[VERSION] $($script:Ctx.State.Version) -> $($Config.Version)"
     $script:Ctx.State.Version = $Config.Version

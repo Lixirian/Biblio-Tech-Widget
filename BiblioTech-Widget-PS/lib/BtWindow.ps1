@@ -506,13 +506,11 @@ function Render-BtFilters {
     if (-not $host_) { return }
     $host_.Children.Clear()
     $st = $Ctx.State
-    $groups = @(
-        @{ Key = 'Type'; Items = @(@('all', 'Tout', ''), @('page', 'Pages', ''), @('blogpost', 'Blogs', ''), @('attachment', 'Pièces jointes', '')) },
-        @{ Key = 'Sort'; Items = @(@('relevance', 'Pertinence', ''), @('recent', 'Plus récents', [string][char]0xE823)) }
-    )
-    # Filtre d'espace proposé uniquement si un espace est configuré (sinon : tout Biblio-Tech).
+    # Filtres de type (pages / blogs / pièces jointes) et de tri retirés (jugés inutiles) :
+    # la recherche porte sur tout, par pertinence. Seul le filtre d'espace reste, s'il est configuré.
+    $groups = @()
     if ($Ctx.Config.SpaceKey) {
-        $groups = @(@{ Key = 'Scope'; Items = @(@('space', "Espace $($Ctx.Config.SpaceKey)", [string][char]0xE8F1), @('all', 'Tout Biblio-Tech', [string][char]0xE774)) }) + $groups
+        $groups = @(@{ Key = 'Scope'; Items = @(@('space', "Espace $($Ctx.Config.SpaceKey)", [string][char]0xE8F1), @('all', 'Tout Biblio-Tech', [string][char]0xE774)) })
     }
     $first = $true
     foreach ($g in $groups) {
@@ -535,21 +533,25 @@ function Render-BtFilters {
             [void]$host_.Children.Add($chip)
         }
     }
-    # Onglet « Catégories » : arborescence de l'index local (à la place de l'accueil).
-    $sep = New-Object System.Windows.Controls.Border
-    $sep.Width = 1; $sep.Height = 18; $sep.Margin = New-BtThickness 4 3 10 9
-    $sep.Background = Get-BtBrush 'Border'
-    [void]$host_.Children.Add($sep)
-    $chip = New-BtChip 'Catégories' ([bool]$Ctx.Browse) 'browse' ([string][char]0xE8B7)
-    $chip.Add_MouseLeftButtonUp({ param($s, $e)
-        $c = $script:Ctx
-        $c.Browse = -not $c.Browse
-        # L'arborescence remplace l'accueil : on vide la recherche en cours.
-        if ($c.Browse -and $c.Ui.SearchBox.Text) { $c.Ui.SearchBox.Text = '' }
-        Render-BtFilters $c
-        Render-BtResults $c
-    })
-    [void]$host_.Children.Add($chip)
+    # Onglets Accueil / Catégories (arborescence de l'index local à la place de l'accueil).
+    if ($groups.Count) {
+        $sep = New-Object System.Windows.Controls.Border
+        $sep.Width = 1; $sep.Height = 18; $sep.Margin = New-BtThickness 4 3 10 9
+        $sep.Background = Get-BtBrush 'Border'
+        [void]$host_.Children.Add($sep)
+    }
+    foreach ($tab in @(@{ Browse = $false; Text = 'Accueil'; Glyph = [string][char]0xE80F }, @{ Browse = $true; Text = 'Catégories'; Glyph = [string][char]0xE8B7 })) {
+        $chip = New-BtChip $tab.Text ([bool]$Ctx.Browse -eq $tab.Browse) $tab.Browse $tab.Glyph
+        $chip.Add_MouseLeftButtonUp({ param($s, $e)
+            $c = $script:Ctx
+            $c.Browse = [bool]$s.Tag
+            # On vide la recherche en cours pour afficher l'onglet choisi.
+            if ($c.Ui.SearchBox.Text) { $c.Ui.SearchBox.Text = '' }
+            Render-BtFilters $c
+            Render-BtResults $c
+        })
+        [void]$host_.Children.Add($chip)
+    }
 }
 
 # --- Rendu de la liste ---------------------------------------------------------

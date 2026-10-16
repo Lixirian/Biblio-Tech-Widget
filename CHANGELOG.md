@@ -1,5 +1,12 @@
 # Historique des versions
 
+## 1.1.7 — 2026-10-16
+
+- Filtres de type (Pages / Blogs / Pièces jointes) et de tri (Pertinence / Plus récents)
+  retirés de la barre (inutiles) : onglets **Accueil** / **Catégories** à la place. `State.Type`
+  et `State.Sort` forcés à `all` / `relevance` au démarrage (un ancien choix mémorisé ne doit
+  plus filtrer sans être visible). Le filtre d'espace reste si `SpaceKey` est configuré.
+
 ## 1.1.6 — 2026-10-16
 
 - **Index des catégories incrémental** (`lib/BtCategories.ps1`, local) : `categories-index.json`

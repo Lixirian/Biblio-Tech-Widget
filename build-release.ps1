@@ -153,6 +153,6 @@ try {
     Invoke-Git commit -q -m "Publication $ver (latest.json)"
     Invoke-Git push -q origin "HEAD:$branch"
     Write-Host "Publié : https://github.com/$gh/releases/tag/v$ver" -ForegroundColor Green
-    Write-Host 'Les postes verront la pastille sous ~5 min (cache raw.githubusercontent).'
+    Write-Host 'Postes en 1.1.6+ : pastille sous ~2 min (latest.json de la release) ; versions antérieures : ~5 à 35 min.'
     Remove-Item $msgFile, $notesFile -Force -ErrorAction SilentlyContinue
 } finally { Pop-Location }

@@ -1,4 +1,7 @@
 {
+    "1.1.7":  [
+                  "Interface simplifiée : les filtres Pages / Blogs / Pièces jointes et Plus récents sont retirés ; la barre propose désormais les onglets Accueil et Catégories."
+              ],
     "1.1.6":  [
                   "Accueil : aperçu des fiches les plus commentées et des nouvelles fiches des 30 derniers jours.",
                   "Nouvel onglet « Catégories » : toutes les fiches rangées par rubrique et sous-rubrique, pour s'y retrouver sans chercher.",
