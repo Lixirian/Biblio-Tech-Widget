@@ -1,5 +1,13 @@
 # Historique des versions
 
+## 1.1.2 — 2026-10-16
+
+- **Fichier unique `Biblio-Tech.cmd`** (racine du dépôt + asset de release) à la place de
+  `BiblioTech-Installer.zip` : en-tête batch qui exécute `launcher\bootstrap.ps1` embarqué
+  (généré par `build-release.ps1`). Installe / met à jour / répare puis lance ; `/repair` force.
+- Chaque version reste livrée en `dist\BiblioTech-Widget_version<X>.zip` (qui contient aussi
+  `Biblio-Tech.cmd`) ; les zips des versions précédentes sont déplacés dans `Archives\`.
+
 ## 1.1.1 — 2026-10-16
 
 - **Connexion manuelle** : plus de SSO automatique en boucle. Au démarrage, seule une session

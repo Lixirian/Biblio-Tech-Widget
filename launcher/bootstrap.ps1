@@ -1,7 +1,8 @@
 ﻿# ============================================================================
-#  Installeur / lanceur du Biblio-Tech Widget (kit distribué via GitHub).
+#  Installeur / lanceur du Biblio-Tech Widget (distribué via GitHub).
 #  Exécuté à CHAQUE lancement (raccourcis -> %LOCALAPPDATA%\BiblioTech-Widget\
-#  launcher\Biblio-Tech.vbs, sans console) et par Biblio-Tech.cmd (kit).
+#  launcher\Biblio-Tech.vbs, sans console) et embarqué tel quel dans
+#  Biblio-Tech.cmd (fichier unique généré par build-release.ps1).
 #  1. Lit latest.json sur GitHub (délai court ; hors ligne -> on lance l'existant).
 #  2. Installe / répare AUTOMATIQUEMENT si la copie locale est absente, abîmée,
 #     plus ancienne que la version publiée, ou si -Repair : arrêt de l'instance
@@ -120,7 +121,9 @@ function Install-App($m) {
 function Install-Launcher {
     if (-not (Test-Path $lchDir)) { New-Item -ItemType Directory -Path $lchDir -Force | Out-Null }
     $srcDir = Join-Path $appDir 'launcher'
+    # Exécuté depuis Biblio-Tech.cmd (script embarqué), $PSScriptRoot est vide : seule la source app\launcher compte.
     if (-not (Test-Path (Join-Path $srcDir 'bootstrap.ps1'))) { $srcDir = $PSScriptRoot }
+    if (-not $srcDir) { $srcDir = $lchDir }
     foreach ($f in @('bootstrap.ps1', 'Biblio-Tech.vbs')) {
         $s = Join-Path $srcDir $f; $d = Join-Path $lchDir $f
         if ((Test-Path $s) -and ([IO.Path]::GetFullPath($s) -ne [IO.Path]::GetFullPath($d))) { Copy-Item -LiteralPath $s -Destination $d -Force }

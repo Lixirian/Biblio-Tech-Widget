@@ -8,12 +8,15 @@ la session SSO déjà ouverte sur le poste. Même socle technique que le *SNOW W
 
 ## Installation
 
-1. Télécharger **`BiblioTech-Installer.zip`** depuis la [dernière release](../../releases/latest).
-2. Extraire l'archive, puis double-cliquer sur **`Biblio-Tech.cmd`**.
+1. Télécharger le fichier unique **[`Biblio-Tech.cmd`](../../raw/main/Biblio-Tech.cmd)**
+   (aussi joint à chaque [release](../../releases/latest)) — rien à extraire.
+2. Double-cliquer dessus.
    - La dernière version est téléchargée depuis GitHub, son empreinte SHA-256 est vérifiée,
      puis elle est installée dans `%LOCALAPPDATA%\BiblioTech-Widget\app`.
    - Les raccourcis *Biblio-Tech Widget* sont créés dans le menu Démarrer et sur le Bureau.
-3. Les lancements suivants passent par le raccourci, qui démarre la copie locale.
+3. Les lancements suivants passent par le raccourci : à chaque démarrage, l'application est
+   mise à jour ou réparée automatiquement si besoin. Relancer `Biblio-Tech.cmd` fait de même
+   (`Biblio-Tech.cmd /repair` force une réinstallation).
 
 ## Utilisation
 

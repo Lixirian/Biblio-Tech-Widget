@@ -48,9 +48,12 @@ BiblioTech-Widget-PS/
   lib/BtWindow.ps1      fenêtre (WindowChrome), taille mémorisée, rendu, filtres, tray, hotkey
   lib/BtReader.ps1      lecteur intégré (WebView2) + mode lecture (CSS injecté)
   lib/BtUpdate.ps1      MAJ GitHub : latest.json, pastille, SHA-256, updater détaché
-launcher/               kit d'installation (Biblio-Tech.cmd + bootstrap.ps1 + Biblio-Tech.vbs) ;
-                        aussi livré dans chaque zip et copié dans %LOCALAPPDATA%\…\launcher :
-                        les raccourcis y pointent -> MAJ / réparation auto à chaque lancement
+launcher/               bootstrap.ps1 + Biblio-Tech.vbs ; livrés dans chaque zip et copiés dans
+                        %LOCALAPPDATA%\…\launcher : les raccourcis y pointent -> MAJ / réparation
+                        auto à chaque lancement
+Biblio-Tech.cmd         FICHIER UNIQUE distribué (install / MAJ / réparation / lancement) :
+                        en-tête batch + bootstrap.ps1 embarqué. GÉNÉRÉ par le build (ne pas
+                        éditer : modifier launcher\bootstrap.ps1). UTF-8 sans BOM, CRLF.
 copilot-agent/          agent déclaratif M365 Copilot (appPackage/, build-agent.ps1, LISEZMOI-DSI.md)
 build-release.ps1       zip + release GitHub + latest.json (dans cet ordre)
 latest.json             manifeste lu par les postes (écrit UNIQUEMENT par le build)
@@ -84,7 +87,7 @@ latest.json             manifeste lu par les postes (écrit UNIQUEMENT par le bu
 1. `Version` ++ dans `config.ps1` ; 2. notes dans `releases.json` ;
 3. `powershell -ExecutionPolicy Bypass -File build-release.ps1` (`-NoPublish` = essai).
 Le build commit + push le code, crée la release `v<X>` (assets : zip de version +
-`BiblioTech-Installer.zip`), PUIS écrit/pousse `latest.json`. Ajouter une entrée en tête
+`Biblio-Tech.cmd`), PUIS écrit/pousse `latest.json`. Ajouter une entrée en tête
 de `CHANGELOG.md` à chaque version.
 
 ## Points à valider sur le terrain (réseau SNCF)

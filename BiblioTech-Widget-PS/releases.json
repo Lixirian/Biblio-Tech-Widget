@@ -1,4 +1,7 @@
 {
+    "1.1.2":  [
+                  "Installation simplifiée : un seul fichier, Biblio-Tech.cmd, à télécharger et double-cliquer (plus de dossier d'installation à extraire). Il installe, met à jour ou répare l'application, puis la lance."
+              ],
     "1.1.1":  [
                   "Connexion : l'application ne lance plus le SSO toute seule en boucle. Si aucune session n'est ouverte, cliquez sur « Se connecter » : la page de connexion s'ouvre et n'est plus rechargée pendant votre validation.",
                   "Lancement : les raccourcis vérifient à chaque démarrage que l'application est à jour et complète, et la mettent à jour ou la réparent automatiquement si besoin (plus rien à lancer à la main)."

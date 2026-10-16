@@ -56,13 +56,38 @@ if (Test-Path $zip) { Remove-Item -LiteralPath $zip -Force }
 Compress-Archive -Path $staging -DestinationPath $zip -CompressionLevel Optimal
 Remove-Item -LiteralPath $staging -Recurse -Force
 
-$kit = Join-Path $dist 'BiblioTech-Installer.zip'
-if (Test-Path $kit) { Remove-Item -LiteralPath $kit -Force }
-$kitStage = Join-Path ([System.IO.Path]::GetTempPath()) 'Biblio-Tech Widget'
-if (Test-Path $kitStage) { Remove-Item -LiteralPath $kitStage -Recurse -Force }
-Copy-Item -LiteralPath (Join-Path $repo 'launcher') -Destination $kitStage -Recurse
-Compress-Archive -Path $kitStage -DestinationPath $kit -CompressionLevel Optimal
-Remove-Item -LiteralPath $kitStage -Recurse -Force
+# --- Biblio-Tech.cmd : FICHIER UNIQUE (installation / MAJ / réparation / lancement) ---
+# En-tête batch (ASCII) qui relit le fichier et exécute le PowerShell placé après le
+# marqueur = launcher\bootstrap.ps1 tel quel. UTF-8 SANS BOM (cmd ne lit pas le BOM),
+# fins de ligne CRLF. Écrit à la racine du dépôt (lien stable) et copié dans dist\.
+$cmdHeader = @'
+@echo off
+REM ============================================================
+REM  Biblio-Tech Widget - UN SEUL FICHIER : double-cliquer.
+REM  Installe la derniere version depuis GitHub si besoin, la
+REM  met a jour ou la repare, cree les raccourcis puis lance
+REM  l'application. Aucun .exe, aucun identifiant stocke.
+REM  Forcer une reinstallation : "Biblio-Tech.cmd /repair"
+REM  Fichier GENERE par build-release.ps1 (launcher\bootstrap.ps1).
+REM ============================================================
+setlocal
+set "BT_SELF=%~f0"
+set "BTARGS="
+if /i "%~1"=="/repair" set "BTARGS=-Repair"
+powershell.exe -NoProfile -ExecutionPolicy Bypass -Command "$s=[IO.File]::ReadAllText($env:BT_SELF,[Text.Encoding]::UTF8); $i=$s.IndexOf('#'+'#BIBLIOTECH-PS#'+'#'); & ([ScriptBlock]::Create($s.Substring($i))) %BTARGS%"
+exit /b
+##BIBLIOTECH-PS##
+'@
+$bsText = [IO.File]::ReadAllText((Join-Path $repo 'launcher\bootstrap.ps1'), [Text.Encoding]::UTF8).TrimStart([char]0xFEFF)
+$cmdText = (($cmdHeader.TrimEnd() + "`n" + $bsText) -replace "`r`n", "`n") -replace "`n", "`r`n"
+$oneCmd = Join-Path $repo 'Biblio-Tech.cmd'
+[IO.File]::WriteAllText($oneCmd, $cmdText, (New-Object System.Text.UTF8Encoding $false))
+$kit = Join-Path $dist 'Biblio-Tech.cmd'
+Copy-Item -LiteralPath $oneCmd -Destination $kit -Force
+# Le zip de version contient aussi le .cmd (à la racine, à côté du dossier de l'app) :
+# chaque zip archivé reste un livrable complet, comme pour le SNOW Widget.
+Compress-Archive -LiteralPath $oneCmd -DestinationPath $zip -Update
+Remove-Item -LiteralPath (Join-Path $dist 'BiblioTech-Installer.zip') -Force -ErrorAction SilentlyContinue
 
 $arch = Join-Path $repo 'Archives'
 Get-ChildItem -LiteralPath $dist -Filter 'BiblioTech-Widget_version*.zip' | Where-Object { $_.Name -ne "$name.zip" } | ForEach-Object {
@@ -107,7 +132,7 @@ try {
 
     $notesFile = Join-Path ([System.IO.Path]::GetTempPath()) ('btnotes_' + [guid]::NewGuid().ToString('N') + '.md')
     $body = if ($notes.Count) { ($notes | ForEach-Object { "- $_" }) -join "`n" } else { "Version $ver" }
-    $body += "`n`n**Installation** : télécharger ``BiblioTech-Installer.zip``, l'extraire puis lancer ``Biblio-Tech.cmd``.`nLes postes déjà équipés reçoivent la mise à jour via la pastille de l'application."
+    $body += "`n`n**Installation, mise à jour ou réparation** : télécharger ``Biblio-Tech.cmd`` (fichier unique) et double-cliquer dessus.`nLes postes déjà équipés se mettent à jour seuls au lancement ou via la pastille de l'application."
     [System.IO.File]::WriteAllText($notesFile, $body, $utf8)
     & gh release view "v$ver" --repo $gh 2>$null | Out-Null
     if ($LASTEXITCODE -eq 0) {
