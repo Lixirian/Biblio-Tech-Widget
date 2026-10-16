@@ -54,6 +54,12 @@ $script:Ctx = @{
     State      = (New-BtState (Join-Path $dataDir 'state.json'))
     ConfHost   = ([uri]$Config.BaseUrl).Host
     HomeUrl    = $Config.BaseUrl.TrimEnd('/') + $Config.HomePath
+    # Vérification SILENCIEUSE de session : une URL d'API, qui répond « anonyme » / 401 sans
+    # déclencher le parcours SSO (charger l'accueil lançait une demande SAML qu'on coupait en
+    # plein vol -> la 1re validation manuelle échouait sur cette demande périmée).
+    CheckUrl   = $Config.BaseUrl.TrimEnd('/') + '/rest/api/user/current'
+    InfoAt     = $null           # sonde d'identité différée (session en cours d'établissement)
+    AuthRetries = 0
     Demo       = ($env:BT_DEMO -eq '1')
     Ready      = $false          # session Confluence validée
     AuthState  = 'init'          # init | login | offline | ok
@@ -64,7 +70,6 @@ $script:Ctx = @{
     # Connexion interactive : lancée UNIQUEMENT par un clic de l'utilisateur (« Se connecter »).
     # Tant qu'elle est en cours, l'appli ne renavigue jamais seule (validation SSO manuelle).
     LoginInteractive = $false
-    LoginNavDone     = $false
     Info       = (New-BtProbe 'info')
     InfoRequested = $false
     NextInfoAt = (Get-Date).AddMinutes($Config.SessionCheckMin)
@@ -193,7 +198,9 @@ function Start-BtAuth {
         if (-not $u -or $u.Scheme -eq 'about') { return }
         $h = $u.Host
         Write-BtLog "[AUTH] Navigation terminée : $h$($u.AbsolutePath)"
-        $isLogin = ($h -ne $c.ConfHost) -or ($u.AbsolutePath -match '(?i)/(login|dologin|authenticate)\.action')
+        # Étape intermédiaire du SSO côté Confluence (réception SAML / OIDC) : on attend la page finale.
+        if ($h -eq $c.ConfHost -and $u.AbsolutePath -match '(?i)/plugins/servlet/(saml|sso|oidc|oauth)') { return }
+        $isLogin =($h -ne $c.ConfHost) -or ($u.AbsolutePath -match '(?i)/(login|dologin|authenticate)\.action')
         if ($isLogin) {
             # Page du fournisseur d'identité ou de connexion Confluence.
             Set-BtAuthState $c 'login'
@@ -203,13 +210,17 @@ function Start-BtAuth {
             Stop-BtAuthNavigation $c
             return
         }
-        $c.InfoRequested = $true     # page Confluence chargée : on valide la session
+        # Page Confluence chargée : on valide la session (après une validation manuelle, on
+        # laisse au cookie de session le temps d'être pris en compte).
+        $c.AuthRetries = 0
+        $c.InfoAt = if ($c.LoginInteractive) { (Get-Date).AddMilliseconds(1500) } else { $null }
+        $c.InfoRequested = $true
     })
     $w.Add_Closing({ param($s, $e) if (-not $script:Ctx.Quitting) { $e.Cancel = $true; Hide-BtAuthWindow } })
     $w.Show()
-    $wv.Source = [uri]$Ctx.HomeUrl
+    $wv.Source = [uri]$Ctx.CheckUrl
     Set-BtAuthState $Ctx 'init'
-    Write-BtLog "[AUTH] WebView2 démarré -> $($Ctx.HomeUrl)"
+    Write-BtLog "[AUTH] WebView2 démarré -> vérification silencieuse $($Ctx.CheckUrl)"
 }
 
 # Arrête le parcours SSO automatique : la fenêtre reste cachée, la page est vidée,
@@ -231,7 +242,7 @@ function Start-BtInteractiveLogin {
     if ($Ctx.LoginInteractive) { Show-BtAuthWindow -Force; return }
     Write-BtLog '[AUTH] Connexion interactive demandée par l''utilisateur.'
     $Ctx.LoginInteractive = $true
-    $Ctx.LoginNavDone = $false
+    $Ctx.AuthRetries = 0
     $Ctx.NetRetryAt = $null
     Set-BtAuthState $Ctx 'init'
     Show-BtAuthWindow -Force
@@ -250,7 +261,7 @@ function Invoke-BtReconnect {
     }
     $Ctx.Ready = $false
     Set-BtAuthState $Ctx 'init'
-    try { $Ctx.WebView.Source = [uri]$Ctx.HomeUrl } catch { }
+    try { $Ctx.WebView.Source = [uri]$Ctx.CheckUrl } catch { }
 }
 
 # Résultat de la sonde d'identité.
@@ -273,17 +284,19 @@ function Complete-BtInfo {
         }
     } elseif ($R.state -eq 'AUTH') {
         Set-BtAuthState $Ctx 'login'
-        if ($Ctx.LoginInteractive -and -not $Ctx.LoginNavDone) {
-            # Une seule redirection vers la page de connexion par clic (pas de boucle).
-            Write-BtLog '[AUTH] Session anonyme : ouverture de la page de connexion.'
-            $Ctx.LoginNavDone = $true
-            try { $Ctx.WebView.Source = [uri]($Ctx.Config.BaseUrl.TrimEnd('/') + '/login.action?os_destination=' + [uri]::EscapeDataString($Ctx.Config.HomePath)) } catch { }
-            Show-BtAuthWindow
-        } elseif (-not $Ctx.LoginInteractive) {
-            Write-BtLog '[AUTH] Session anonyme.'
+        if (-not $Ctx.LoginInteractive) {
+            Write-BtLog '[AUTH] Session anonyme : attente du clic « Se connecter ».'
             Stop-BtAuthNavigation $Ctx
+        } elseif ($Ctx.AuthRetries -lt 3) {
+            # Connexion manuelle : JAMAIS de renavigation (elle relançait un 2e parcours SSO).
+            # La session peut mettre un instant à être reconnue : on revérifie simplement.
+            $Ctx.AuthRetries++
+            Write-BtLog "[AUTH] Session pas encore reconnue : nouvelle vérification dans 2 s ($($Ctx.AuthRetries)/3)."
+            $Ctx.InfoAt = (Get-Date).AddSeconds(2)
+            $Ctx.InfoRequested = $true
         } else {
-            Write-BtLog '[AUTH] Session toujours anonyme : la fenêtre de connexion reste ouverte.'
+            Write-BtLog '[AUTH] Session toujours anonyme : la fenêtre de connexion reste ouverte (aucune relance automatique).'
+            Show-BtAuthWindow
         }
     } else {
         Write-BtLog "[AUTH] Vérification de session impossible ($($R.state) $($R.error)) : nouvel essai."
@@ -294,7 +307,8 @@ function Complete-BtInfo {
 function Step-BtInfo {
     param($Ctx)
     if ($Ctx.Info.Phase -eq '') {
-        $due = $Ctx.InfoRequested -or ($Ctx.Ready -and (Get-Date) -ge $Ctx.NextInfoAt)
+        if ($Ctx.InfoAt -and (Get-Date) -lt $Ctx.InfoAt) { return }
+        $due =$Ctx.InfoRequested -or ($Ctx.Ready -and (Get-Date) -ge $Ctx.NextInfoAt)
         if ($due -and $Ctx.WebView -and $Ctx.WebView.CoreWebView2) {
             $Ctx.InfoRequested = $false
             $Ctx.NextInfoAt = (Get-Date).AddMinutes($Ctx.Config.SessionCheckMin)

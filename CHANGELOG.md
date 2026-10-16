@@ -1,5 +1,15 @@
 # Historique des versions
 
+## 1.1.5 — 2026-10-16
+
+- **Double connexion corrigée** : la vérification silencieuse (démarrage, reconnexion,
+  réseau revenu) navigue vers `CheckUrl` = `/rest/api/user/current` au lieu de l'accueil ;
+  elle ne déclenche plus de demande SAML que l'appli coupait (`about:blank`) et qui faisait
+  échouer la 1re validation manuelle. L'accueil n'est chargé qu'au clic « Se connecter ».
+- Connexion manuelle : plus aucune renavigation vers `login.action` (2e parcours SSO). Si la
+  session n'est pas encore reconnue, simple re-vérification (`InfoAt`, 3 essais / 2 s) ; sonde
+  différée de 1,5 s après chaque page ; pages `/plugins/servlet/(saml|sso|oidc|oauth)` ignorées.
+
 ## 1.1.4 — 2026-10-16
 
 - **Icône de la barre des tâches** : `Window.Icon` était ignorée (fenêtre WPF hébergée par

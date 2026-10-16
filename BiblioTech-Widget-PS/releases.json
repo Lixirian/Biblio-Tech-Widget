@@ -1,4 +1,7 @@
 {
+    "1.1.5":  [
+                  "Connexion : une seule validation suffit. Le premier essai échouait parce que l'application interrompait en arrière-plan une demande de connexion SSO, puis en relançait une seconde."
+              ],
     "1.1.4":  [
                   "L'icône Biblio-Tech s'affiche désormais dans la barre des tâches (fenêtre principale, lecteur et connexion).",
                   "Nouveau tableau de bord (bouton graphique en haut) : commentaires et réponses par jour sur la période choisie, pages les plus commentées, contributeurs, consignes phares ; export Excel avec graphiques et liens (enregistré dans Téléchargements).",
