@@ -1,2 +1,3 @@
-*.cmd text eol=crlf
+# Biblio-Tech.cmd est servi tel quel par GitHub : stocké en CRLF (pas de conversion).
+*.cmd -text
 *.vbs text eol=crlf
