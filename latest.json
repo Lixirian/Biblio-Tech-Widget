@@ -1,10 +1,10 @@
 {
-    "version":  "1.1.2",
-    "zip":  "BiblioTech-Widget_version1.1.2.zip",
-    "url":  "https://github.com/Lixirian/Biblio-Tech-Widget/releases/download/v1.1.2/BiblioTech-Widget_version1.1.2.zip",
-    "sha256":  "46514F6092041107C5F292D181B16E24280549FBC3CB29F5C0AC169F63B6AB9E",
+    "version":  "1.1.3",
+    "zip":  "BiblioTech-Widget_version1.1.3.zip",
+    "url":  "https://github.com/Lixirian/Biblio-Tech-Widget/releases/download/v1.1.3/BiblioTech-Widget_version1.1.3.zip",
+    "sha256":  "12454146F1B9439529DB76271E30A104CC9C880A5C471D07DDFC8311E3721BF9",
     "date":  "2026-10-16",
     "notes":  [
-                  "Installation simplifiée : un seul fichier, Biblio-Tech.cmd, à télécharger et double-cliquer (plus de dossier d\u0027installation à extraire). Il installe, met à jour ou répare l\u0027application, puis la lance."
+                  "Recherche plus pertinente : les fiches dont le TITRE contient tous vos mots-clés apparaissent en premier (ex. « OPW bureautique » remonte les fiches OPW Bureautique avant les fiches OPW métier qui citent seulement « bureautique » dans leur texte)."
               ]
 }
