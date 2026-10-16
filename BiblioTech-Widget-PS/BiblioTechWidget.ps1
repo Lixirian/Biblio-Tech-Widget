@@ -69,7 +69,7 @@ $script:Ctx = @{
     NetRetryAt = $null
     Search     = @{
         Probe = (New-BtProbe 'search'); Pending = $null; Active = $null
-        Typed = ''; DebounceAt = $null; ShownQuery = ''; Fresh = $false; Analysis = $null; Relaxed = $false
+        Typed = ''; DebounceAt = $null; ShownQuery = ''; Fresh = $false; Analysis = $null; Relaxed = $false; TitleIds = @()
         Results = @(); Total = 0; More = $false; Error = $null; LastVia = ''; LastMs = 0
         Recent = @(); RecentError = $null
     }
@@ -313,7 +313,7 @@ function Request-BtSearch {
         $s.ShownQuery = $q
         if ($Start -eq 0) { $s.Results = @(); $s.Error = $null; $s.Fresh = $true; $s.More = $false; $s.LastVia = '' }
     } else { $s.RecentError = $null }
-    $an = $null; $relax = $false
+    $an = $null; $relax = $false; $tcql = ''
     if ($Kind -eq 'recent') { $cql = Get-BtCql $Ctx $null -Recent }
     else {
         # Pagination (« Afficher plus ») : on garde l'analyse et le niveau (strict / élargi) en cours.
@@ -321,9 +321,11 @@ function Request-BtSearch {
         if ($Start -eq 0) { $s.Analysis = Resolve-BtQuery $q; $s.Relaxed = $false }
         $an = $s.Analysis
         $cql = Get-BtCql $Ctx $an -Relaxed:$relax
+        # 1re page : les fiches dont le titre réunit toutes les notions passent en tête.
+        if ($Start -eq 0) { $tcql = Get-BtCql $Ctx $an -TitleOnly; $s.TitleIds = @() }
     }
     $kw = if ($an -and $an.Keywords) { $an.Keywords } else { $q }
-    $s.Pending = @{ Id = [guid]::NewGuid().ToString('N'); Query = $q; Keywords = $kw; Start = $Start; Kind = $Kind; Cql = $cql; Relaxed = $relax }
+    $s.Pending = @{ Id = [guid]::NewGuid().ToString('N'); Query = $q; Keywords = $kw; Start = $Start; Kind = $Kind; Cql = $cql; TitleCql = $tcql; Relaxed = $relax }
     if (-not $Ctx.Ready -and -not $Ctx.Demo) { Set-BtStatus $Ctx 'busy' 'En attente de la connexion…' }
     Render-BtResults $Ctx
 }
@@ -337,7 +339,7 @@ function Step-BtSearch {
         $job = $s.Pending; $s.Pending = $null; $s.Active = $job
         Write-BtLog "[SEARCH] $($job.Kind) start=$($job.Start) CQL : $($job.Cql)"
         if ($Ctx.Demo) { Complete-BtSearch $Ctx $job (Get-BtDemoResult $job.Keywords $job.Start -Recent:($job.Kind -eq 'recent')); return }
-        Start-BtProbe $Ctx $s.Probe (Get-BtSearchKickJS $Ctx $job.Id $job.Cql $job.Keywords $job.Start) 'window.__btSearch' ([int]$Ctx.Config.FetchTimeoutSec * 3 + 5) $job.Id
+        Start-BtProbe $Ctx $s.Probe (Get-BtSearchKickJS $Ctx $job.Id $job.Cql $job.Keywords $job.Start ([string]$job.TitleCql)) 'window.__btSearch' ([int]$Ctx.Config.FetchTimeoutSec * 3 + 5) $job.Id
         return
     }
     $r = Step-BtProbe $Ctx $s.Probe
@@ -365,6 +367,13 @@ function Complete-BtSearch {
             if ($Job.Kind -eq 'recent') {
                 $s.Recent = @($items | Select-Object -First ([int]$Ctx.Config.RecentCount))
             } else {
+                # Bloc « titre » : mémorisé en 1re page, puis retiré des pages suivantes (pas de doublon).
+                if ($Job.Start -eq 0) {
+                    $s.TitleIds = @($R.titleIds | Where-Object { $_ } | ForEach-Object { [string]$_ })
+                    if ($Job.TitleCql) { Write-BtLog "[SEARCH] Titre : $([int]$R.titleCount) fiche(s) réunissant toutes les notions placée(s) en tête." }
+                } elseif (@($s.TitleIds).Count) {
+                    $items = @($items | Where-Object { @($s.TitleIds) -notcontains [string]$_.id })
+                }
                 $s.Results = if ($Job.Start -gt 0) { @($s.Results) + $items } else { $items }
                 $s.Total = [int]$R.total
                 $s.More = [bool]$R.more

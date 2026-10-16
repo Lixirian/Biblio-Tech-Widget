@@ -1,5 +1,13 @@
 # Historique des versions
 
+## 1.1.3 — 2026-10-16
+
+- **Titres en tête** (tri « Pertinence », 1re page) : requête CQL parallèle restreinte aux
+  titres (`Get-BtCql -TitleOnly`, `Format-BtKeywordClause -Field title`, 50 max) ; ses fiches
+  passent avant les résultats Confluence, sans doublon (`titleIds`, retirés aussi des pages
+  suivantes). Ignoré en tri « Plus récents », relance élargie ou « quoi de neuf ». En cas
+  d'échec de cette requête, l'ordre Confluence est conservé (`[SEARCH] Replis : titre…`).
+
 ## 1.1.2 — 2026-10-16
 
 - **Fichier unique `Biblio-Tech.cmd`** (racine du dépôt + asset de release) à la place de

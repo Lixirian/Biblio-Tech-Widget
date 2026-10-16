@@ -21,8 +21,15 @@ function ConvertTo-BtCqlString {
 # l'analyse de la saisie (Resolve-BtQuery, lib\BtAssist.ps1).
 # -Recent : pages/blogs (de l'espace s'il est configuré) triés par date de modification (accueil).
 # -Relaxed : au moins une des notions au lieu de toutes (relance automatique si 0 résultat).
+# -TitleOnly : toutes les notions dans le TITRE (résultats affichés en tête, tri pertinence) ;
+#   renvoie '' quand ce bloc n'a pas de sens (tri par date, relance élargie, pas de notion).
 function Get-BtCql {
-    param($Ctx, $Analysis, [switch]$Recent, [switch]$Relaxed)
+    param($Ctx, $Analysis, [switch]$Recent, [switch]$Relaxed, [switch]$TitleOnly)
+    if ($TitleOnly) {
+        if ($Recent -or $Relaxed -or -not $Analysis -or $Ctx.State.Sort -eq 'recent' -or $Analysis.Intent -eq 'news') { return '' }
+        $tc = Format-BtKeywordClause $Analysis -Field title
+        if (-not $tc) { return '' }
+    }
     $st = $Ctx.State
     $parts = New-Object System.Collections.Generic.List[string]
     if ($Ctx.Config.SpaceKey -and ($Recent -or $st.Scope -ne 'all')) {
@@ -39,7 +46,7 @@ function Get-BtCql {
     }
     $parts.Add('type in (' + ($types -join ', ') + ')')
     if (-not $Recent -and $Analysis) {
-        $kc = Format-BtKeywordClause $Analysis -Relaxed:$Relaxed
+        $kc = if ($TitleOnly) { $tc } else { Format-BtKeywordClause $Analysis -Relaxed:$Relaxed }
         if ($kc) { $parts.Add('(' + $kc + ')') }
         if ($Analysis.Since) { $parts.Add(('lastmodified >= now("{0}")' -f $Analysis.Since)) }
     }
@@ -83,12 +90,13 @@ $script:BtSearchJs = @'
     if (ct.indexOf('json') < 0) throw new Error('réponse non JSON (' + ct + ')');
     return r.json();
   }
-  function done(o, via){ o.state='OK'; o.via=via; o.id=P.id; o.ms=Date.now()-t0; o.errors=errs; window.__btSearch=o; }
+  function done(o){ o.state='OK'; o.id=P.id; o.ms=Date.now()-t0; o.errors=errs; window.__btSearch=o; }
   function fail(state, m){ window.__btSearch = {state:state, id:P.id, error:m, errors:errs, ms:Date.now()-t0}; }
-  var qs = 'cql=' + encodeURIComponent(P.cql) + '&start=' + P.start + '&limit=' + P.limit;
+  function qsOf(cql, start, limit){ return 'cql=' + encodeURIComponent(cql) + '&start=' + start + '&limit=' + limit; }
 
-  function viaSearch(){
-    return req(base + '/rest/api/search?' + qs + '&excerpt=highlight&expand=' + encodeURIComponent('content.space,content.history.lastUpdated,content.metadata.labels'))
+  // Chaque stratégie renvoie {items, total, more, via} pour la requête (cql, start, limit) donnée.
+  function viaSearch(cql, start, limit){
+    return req(base + '/rest/api/search?' + qsOf(cql, start, limit) + '&excerpt=highlight&expand=' + encodeURIComponent('content.space,content.history.lastUpdated,content.metadata.labels'))
       .then(asJson).then(function(j){
         var b = (j._links && j._links.base) || base;
         var items = (j.results || []).map(function(r){
@@ -102,12 +110,12 @@ $script:BtSearchJs = @'
             author:txt(lu.by && lu.by.displayName), labels:labels };
         });
         var total = (typeof j.totalSize === 'number') ? j.totalSize : items.length;
-        done({items:items, total:total, more:(P.start + items.length) < total}, 'rest-search');
+        return {items:items, total:total, more:(start + items.length) < total, via:'rest-search'};
       });
   }
 
-  function viaContent(){
-    return req(base + '/rest/api/content/search?' + qs + '&expand=' + encodeURIComponent('space,history.lastUpdated,metadata.labels,container'))
+  function viaContent(cql, start, limit){
+    return req(base + '/rest/api/content/search?' + qsOf(cql, start, limit) + '&expand=' + encodeURIComponent('space,history.lastUpdated,metadata.labels,container'))
       .then(asJson).then(function(j){
         var b = (j._links && j._links.base) || base;
         var items = (j.results || []).map(function(c){
@@ -118,8 +126,8 @@ $script:BtSearchJs = @'
             modified:txt(lu.when), friendly:'', author:txt(lu.by && lu.by.displayName), labels:labels };
         });
         var more = !!(j._links && j._links.next);
-        var total = (typeof j.totalSize === 'number') ? j.totalSize : (P.start + items.length + (more ? 1 : 0));
-        done({items:items, total:total, more:more}, 'rest-content');
+        var total = (typeof j.totalSize === 'number') ? j.totalSize : (start + items.length + (more ? 1 : 0));
+        return {items:items, total:total, more:more, via:'rest-content'};
       });
   }
 
@@ -150,14 +158,29 @@ $script:BtSearchJs = @'
         var total = items.length;
         var cnt = doc.querySelector('.search-results-count, .search-result-count, .result-count');
         if (cnt) { var n = parseInt(txt(cnt.textContent).replace(/\D/g,''), 10); if (!isNaN(n)) total = n; }
-        done({items:items, total:total, more:(P.start + items.length) < total}, 'dom');
+        return {items:items, total:total, more:(P.start + items.length) < total, via:'dom'};
       });
   }
 
-  var chain = (P.strategy === 'dom') ? viaDom() :
-    viaSearch()
-      .catch(function(e){ if (e && e.auth) throw e; errs.push('rest-search: ' + msg(e)); return viaContent(); })
+  var main = (P.strategy === 'dom') ? viaDom() :
+    viaSearch(P.cql, P.start, P.limit)
+      .catch(function(e){ if (e && e.auth) throw e; errs.push('rest-search: ' + msg(e)); return viaContent(P.cql, P.start, P.limit); })
       .catch(function(e){ if (e && e.auth) throw e; errs.push('rest-content: ' + msg(e)); return viaDom(); });
+  // Bloc « titre » (1re page, tri pertinence) : fiches dont le TITRE réunit toutes les notions.
+  // Facultatif : en cas d'échec on garde simplement l'ordre de Confluence.
+  var titles = (P.titleCql && P.start === 0 && P.strategy !== 'dom') ?
+    viaSearch(P.titleCql, 0, P.titleLimit)
+      .catch(function(){ return viaContent(P.titleCql, 0, P.titleLimit); })
+      .catch(function(e){ errs.push('titre: ' + msg(e)); return null; }) : Promise.resolve(null);
+  var chain = Promise.all([titles, main]).then(function(a){
+    var t = a[0], m = a[1], seen = {}, items = [];
+    if (t) t.items.forEach(function(it){ if (it.id && !seen[it.id]) { seen[it.id] = 1; it.titleHit = true; items.push(it); } });
+    m.items.forEach(function(it){ if (!it.id || !seen[it.id]) { if (it.id) seen[it.id] = 1; items.push(it); } });
+    m.items = items;
+    m.titleIds = t ? t.items.map(function(i){ return i.id; }).filter(function(k){ return !!k; }) : [];
+    m.titleCount = t ? t.items.length : 0;
+    done(m);
+  });
   chain.catch(function(e){
     if (e && e.auth) { fail('AUTH', msg(e)); return; }
     errs.push('dom: ' + msg(e));
@@ -168,11 +191,13 @@ $script:BtSearchJs = @'
 '@
 
 function Get-BtSearchKickJS {
-    param($Ctx, [string]$Id, [string]$Cql, [string]$Query, [int]$Start)
+    param($Ctx, [string]$Id, [string]$Cql, [string]$Query, [int]$Start, [string]$TitleCql = '')
     $p = @{
         id        = $Id
         base      = $Ctx.Config.BaseUrl.TrimEnd('/')
         cql       = $Cql
+        titleCql  = $TitleCql
+        titleLimit = 50
         q         = $Query
         start     = $Start
         limit     = [int]$Ctx.Config.PageSize

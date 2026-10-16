@@ -153,18 +153,19 @@ function Resolve-BtQuery {
 }
 
 # Clause CQL « mots-clés ». Stricte : toutes les notions ; -Relaxed : au moins une.
+# -Field title : même clause restreinte aux titres (bloc « titre » affiché en premier).
 function Format-BtKeywordClause {
-    param($Analysis, [switch]$Relaxed)
+    param($Analysis, [switch]$Relaxed, [ValidateSet('text', 'title')][string]$Field = 'text')
     $parts = New-Object System.Collections.Generic.List[string]
-    foreach ($p in $Analysis.Phrases) { $parts.Add(('text ~ "\"{0}\""' -f (ConvertTo-BtCqlString $p))) }
+    foreach ($p in $Analysis.Phrases) { $parts.Add(('{0} ~ "\"{1}\""' -f $Field, (ConvertTo-BtCqlString $p))) }
     foreach ($g in $Analysis.Groups) {
-        $alts = @($g | ForEach-Object { 'text ~ "{0}"' -f (ConvertTo-BtCqlString $_) })
+        $alts = @($g | ForEach-Object { '{0} ~ "{1}"' -f $Field, (ConvertTo-BtCqlString $_) })
         $parts.Add($(if ($alts.Count -gt 1) { '(' + ($alts -join ' OR ') + ')' } else { $alts[0] }))
     }
     if (-not $parts.Count) {
         # « Quoi de neuf ? » sans sujet : pas de clause, le tri par date suffit.
         if ($Analysis.Intent -eq 'news') { return '' }
-        return ('text ~ "{0}"' -f (ConvertTo-BtCqlString $Analysis.Raw))
+        return ('{0} ~ "{1}"' -f $Field, (ConvertTo-BtCqlString $Analysis.Raw))
     }
     return ($parts -join $(if ($Relaxed) { ' OR ' } else { ' AND ' }))
 }
