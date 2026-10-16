@@ -1,10 +1,10 @@
 {
-    "version":  "1.1.7",
-    "zip":  "BiblioTech-Widget_version1.1.7.zip",
-    "url":  "https://github.com/Lixirian/Biblio-Tech-Widget/releases/download/v1.1.7/BiblioTech-Widget_version1.1.7.zip",
-    "sha256":  "339F8EDB0A4E5169890E220099F44584CB5D2EE9CB0D0E66B627CA9F6FF71B66",
+    "version":  "1.1.8",
+    "zip":  "BiblioTech-Widget_version1.1.8.zip",
+    "url":  "https://github.com/Lixirian/Biblio-Tech-Widget/releases/download/v1.1.8/BiblioTech-Widget_version1.1.8.zip",
+    "sha256":  "4F220566547705FC2D6EE5E5D0E3B08BCC4D885CF021547391CA87F121F3935D",
     "date":  "2026-10-16",
     "notes":  [
-                  "Interface simplifiée : les filtres Pages / Blogs / Pièces jointes et Plus récents sont retirés ; la barre propose désormais les onglets Accueil et Catégories."
+                  "Connexion automatique à l\u0027ouverture : si votre session SSO est encore valide, Biblio-Tech se reconnecte seul, sans rien afficher. Sinon, la fenêtre de connexion s\u0027ouvre directement sur la page de validation (une seule validation)."
               ]
 }
