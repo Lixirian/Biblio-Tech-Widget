@@ -229,6 +229,7 @@ $script:BtXamlBody = @'
 $script:BtXamlButtons = @'
 <StackPanel Orientation="Horizontal" VerticalAlignment="Top" WindowChrome.IsHitTestVisibleInChrome="True">
   <Button x:Name="UpdateBtn" Style="{StaticResource UpdateBtn}" Margin="0,11,8,0" VerticalAlignment="Top" Visibility="Collapsed" ToolTip="Une nouvelle version est disponible : cliquer pour voir les nouveautés"/>
+  <Button x:Name="DashBtn" Style="{StaticResource IconBtn}" Margin="0,6,4,0" VerticalAlignment="Top" Content="&#xE9D2;" ToolTip="Tableau de bord (activité, commentaires, consignes phares, export Excel)"/>
   <Button x:Name="MenuBtn" Style="{StaticResource IconBtn}" Margin="0,6,10,0" VerticalAlignment="Top" Content="&#xE712;" ToolTip="Menu"/>
   <Button x:Name="MinBtn" Style="{StaticResource CaptionBtn}" Content="&#xE921;" ToolTip="Réduire"/>
   <Button x:Name="MaxBtn" Style="{StaticResource CaptionBtn}" Content="&#xE922;" ToolTip="Agrandir"/>
@@ -274,7 +275,7 @@ function New-BtWindow {
     $ui = @{ Suppress = $false; LastState = [System.Windows.WindowState]::Normal; TrayTipShown = $false }
     foreach ($n in @('Root', 'Bar', 'LogoArea', 'SubTitle', 'SearchShell', 'SearchHint', 'SearchBox', 'ClearBtn', 'HotkeyText', 'BusyBar',
             'StatusArea', 'StatusDot', 'StatusText', 'FilterHost', 'ResultsScroll', 'ResultsPanel', 'FooterText', 'OpenHomeBtn',
-            'UpdateBtn', 'MenuBtn', 'MinBtn', 'MaxBtn', 'CloseBtn')) {
+            'UpdateBtn', 'DashBtn', 'MenuBtn', 'MinBtn', 'MaxBtn', 'CloseBtn')) {
         $ui[$n] = $win.FindName($n)
     }
     $Ctx.Ui = $ui
@@ -287,6 +288,7 @@ function New-BtWindow {
         $img = $win.FindName('LogoImg'); $img.Source = $logo; $img.Visibility = [System.Windows.Visibility]::Visible
         $win.FindName('LogoBadge').Visibility = [System.Windows.Visibility]::Collapsed
     }
+    Register-BtWindowIcon $win
     Restore-BtWindowBounds $Ctx
 
     $ui.SearchBox.Add_TextChanged({ param($s, $e)
@@ -317,6 +319,7 @@ function New-BtWindow {
     $ui.ClearBtn.Add_Click({ $script:Ctx.Ui.SearchBox.Text = ''; $script:Ctx.Ui.SearchBox.Focus() | Out-Null })
     $ui.StatusArea.Add_MouseLeftButtonUp({ if (-not $script:Ctx.Ready) { Start-BtInteractiveLogin $script:Ctx } })
     $ui.MenuBtn.Add_Click({ try { $script:Ctx.TrayMenu.Show([System.Windows.Forms.Cursor]::Position) } catch { } })
+    $ui.DashBtn.Add_Click({ Show-BtDashboard $script:Ctx })
     $ui.OpenHomeBtn.Add_Click({ Open-BtExternal $script:Ctx.HomeUrl })
     $ui.UpdateBtn.Add_Click({ Invoke-BtPromptAndUpdate $script:Ctx })
     $ui.MinBtn.Add_Click({ $script:Ctx.Window.WindowState = [System.Windows.WindowState]::Minimized })
@@ -655,6 +658,12 @@ function Initialize-BtTray {
     [void]$m.Items.Add((New-Object System.Windows.Forms.ToolStripSeparator))
     $null = & $add 'Se reconnecter à Confluence' { Invoke-BtReconnect $script:Ctx -ShowWindow }
     $null = & $add 'Rechercher une mise à jour' { Invoke-BtUpdateCheck $script:Ctx -Manual }
+    $null = & $add 'Tableau de bord' { Show-BtDashboard $script:Ctx }
+    $null = & $add 'Analyser les catégories (diagnostic)' { Start-BtCategScan $script:Ctx -Manual }
+    $null = & $add 'Ouvrir l''analyse des catégories' {
+        $f = Join-Path $script:Ctx.DataDir 'analyse-categories.txt'
+        if (Test-Path -LiteralPath $f) { try { Start-Process notepad.exe -ArgumentList ('"' + $f + '"') } catch { } }
+        else { Show-BtFlash $script:Ctx 'Pas encore d''analyse : menu … > Analyser les catégories.' } }
     $null = & $add 'Ouvrir le journal' { try { Start-Process notepad.exe -ArgumentList ('"' + (Join-Path $script:Ctx.DataDir 'app_debug.log') + '"') } catch { } }
     $null = & $add 'Ouvrir le dossier de données' { try { Start-Process explorer.exe -ArgumentList ('"' + $script:Ctx.DataDir + '"') } catch { } }
     $null = & $add ("À propos (v" + $Ctx.Config.Version + ')') { Open-BtExternal ("https://github.com/" + $script:Ctx.Config.GitHubRepo) }

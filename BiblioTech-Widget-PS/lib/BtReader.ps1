@@ -68,6 +68,7 @@ function New-BtReaderWindow {
     foreach ($n in @('BackBtn', 'FwdBtn', 'ReloadBtn', 'ReadBtn', 'ReadIcon', 'ReadText', 'PinBtn', 'PinIcon', 'CopyBtn', 'WebBtn', 'TitleText', 'SubText', 'Host')) { $r.Ui[$n] = $win.FindName($n) }
     $ico = New-BtImageSource (Get-BtAppIconPath 'png') 64
     if ($ico) { $win.Icon = $ico }
+    Register-BtWindowIcon $win
 
     $wv = New-BtWebView $Ctx
     $r.WebView = $wv

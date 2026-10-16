@@ -22,6 +22,8 @@ try { $cw = [BtNative]::GetConsoleWindow(); if ($cw -ne [IntPtr]::Zero) { [void]
 . (Join-Path $root 'lib\BtWindow.ps1')
 . (Join-Path $root 'lib\BtReader.ps1')
 . (Join-Path $root 'lib\BtUpdate.ps1')
+. (Join-Path $root 'lib\BtCategories.ps1')
+. (Join-Path $root 'lib\BtDashboard.ps1')
 . (Join-Path $root 'config.ps1')
 
 try { [void][BtNative]::SetCurrentProcessExplicitAppUserModelID('SNCF.BiblioTechWidget') } catch { }
@@ -75,6 +77,8 @@ $script:Ctx = @{
     }
     Update     = @{ Phase = ''; Job = $null; Manual = $false; Available = $null; Target = $null; NextCheck = (Get-Date).AddSeconds(10) }
     Reader     = @{ Window = $null; WebView = $null; Ui = $null; Item = $null; Url = '' }
+    Categ      = @{ Probe = (New-BtProbe 'categ'); Id = ''; Manual = $false; AutoAt = $null; StartedAt = $null }
+    Dash       = @{ Window = $null; WebView = $null }
     Ui         = $null
     Window     = $null
     StatusKind = 'idle'
@@ -119,6 +123,7 @@ function Show-BtAuthWindow {
     $w.Top = $wa.Top + ($wa.Height - $w.Height) / 2
     $w.ShowInTaskbar = $true
     $w.Show(); $w.Activate() | Out-Null
+    Set-BtWindowIconNative $w     # le bouton de barre des tâches vient d'être (re)créé
     Write-BtLog '[AUTH] Fenêtre de connexion présentée.'
 }
 
@@ -150,6 +155,9 @@ function Start-BtAuth {
     $w.WindowStartupLocation = [System.Windows.WindowStartupLocation]::Manual
     $w.Left = -5000; $w.Top = -5000
     $w.ShowInTaskbar = $false
+    $ico = New-BtImageSource (Get-BtAppIconPath 'png') 64
+    if ($ico) { $w.Icon = $ico }
+    Register-BtWindowIcon $w
     $wv = New-BtWebView $Ctx
     $w.Content = $wv
     $Ctx.AuthWindow = $w
@@ -258,6 +266,8 @@ function Complete-BtInfo {
         Set-BtAuthState $Ctx 'ok'
         Write-BtLog "[AUTH] Session valide ($($R.user)) - espace : $($R.space)"
         if ($first) {
+            # Analyse des catégories (diagnostic local) : une fois par version, 45 s après la connexion.
+            if ($Ctx.State.CategScanVersion -ne $Ctx.Config.Version) { $Ctx.Categ.AutoAt = (Get-Date).AddSeconds(45) }
             Request-BtSearch $Ctx '' 0 'recent'
             if ($Ctx.Search.Typed -and -not $Ctx.Search.ShownQuery) { $Ctx.Search.DebounceAt = Get-Date }
         }
@@ -406,7 +416,7 @@ function Complete-BtSearch {
 function Step-BtPump {
     $c = $script:Ctx
     if ($c.Quitting) { return }
-    foreach ($step in @('Step-BtInfo', 'Step-BtSearch', 'Step-BtUpdate')) {
+    foreach ($step in @('Step-BtInfo', 'Step-BtSearch', 'Step-BtUpdate', 'Step-BtCategScan')) {
         try { & $step $c } catch { Write-BtLog "[PUMP] $step : $($_.Exception.Message)" }
     }
     try {
@@ -435,7 +445,7 @@ function Stop-BtApp {
     try { if ($Ctx.Hotkey) { $Ctx.Hotkey.Dispose() } } catch { }
     try { if ($Ctx.Tray) { $Ctx.Tray.Visible = $false; $Ctx.Tray.Dispose() } } catch { }
     try { if ($Ctx.Window -and $Ctx.Window.IsVisible) { Save-BtWindowBounds $Ctx } } catch { }
-    foreach ($w in @($Ctx.Reader.Window, $Ctx.AuthWindow, $Ctx.Window)) { try { if ($w) { $w.Close() } } catch { } }
+    foreach ($w in @($Ctx.Reader.Window, $Ctx.Dash.Window, $Ctx.AuthWindow, $Ctx.Window)) { try { if ($w) { $w.Close() } } catch { } }
     try { $script:App.Shutdown() } catch { }
 }
 

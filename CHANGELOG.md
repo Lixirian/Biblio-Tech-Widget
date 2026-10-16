@@ -1,5 +1,28 @@
 # Historique des versions
 
+## 1.1.4 — 2026-10-16
+
+- **Icône de la barre des tâches** : `Window.Icon` était ignorée (fenêtre WPF hébergée par
+  powershell.exe + AppUserModelID explicite). `Set-BtWindowIconNative` (BtCommon) pose
+  l'icône en Win32 (`WM_SETICON` 32/16 px depuis `icone app.ico`) ; `Register-BtWindowIcon`
+  la ré-applique sur SourceInitialized, ContentRendered, chaque réaffichage et à
+  900/2500/6000 ms (même correctif que SNOW 1.5.17). Fenêtres : principale, lecteur, connexion.
+- **Tableau de bord** (`lib/BtDashboard.ps1`, bouton `DashBtn` + menu) : fenêtre WebView2 qui
+  charge `/rest/api/user/current` puis y injecte une page (SVG intégré, sans librairie) ;
+  `type = comment` par plage de dates (`created`), réponses = commentaire ayant un ancêtre
+  commentaire ; pages les plus commentées, contributeurs ; « consignes phares » via
+  `/rest/confanalytics/1.0/...` si disponible (essais journalisés `[DASH]`), sinon repli sur
+  les plus commentées. Pont `chrome.webview.postMessage` -> journal. Max `DashMaxComments`.
+- **Export Excel** (COM, Excel du poste) : Synthèse (indicateurs + 3 graphiques natifs),
+  Par jour, Pages commentées, Consignes phares, Contributeurs ; titres en liens. Écriture par
+  blocs `object[,]` ; `NumberFormat` lu dans la langue d'Excel (`jj/mm/aaaa` puis `dd/mm/yyyy`).
+  Fichier dans Téléchargements, ouvert à la fin.
+- **Analyse des catégories** (`lib/BtCategories.ps1`, diagnostic LOCAL, rien n'est envoyé) :
+  métadonnées seulement (ancêtres, étiquettes, espace, type, titres) jusqu'à `CategScanMax`
+  pages -> `analyse-categories.txt` (arborescence niveaux 0-2, chemins, étiquettes et
+  combinaisons, préfixes émoji / « X - », 2 premiers mots). Automatique une fois par version
+  (45 s après connexion, `State.CategScanVersion`) + menu.
+
 ## 1.1.3 — 2026-10-16
 
 - **Titres en tête** (tri « Pertinence », 1re page) : requête CQL parallèle restreinte aux

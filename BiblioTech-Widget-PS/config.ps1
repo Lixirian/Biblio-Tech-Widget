@@ -7,7 +7,7 @@
 $Config = @{
     # Version de l'application. À INCRÉMENTER à chaque publication (build-release.ps1
     # lit cette valeur pour nommer le zip, la release GitHub et latest.json).
-    Version            = '1.1.3'
+    Version            = '1.1.4'
 
     # ----- Confluence -----
     # URL de l'instance (sans slash final).
@@ -25,6 +25,8 @@ $Config = @{
     # Types de contenu remontés par défaut (filtre « Tout »).
     ContentTypes       = @('page', 'blogpost', 'attachment')
     PageSize           = 20      # résultats par page (« Afficher plus » charge la suite)
+    CategScanMax       = 3000    # analyse des catégories (diagnostic local) : nb max de pages parcourues
+    DashMaxComments    = 5000    # tableau de bord : nb max de commentaires chargés par plage de dates
     RecentCount        = 12      # pages « mises à jour récemment » sur l'accueil
     MinQueryLength     = 2       # nb de caractères avant la recherche automatique
     SearchDebounceMs   = 450     # pause de frappe avant de lancer la recherche

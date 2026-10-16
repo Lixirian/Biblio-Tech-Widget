@@ -1,4 +1,9 @@
 {
+    "1.1.4":  [
+                  "L'icône Biblio-Tech s'affiche désormais dans la barre des tâches (fenêtre principale, lecteur et connexion).",
+                  "Nouveau tableau de bord (bouton graphique en haut) : commentaires et réponses par jour sur la période choisie, pages les plus commentées, contributeurs, consignes phares ; export Excel avec graphiques et liens (enregistré dans Téléchargements).",
+                  "Analyse des catégories (diagnostic local, menu …) : synthèse de l'organisation de Biblio-Tech (rubriques, étiquettes, préfixes de titres) enregistrée sur votre poste, pour préparer le classement des résultats par catégorie."
+              ],
     "1.1.3":  [
                   "Recherche plus pertinente : les fiches dont le TITRE contient tous vos mots-clés apparaissent en premier (ex. « OPW bureautique » remonte les fiches OPW Bureautique avant les fiches OPW métier qui citent seulement « bureautique » dans leur texte)."
               ],

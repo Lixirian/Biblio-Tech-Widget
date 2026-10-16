@@ -37,6 +37,62 @@ function Get-BtAppIconPath {
     return $null
 }
 
+# --- Icône de la barre des tâches ---------------------------------------------
+# Une fenêtre WPF hébergée par powershell.exe (WindowChrome, AppUserModelID explicite)
+# ignore souvent Window.Icon dans la barre des tâches : bouton vide ou icône PowerShell.
+# On pose l'icône au niveau Win32 (WM_SETICON) et on la ré-applique à plusieurs moments
+# car la barre des tâches peut créer son bouton AVANT (même correctif que SNOW 1.5.17).
+if (-not ([System.Management.Automation.PSTypeName]'BtIconNative').Type) {
+    Add-Type -Namespace '' -Name 'BtIconNative' -MemberDefinition @'
+[System.Runtime.InteropServices.DllImport("user32.dll")]
+public static extern System.IntPtr SendMessage(System.IntPtr hWnd, int Msg, System.IntPtr wParam, System.IntPtr lParam);
+'@
+}
+$script:BtIconHandles = $null     # gardées vivantes pendant toute la session (HICON partagées)
+
+function Set-BtWindowIconNative {
+    param($Win)
+    try {
+        if (-not $script:BtIconHandles) {
+            Add-Type -AssemblyName System.Drawing
+            $ico = Get-BtAppIconPath 'ico'
+            if ($ico) {
+                $big = New-Object System.Drawing.Icon $ico, 32, 32
+                $small = New-Object System.Drawing.Icon $ico, 16, 16
+                $script:BtIconHandles = @{ Big = $big.Handle; Small = $small.Handle; Keep = @($big, $small) }
+            } else {
+                $png = Get-BtAppIconPath 'png'
+                if (-not $png) { return }
+                $src = New-Object System.Drawing.Bitmap $png
+                $b32 = New-Object System.Drawing.Bitmap $src, (New-Object System.Drawing.Size 32, 32)
+                $b16 = New-Object System.Drawing.Bitmap $src, (New-Object System.Drawing.Size 16, 16)
+                $script:BtIconHandles = @{ Big = $b32.GetHicon(); Small = $b16.GetHicon(); Keep = @($src, $b32, $b16) }
+            }
+        }
+        $hwnd = (New-Object System.Windows.Interop.WindowInteropHelper $Win).Handle
+        if ($hwnd -eq [IntPtr]::Zero) { return }
+        [void][BtIconNative]::SendMessage($hwnd, 0x0080, [IntPtr]1, $script:BtIconHandles.Big)    # WM_SETICON, ICON_BIG
+        [void][BtIconNative]::SendMessage($hwnd, 0x0080, [IntPtr]0, $script:BtIconHandles.Small)  # ICON_SMALL
+    } catch { Write-BtLog ("[UI] Icône barre des tâches : échec ({0})" -f $_.Exception.Message) }
+}
+
+# Branche la pose de l'icône sur une fenêtre : création du HWND, premier rendu, chaque
+# réaffichage, et reprises différées (relance juste après une mise à jour).
+function Register-BtWindowIcon {
+    param($Win)
+    $apply = { param($s, $e) Set-BtWindowIconNative $s }
+    $Win.Add_SourceInitialized($apply)
+    $Win.Add_ContentRendered($apply)
+    $Win.Add_IsVisibleChanged({ param($s, $e) if ($s.IsVisible) { Set-BtWindowIconNative $s } })
+    foreach ($ms in @(900, 2500, 6000)) {
+        $t = New-Object System.Windows.Threading.DispatcherTimer
+        $t.Interval = [TimeSpan]::FromMilliseconds($ms)
+        $t.Tag = $Win
+        $t.Add_Tick({ param($s, $e) $s.Stop(); Set-BtWindowIconNative $s.Tag })
+        $t.Start()
+    }
+}
+
 # --- Journal ----------------------------------------------------------------
 $script:BtLogPath = $null
 
