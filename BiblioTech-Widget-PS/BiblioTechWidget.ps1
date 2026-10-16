@@ -24,6 +24,7 @@ try { $cw = [BtNative]::GetConsoleWindow(); if ($cw -ne [IntPtr]::Zero) { [void]
 . (Join-Path $root 'lib\BtUpdate.ps1')
 . (Join-Path $root 'lib\BtCategories.ps1')
 . (Join-Path $root 'lib\BtDashboard.ps1')
+. (Join-Path $root 'lib\BtBrowse.ps1')
 . (Join-Path $root 'config.ps1')
 
 try { [void][BtNative]::SetCurrentProcessExplicitAppUserModelID('SNCF.BiblioTechWidget') } catch { }
@@ -80,9 +81,13 @@ $script:Ctx = @{
         Results = @(); Total = 0; More = $false; Error = $null; LastVia = ''; LastMs = 0
         Recent = @(); RecentError = $null
     }
-    Update     = @{ Phase = ''; Job = $null; Manual = $false; Available = $null; Target = $null; NextCheck = (Get-Date).AddSeconds(10) }
+    Update     = @{ Phase = ''; Job = $null; Manual = $false; Available = $null; Target = $null; NextCheck = (Get-Date).AddSeconds(10)
+                    Source = 'release'; LastCheckAt = (Get-Date); ReleaseFailLogged = $false }
     Reader     = @{ Window = $null; WebView = $null; Ui = $null; Item = $null; Url = '' }
-    Categ      = @{ Probe = (New-BtProbe 'categ'); Id = ''; Manual = $false; AutoAt = $null; StartedAt = $null }
+    Categ      = @{ Probe = (New-BtProbe 'categ'); Id = ''; Manual = $false; Mode = ''; AutoAt = $null; StartedAt = $null; Index = $null; Tree = $null }
+    Home       = @{ Probe = (New-BtProbe 'home'); Id = ''; At = $null; Top = @(); Fresh = @(); Error = $null }
+    Browse     = $false          # onglet « Catégories » (arborescence) affiché à la place de l'accueil
+    BrowseOpen = @{}             # nœuds dépliés (chemin -> $true)
     Dash       = @{ Window = $null; WebView = $null }
     Ui         = $null
     Window     = $null
@@ -277,8 +282,8 @@ function Complete-BtInfo {
         Set-BtAuthState $Ctx 'ok'
         Write-BtLog "[AUTH] Session valide ($($R.user)) - espace : $($R.space)"
         if ($first) {
-            # Analyse des catégories (diagnostic local) : une fois par version, 45 s après la connexion.
-            if ($Ctx.State.CategScanVersion -ne $Ctx.Config.Version) { $Ctx.Categ.AutoAt = (Get-Date).AddSeconds(45) }
+            # Index des catégories : mis à jour à CHAQUE ouverture (incrémental), 20 s après la connexion.
+            $Ctx.Categ.AutoAt = (Get-Date).AddSeconds(20)
             Request-BtSearch $Ctx '' 0 'recent'
             if ($Ctx.Search.Typed -and -not $Ctx.Search.ShownQuery) { $Ctx.Search.DebounceAt = Get-Date }
         }
@@ -430,7 +435,7 @@ function Complete-BtSearch {
 function Step-BtPump {
     $c = $script:Ctx
     if ($c.Quitting) { return }
-    foreach ($step in @('Step-BtInfo', 'Step-BtSearch', 'Step-BtUpdate', 'Step-BtCategScan')) {
+    foreach ($step in @('Step-BtInfo', 'Step-BtSearch', 'Step-BtUpdate', 'Step-BtCategScan', 'Step-BtHome')) {
         try { & $step $c } catch { Write-BtLog "[PUMP] $step : $($_.Exception.Message)" }
     }
     try {
@@ -473,6 +478,13 @@ if ($script:Ctx.Demo) {
     Request-BtSearch $script:Ctx '' 0 'recent'
     # BT_TEST_QUERY : pré-remplit la recherche (test visuel).
     if ($env:BT_TEST_QUERY) { Show-BtSearch $script:Ctx; $script:Ctx.Ui.SearchBox.Text = $env:BT_TEST_QUERY }
+    # BT_TEST_BROWSE : ouvre l'onglet « Catégories » (index local existant), 1re catégorie dépliée.
+    if ($env:BT_TEST_BROWSE) {
+        $script:Ctx.Browse = $true
+        $tr = Get-BtCategTree $script:Ctx
+        if ($tr) { foreach ($k in @($tr.Kids.Values | Sort-Object { $_.Name } | Select-Object -First 1)) { $script:Ctx.BrowseOpen[$k.Path] = $true; foreach ($k2 in @($k.Kids.Values | Sort-Object { $_.Name } | Select-Object -First 1)) { $script:Ctx.BrowseOpen[$k2.Path] = $true } } }
+        Render-BtFilters $script:Ctx; Render-BtResults $script:Ctx
+    }
 } else {
     Start-BtAuth $script:Ctx
 }

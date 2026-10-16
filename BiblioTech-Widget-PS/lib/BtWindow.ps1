@@ -289,6 +289,11 @@ function New-BtWindow {
         $win.FindName('LogoBadge').Visibility = [System.Windows.Visibility]::Collapsed
     }
     Register-BtWindowIcon $win
+    # Retour sur la fenêtre : contrôle de mise à jour immédiat (au plus une fois par minute).
+    $win.Add_Activated({
+        $u = $script:Ctx.Update
+        if (-not $u.Phase -and ((Get-Date) - $u.LastCheckAt).TotalSeconds -ge 60) { $u.NextCheck = Get-Date }
+    })
     Restore-BtWindowBounds $Ctx
 
     $ui.SearchBox.Add_TextChanged({ param($s, $e)
@@ -486,6 +491,14 @@ function Invoke-BtAction {
     }
 }
 
+# Ouvre un fichier du dossier de données (rapport, journal) dans le Bloc-notes.
+function Open-BtDataFile {
+    param($Ctx, [string]$Name)
+    $f = Join-Path $Ctx.DataDir $Name
+    if (Test-Path -LiteralPath $f) { try { Start-Process notepad.exe -ArgumentList ('"' + $f + '"') } catch { } }
+    else { Show-BtFlash $Ctx 'Pas encore d''analyse : elle se lance automatiquement après la connexion.' }
+}
+
 # --- Filtres -------------------------------------------------------------------
 function Render-BtFilters {
     param($Ctx)
@@ -522,6 +535,21 @@ function Render-BtFilters {
             [void]$host_.Children.Add($chip)
         }
     }
+    # Onglet « Catégories » : arborescence de l'index local (à la place de l'accueil).
+    $sep = New-Object System.Windows.Controls.Border
+    $sep.Width = 1; $sep.Height = 18; $sep.Margin = New-BtThickness 4 3 10 9
+    $sep.Background = Get-BtBrush 'Border'
+    [void]$host_.Children.Add($sep)
+    $chip = New-BtChip 'Catégories' ([bool]$Ctx.Browse) 'browse' ([string][char]0xE8B7)
+    $chip.Add_MouseLeftButtonUp({ param($s, $e)
+        $c = $script:Ctx
+        $c.Browse = -not $c.Browse
+        # L'arborescence remplace l'accueil : on vide la recherche en cours.
+        if ($c.Browse -and $c.Ui.SearchBox.Text) { $c.Ui.SearchBox.Text = '' }
+        Render-BtFilters $c
+        Render-BtResults $c
+    })
+    [void]$host_.Children.Add($chip)
 }
 
 # --- Rendu de la liste ---------------------------------------------------------
@@ -581,7 +609,11 @@ function Render-BtResults {
         return
     }
 
-    # --- Accueil : épinglés, recherches récentes, dernières mises à jour ---
+    # --- Onglet « Catégories » : arborescence ---
+    if ($Ctx.Browse) { Render-BtCategTree $Ctx $list; return }
+
+    # --- Accueil : épinglés, recherches récentes, aperçu (plus commentées, nouvelles
+    #     fiches), dernières mises à jour ---
     $pins = @($Ctx.State.Pins)
     if ($pins.Count) {
         [void]$list.Children.Add((New-BtSectionHeader 'Épinglés' ([string][char]0xE840)))
@@ -613,7 +645,8 @@ function Render-BtResults {
         }
         [void]$list.Children.Add($wp)
     }
-    $label = if (-not $Ctx.Config.SpaceKey) { 'Mis à jour récemment · Biblio-Tech' } elseif ($Ctx.SpaceName) { "Mis à jour récemment · $($Ctx.SpaceName)" } else { "Mis à jour récemment · $($Ctx.Config.SpaceKey)" }
+    Render-BtHomeOverview $Ctx $list
+    $label =if (-not $Ctx.Config.SpaceKey) { 'Mis à jour récemment · Biblio-Tech' } elseif ($Ctx.SpaceName) { "Mis à jour récemment · $($Ctx.SpaceName)" } else { "Mis à jour récemment · $($Ctx.Config.SpaceKey)" }
     [void]$list.Children.Add((New-BtSectionHeader $label ([string][char]0xE823)))
     if ($s.RecentError) {
         [void]$list.Children.Add((New-BtMessageCard $Ctx ([string][char]0xE783) 'Chargement impossible' $s.RecentError 'Réessayer' 'retry' 'Error'))
@@ -659,11 +692,10 @@ function Initialize-BtTray {
     $null = & $add 'Se reconnecter à Confluence' { Invoke-BtReconnect $script:Ctx -ShowWindow }
     $null = & $add 'Rechercher une mise à jour' { Invoke-BtUpdateCheck $script:Ctx -Manual }
     $null = & $add 'Tableau de bord' { Show-BtDashboard $script:Ctx }
-    $null = & $add 'Analyser les catégories (diagnostic)' { Start-BtCategScan $script:Ctx -Manual }
-    $null = & $add 'Ouvrir l''analyse des catégories' {
-        $f = Join-Path $script:Ctx.DataDir 'analyse-categories.txt'
-        if (Test-Path -LiteralPath $f) { try { Start-Process notepad.exe -ArgumentList ('"' + $f + '"') } catch { } }
-        else { Show-BtFlash $script:Ctx 'Pas encore d''analyse : menu … > Analyser les catégories.' } }
+    $null = & $add 'Mettre à jour les catégories' { Start-BtCategScan $script:Ctx -Manual }
+    $null = & $add 'Reconstruire l''index des catégories (complet)' { Start-BtCategScan $script:Ctx -Manual -Full }
+    $null = & $add 'Ouvrir l''analyse des catégories' { Open-BtDataFile $script:Ctx 'analyse-categories.txt' }
+    $null = & $add 'Ouvrir le journal des catégories' { Open-BtDataFile $script:Ctx 'categories-journal.log' }
     $null = & $add 'Ouvrir le journal' { try { Start-Process notepad.exe -ArgumentList ('"' + (Join-Path $script:Ctx.DataDir 'app_debug.log') + '"') } catch { } }
     $null = & $add 'Ouvrir le dossier de données' { try { Start-Process explorer.exe -ArgumentList ('"' + $script:Ctx.DataDir + '"') } catch { } }
     $null = & $add ("À propos (v" + $Ctx.Config.Version + ')') { Open-BtExternal ("https://github.com/" + $script:Ctx.Config.GitHubRepo) }

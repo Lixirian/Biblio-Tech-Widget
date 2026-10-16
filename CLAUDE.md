@@ -48,7 +48,8 @@ BiblioTech-Widget-PS/
   lib/BtWindow.ps1      fenêtre (WindowChrome), taille mémorisée, rendu, filtres, tray, hotkey
   lib/BtReader.ps1      lecteur intégré (WebView2) + mode lecture (CSS injecté)
   lib/BtUpdate.ps1      MAJ GitHub : latest.json, pastille, SHA-256, updater détaché
-  lib/BtCategories.ps1  analyse des catégories (diagnostic LOCAL -> analyse-categories.txt)
+  lib/BtCategories.ps1  index LOCAL des catégories, incrémental (categories-index.json + journal)
+  lib/BtBrowse.ps1      onglet « Catégories » (arborescence) + aperçu de l'accueil
   lib/BtDashboard.ps1   tableau de bord (page injectée dans une origine Confluence) + export Excel (COM)
 launcher/               bootstrap.ps1 + Biblio-Tech.vbs ; livrés dans chaque zip et copiés dans
                         %LOCALAPPDATA%\…\launcher : les raccourcis y pointent -> MAJ / réparation

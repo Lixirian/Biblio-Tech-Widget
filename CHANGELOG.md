@@ -1,5 +1,28 @@
 # Historique des versions
 
+## 1.1.6 — 2026-10-16
+
+- **Index des catégories incrémental** (`lib/BtCategories.ps1`, local) : `categories-index.json`
+  (métadonnées : titre, ancêtres, étiquettes, type, lien, date). À chaque ouverture (20 s après
+  la connexion) : fiches `lastmodified >= dernière analyse - 1 j` + liste légère des id
+  (suppressions, si complète) ; parcours complet si index absent / > 7 jours / menu
+  « Reconstruire ». Journal `categories-journal.log` (catégories + / - / ~, fiches + / - / >).
+  Rapport `analyse-categories.txt` régénéré depuis l'index. Sérialisation JavaScriptSerializer.
+- **Onglet « Catégories »** (`lib/BtBrowse.ps1`, puce dans la barre de filtres) : arborescence
+  de l'index (niveau 1 = page sous l'accueil de l'espace), nœuds dépliables, page de rubrique
+  « ouvrir ↗ », fiches -> lecteur (Ctrl+clic : navigateur), 200 fiches max par nœud.
+- **Accueil** : « Les plus commentées » et « Nouvelles fiches » des 30 derniers jours (sonde
+  `__btHome`, rafraîchie toutes les 15 min).
+- **Tableau de bord** : sans réponse (1re réponse d'un autre contributeur, réponses postées
+  après la période incluses), délai médian / moyen, % < 48 h, comparaison période précédente
+  (`/rest/api/search` totalSize), jours × heures, activité éditoriale (créées / dernière
+  modification), nouvelles consignes, fiches à revoir (> 12 mois, `version.when`), rubriques
+  (`id in (…)` + ancêtres), « J'aime » (`/rest/likes/1.0/content/{id}/likes`, journalisé).
+  Export Excel : 11 feuilles, 6 graphiques, échelle de couleurs jours × heures.
+- **Pastille de MAJ rapide** : `latest.json` joint à la release et lu via
+  `github.com/…/releases/latest/download/latest.json` (repli raw) ; contrôle toutes les
+  2 min et au retour sur la fenêtre ; bulle de notification.
+
 ## 1.1.5 — 2026-10-16
 
 - **Double connexion corrigée** : la vérification silencieuse (démarrage, reconnexion,

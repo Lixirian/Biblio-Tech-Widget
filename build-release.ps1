@@ -134,12 +134,17 @@ try {
     $body = if ($notes.Count) { ($notes | ForEach-Object { "- $_" }) -join "`n" } else { "Version $ver" }
     $body += "`n`n**Installation, mise à jour ou réparation** : télécharger ``Biblio-Tech.cmd`` (fichier unique) et double-cliquer dessus.`nLes postes déjà équipés se mettent à jour seuls au lancement ou via la pastille de l'application."
     [System.IO.File]::WriteAllText($notesFile, $body, $utf8)
+    # latest.json est AUSSI joint à la release : les postes le lisent via
+    # github.com/<dépôt>/releases/latest/download/latest.json, disponible dès la publication
+    # (raw.githubusercontent garde l'ancienne version ~5 min en cache).
+    $relManifest = Join-Path $dist 'latest.json'
+    [System.IO.File]::WriteAllText($relManifest, $manifestJson, $utf8)
     & gh release view "v$ver" --repo $gh 2>$null | Out-Null
     if ($LASTEXITCODE -eq 0) {
-        & gh release upload "v$ver" $zip $kit --clobber --repo $gh
+        & gh release upload "v$ver" $zip $kit $relManifest --clobber --repo $gh
         Write-Host "Release v$ver existante : assets remplacés."
     } else {
-        & gh release create "v$ver" $zip $kit --repo $gh --target $branch --title "Biblio-Tech Widget $ver" --notes-file $notesFile --latest
+        & gh release create "v$ver" $zip $kit $relManifest --repo $gh --target $branch --title "Biblio-Tech Widget $ver" --notes-file $notesFile --latest
     }
     if ($LASTEXITCODE -ne 0) { throw 'Création de la release GitHub impossible.' }
 

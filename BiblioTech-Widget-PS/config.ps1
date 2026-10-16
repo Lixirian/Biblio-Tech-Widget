@@ -7,7 +7,7 @@
 $Config = @{
     # Version de l'application. À INCRÉMENTER à chaque publication (build-release.ps1
     # lit cette valeur pour nommer le zip, la release GitHub et latest.json).
-    Version            = '1.1.5'
+    Version            = '1.1.6'
 
     # ----- Confluence -----
     # URL de l'instance (sans slash final).
@@ -25,7 +25,7 @@ $Config = @{
     # Types de contenu remontés par défaut (filtre « Tout »).
     ContentTypes       = @('page', 'blogpost', 'attachment')
     PageSize           = 20      # résultats par page (« Afficher plus » charge la suite)
-    CategScanMax       = 3000    # analyse des catégories (diagnostic local) : nb max de pages parcourues
+    CategScanMax       = 8000    # index local des catégories : nb max de fiches (parcours complet hebdomadaire)
     DashMaxComments    = 5000    # tableau de bord : nb max de commentaires chargés par plage de dates
     RecentCount        = 12      # pages « mises à jour récemment » sur l'accueil
     MinQueryLength     = 2       # nb de caractères avant la recherche automatique
@@ -58,5 +58,5 @@ $Config = @{
     GitHubRepo             = 'Lixirian/Biblio-Tech-Widget'
     UpdateBranch           = 'main'
     # Contrôle ~10 s après le lancement, puis à cette cadence (secondes, min. 60).
-    UpdateCheckIntervalSec = 1800
+    UpdateCheckIntervalSec = 120
 }

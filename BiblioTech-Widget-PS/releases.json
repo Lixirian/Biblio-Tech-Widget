@@ -1,4 +1,11 @@
 {
+    "1.1.6":  [
+                  "Accueil : aperçu des fiches les plus commentées et des nouvelles fiches des 30 derniers jours.",
+                  "Nouvel onglet « Catégories » : toutes les fiches rangées par rubrique et sous-rubrique, pour s'y retrouver sans chercher.",
+                  "Tableau de bord enrichi : commentaires sans réponse, délai de première réponse, comparaison avec la période précédente, jours et heures d'activité, activité éditoriale, nouvelles consignes, fiches à revoir, répartition par rubrique, « J'aime » ; tout est repris dans l'export Excel.",
+                  "Les catégories se mettent à jour automatiquement à chaque ouverture (seulement ce qui a changé) ; un journal liste les catégories et fiches ajoutées, retirées ou déplacées.",
+                  "La pastille de mise à jour apparaît en 2 minutes environ après la publication d'une nouvelle version (avant : jusqu'à 35 minutes), avec une notification."
+              ],
     "1.1.5":  [
                   "Connexion : une seule validation suffit. Le premier essai échouait parce que l'application interrompait en arrière-plan une demande de connexion SSO, puis en relançait une seconde."
               ],

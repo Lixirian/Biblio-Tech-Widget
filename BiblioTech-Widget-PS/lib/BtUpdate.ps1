@@ -47,10 +47,13 @@ function Receive-BtWebJob {
     finally { try { $Job.PS.Dispose() } catch { } }
 }
 
+# Source 'release' (par défaut) : latest.json joint à la dernière release GitHub, disponible
+# DÈS la publication. Source 'raw' (repli) : fichier du dépôt via raw.githubusercontent, dont
+# le CDN garde l'ancienne version ~5 min (le paramètre anti-cache n'y change rien).
 function Get-BtManifestUrl {
-    param($Ctx)
+    param($Ctx, [string]$Source = 'release')
     $c = $Ctx.Config
-    # Paramètre anti-cache : le CDN de raw.githubusercontent garde ~5 min sinon.
+    if ($Source -eq 'release') { return ('https://github.com/{0}/releases/latest/download/latest.json?t={1}' -f $c.GitHubRepo, [DateTime]::UtcNow.Ticks) }
     return ('https://raw.githubusercontent.com/{0}/{1}/latest.json?t={2}' -f $c.GitHubRepo, $c.UpdateBranch, [DateTime]::UtcNow.Ticks)
 }
 
@@ -78,12 +81,14 @@ function Test-BtInstalledCopy {
 
 # Lance un contrôle (non bloquant). -Manual : retour visible à l'utilisateur.
 function Invoke-BtUpdateCheck {
-    param($Ctx, [switch]$Manual)
+    param($Ctx, [switch]$Manual, [string]$Source = 'release')
     $u = $Ctx.Update
     if ($u.Phase) { return }
     if (-not $Ctx.Config.GitHubRepo) { return }
     $u.Manual = [bool]$Manual
-    $u.Job = Start-BtWebJob (Get-BtManifestUrl $Ctx)
+    $u.Source = $Source
+    $u.LastCheckAt = Get-Date
+    $u.Job = Start-BtWebJob (Get-BtManifestUrl $Ctx $Source)
     $u.Phase = 'check'
     if ($Manual) { Show-BtFlash $Ctx 'Recherche de mise à jour…' }
 }
@@ -119,6 +124,12 @@ function Step-BtUpdate {
 function Complete-BtUpdateCheck {
     param($Ctx, $R)
     $u = $Ctx.Update
+    if (-not $R.Ok -and $u.Source -eq 'release') {
+        # Release sans latest.json joint (versions publiées avant 1.1.6) ou github.com filtré : repli.
+        if (-not $u.ReleaseFailLogged) { Write-BtLog "[MAJ] latest.json de la release illisible ($($R.Error)) : repli sur le dépôt."; $u.ReleaseFailLogged = $true }
+        Invoke-BtUpdateCheck $Ctx -Manual:$u.Manual -Source raw
+        return
+    }
     if (-not $R.Ok) {
         Write-BtLog "[MAJ] Lecture de latest.json KO : $($R.Error)"
         if ($u.Manual) { Show-BtFlash $Ctx 'Impossible de joindre GitHub pour vérifier les mises à jour.' }
@@ -135,7 +146,13 @@ function Complete-BtUpdateCheck {
     } catch { Write-BtLog "[MAJ] latest.json invalide : $($_.Exception.Message)"; return }
 
     if ($m.Version -and $m.Url -and (Compare-BtVersion $m.Version $Ctx.Config.Version) -gt 0) {
-        if (-not $u.Available -or $u.Available.Version -ne $m.Version) { Write-BtLog "[MAJ] Nouvelle version disponible : $($m.Version) (actuelle $($Ctx.Config.Version))." }
+        if (-not $u.Available -or $u.Available.Version -ne $m.Version) {
+            Write-BtLog "[MAJ] Nouvelle version disponible : $($m.Version) (actuelle $($Ctx.Config.Version), source $($u.Source))."
+            # Fenêtre peut-être cachée dans la zone de notification : on prévient aussi par une bulle.
+            if (-not $u.Manual) {
+                try { $Ctx.Tray.ShowBalloonTip(8000, 'Biblio-Tech', "Mise à jour $($m.Version) disponible : cliquez sur la pastille « Mise à jour » de la fenêtre.", [System.Windows.Forms.ToolTipIcon]::Info) } catch { }
+            }
+        }
         $u.Available = $m
         if ($u.Manual) { Invoke-BtPromptAndUpdate $Ctx -SkipCheck }
     } else {
