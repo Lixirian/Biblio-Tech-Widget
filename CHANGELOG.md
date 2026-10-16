@@ -1,5 +1,14 @@
 # Historique des versions
 
+## 1.1.9 — 2026-10-16
+
+- **Langage courant** (`BtAssist.ps1`) : « donne moi tout ce qui concerne les bornes evote »
+  donnait les notions `donne · moi · concerne · bornes · evote`, toutes OBLIGATOIRES (ET) ->
+  1 seul résultat. Ajout des formules de demande au bruit (`donne-moi`, `sors-moi`, `tout ce
+  qui concerne`, `les infos sur`, `à propos de`, `au sujet de`, `relatif à`, `y a-t-il`…) et
+  des mots vides associés (moi, concerne, infos, documentation, est-ce…). Vérifié sur
+  11 formulations : toutes donnent `bornes · evote` comme la saisie par mots-clés.
+
 ## 1.1.8 — 2026-10-16
 
 - **Reconnexion automatique à l'ouverture** : le cookie de session Confluence est un cookie de

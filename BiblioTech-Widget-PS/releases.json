@@ -1,4 +1,7 @@
 {
+    "1.1.9":  [
+                  "Langage courant : les formules de demande (« donne-moi tout ce qui concerne… », « sors-moi les infos sur… », « à propos de… ») sont ignorées ; seuls les vrais mots-clés sont cherchés (ex. « bornes · evote »)."
+              ],
     "1.1.8":  [
                   "Connexion automatique à l'ouverture : si votre session SSO est encore valide, Biblio-Tech se reconnecte seul, sans rien afficher. Sinon, la fenêtre de connexion s'ouvre directement sur la page de validation (une seule validation)."
               ],

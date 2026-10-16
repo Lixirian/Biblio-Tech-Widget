@@ -22,6 +22,10 @@ se s si sur sous par pour sans chez vers entre très trop peu bien aussi encore 
 un une y faire fais fait faut dois doit devons devez peux peut pouvons pouvez puis veux veut voudrais aimerais
 besoin aide aider svp merci bonjour stp hello là ici alors donc car mais comme tout tous toute toutes autre autres
 avoir eu fois depuis puisque lorsque lors chaque même cas quoi rien
+moi toi donne donnez donner montre montrez montrer affiche affichez afficher sors sortez sortir sort liste listez lister
+trouve trouvez retrouve retrouver envoie envoyer indique indiquer dis dites voir obtenir connaître connaitre souhaite souhaiterais
+concerne concernent concernant concernée concernées propos sujet relatif relative relatifs relatives rapport traite traitent parle parlent
+info infos information informations renseignement renseignements documentation doc docs élément éléments existe existent existant est-ce documenté documentée documentés documentées
 '@ -split '\s+' | Where-Object { $_ } | ForEach-Object { $script:BtStopWords[$_] = $true }
 
 # Tournures sans valeur de recherche (retirées AVANT le découpage en mots).
@@ -29,7 +33,15 @@ $script:BtNoise = @(
     'sans arr[eê]t', 'tout le temps', 'de temps en temps', 'que faire', 'quoi faire', 'que dois-je faire',
     'mis(es)? à jour', 'mise à jour r[ée]cente', 'nouvelles? fiches?', 'quelles? fiches?', 'quelles? pages?',
     'une fiche', 'la fiche', 'une proc[ée]dure', 'la proc[ée]dure', 'trouver', 'cherche[rz]?', 'savoir',
-    "j'ai", "je n'arrive pas [àa]", "n'arrive pas [àa]", 'il y a', 'est-ce que', 'est ce que'
+    "j'ai", "je n'arrive pas [àa]", "n'arrive pas [àa]", 'il y a', 'est-ce que', 'est ce que',
+    # Formules de demande (« donne-moi tout ce qui concerne les bornes evote ») : sans elles,
+    # chaque mot devenait une notion OBLIGATOIRE et la recherche ne trouvait presque rien.
+    '(donne|donnez|montre|montrez|affiche|affichez|sors|sortez|trouve|trouvez|liste|listez|envoie|envoyez|indique|indiquez|dis|dites)[- ]moi',
+    'je (veux|voudrais|souhaite|souhaiterais|cherche|recherche|aimerais) (avoir|voir|conna[iî]tre|obtenir|trouver)?',
+    "(tout|toutes?) (ce|celles?|ceux) (qui|qu'il y a|que)( (concerne(nt)?|touche(nt)?|traite(nt)?|parle(nt)?|existe(nt)?|a trait))?",
+    '(toutes? )?les (infos?|informations?|fiches?|pages?|documents?|docs?|proc[ée]dures?|consignes?|articles?)( (sur|concernant|relatives?|li[ée]es|disponibles?))?',
+    '[àa] propos (de|du|des|d)', 'au sujet (de|du|des|d)', 'en (rapport|lien) avec', 'relati(f|ve|fs|ves) (à|a|au|aux)',
+    "qu'est[- ]ce qu'il y a", 'y a[- ]t[- ]il', 'il existe'
 )
 
 # Synonymes métier (support poste de travail). Clé = forme saisie ; valeur = variantes
