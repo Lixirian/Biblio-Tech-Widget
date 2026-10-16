@@ -50,6 +50,72 @@ public static extern System.IntPtr SendMessage(System.IntPtr hWnd, int Msg, Syst
 }
 $script:BtIconHandles = $null     # gardées vivantes pendant toute la session (HICON partagées)
 
+# Épinglage dans la barre des tâches : sans propriétés de relance, Windows épingle le
+# PROCESSUS (powershell.exe : son icône, sa commande). On pose sur chaque fenêtre
+# System.AppUserModel.RelaunchCommand / RelaunchDisplayNameResource / RelaunchIconResource
+# puis System.AppUserModel.ID : l'épingle reprend l'icône du widget et relance le lanceur.
+if (-not ([System.Management.Automation.PSTypeName]'BtTaskbar').Type) {
+    Add-Type -TypeDefinition @'
+using System;
+using System.Runtime.InteropServices;
+public static class BtTaskbar {
+    [StructLayout(LayoutKind.Sequential, Pack = 4)]
+    public struct PROPERTYKEY { public Guid fmtid; public uint pid; }
+    // PROPVARIANT : vt + pointeur (VT_LPWSTR) ; taille couverte pour x86 (16) et x64 (24).
+    [StructLayout(LayoutKind.Explicit)]
+    public struct PROPVARIANT { [FieldOffset(0)] public ushort vt; [FieldOffset(8)] public IntPtr p; [FieldOffset(16)] public long pad; }
+    [ComImport, Guid("886D8EEB-8CF2-4446-8D02-CDBA1DBDCF99"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+    interface IPropertyStore {
+        [PreserveSig] int GetCount(out uint c);
+        [PreserveSig] int GetAt(uint i, out PROPERTYKEY k);
+        [PreserveSig] int GetValue(ref PROPERTYKEY k, out PROPVARIANT v);
+        [PreserveSig] int SetValue(ref PROPERTYKEY k, ref PROPVARIANT v);
+        [PreserveSig] int Commit();
+    }
+    [DllImport("shell32.dll")] static extern int SHGetPropertyStoreForWindow(IntPtr hwnd, ref Guid iid, [MarshalAs(UnmanagedType.Interface)] out IPropertyStore ps);
+    [DllImport("ole32.dll")] static extern int PropVariantClear(ref PROPVARIANT pv);
+    static readonly Guid FMT = new Guid("9F4C2855-9F79-4B39-A8D0-E1D42DE1D5F3");   // System.AppUserModel.*
+    static IPropertyStore Open(IntPtr hwnd) {
+        Guid iid = new Guid("886D8EEB-8CF2-4446-8D02-CDBA1DBDCF99"); IPropertyStore ps;
+        int hr = SHGetPropertyStoreForWindow(hwnd, ref iid, out ps);
+        if (hr != 0) Marshal.ThrowExceptionForHR(hr);
+        return ps;
+    }
+    static void Set(IPropertyStore ps, uint pid, string val) {
+        PROPERTYKEY k = new PROPERTYKEY(); k.fmtid = FMT; k.pid = pid;
+        PROPVARIANT v = new PROPVARIANT(); v.vt = 31; v.p = Marshal.StringToCoTaskMemUni(val);   // VT_LPWSTR
+        try { int hr = ps.SetValue(ref k, ref v); if (hr != 0) Marshal.ThrowExceptionForHR(hr); } finally { PropVariantClear(ref v); }
+    }
+    // pid : 2 RelaunchCommand, 3 RelaunchIconResource, 4 RelaunchDisplayNameResource, 5 ID (posé en dernier).
+    public static void Apply(IntPtr hwnd, string appId, string command, string name, string icon) {
+        IPropertyStore ps = Open(hwnd);
+        try { Set(ps, 2, command); Set(ps, 4, name); Set(ps, 3, icon); Set(ps, 5, appId); ps.Commit(); }
+        finally { Marshal.ReleaseComObject(ps); }
+    }
+    public static string Read(IntPtr hwnd, uint pid) {
+        IPropertyStore ps = Open(hwnd);
+        try {
+            PROPERTYKEY k = new PROPERTYKEY(); k.fmtid = FMT; k.pid = pid; PROPVARIANT v;
+            if (ps.GetValue(ref k, out v) != 0 || v.vt != 31) return null;
+            try { return Marshal.PtrToStringUni(v.p); } finally { PropVariantClear(ref v); }
+        } finally { Marshal.ReleaseComObject(ps); }
+    }
+}
+'@
+}
+$script:BtAppId = 'SNCF.BiblioTechWidget'
+
+function Set-BtWindowRelaunch {
+    param($Win)
+    try {
+        $hwnd = (New-Object System.Windows.Interop.WindowInteropHelper $Win).Handle
+        if ($hwnd -eq [IntPtr]::Zero) { return }
+        $cmd = '"{0}" "{1}"' -f (Join-Path $env:WINDIR 'System32\wscript.exe'), (Get-BtLauncherVbs)
+        $ico = Get-BtAppIconPath 'ico'
+        [BtTaskbar]::Apply($hwnd, $script:BtAppId, $cmd, 'Biblio-Tech', $(if ($ico) { "$ico,0" } else { '' }))
+    } catch { Write-BtLog ("[UI] Propriétés d'épinglage : échec ({0})" -f $_.Exception.Message) }
+}
+
 function Set-BtWindowIconNative {
     param($Win)
     try {
@@ -81,6 +147,7 @@ function Set-BtWindowIconNative {
 function Register-BtWindowIcon {
     param($Win)
     $apply = { param($s, $e) Set-BtWindowIconNative $s }
+    $Win.Add_SourceInitialized({ param($s, $e) Set-BtWindowRelaunch $s })   # épinglage : icône + relance du widget
     $Win.Add_SourceInitialized($apply)
     $Win.Add_ContentRendered($apply)
     $Win.Add_IsVisibleChanged({ param($s, $e) if ($s.IsVisible) { Set-BtWindowIconNative $s } })

@@ -1,5 +1,15 @@
 # Historique des versions
 
+## 1.1.10 — 2026-10-16
+
+- **Épinglage dans la barre des tâches** : Windows épinglait le processus (powershell.exe,
+  son icône). `Set-BtWindowRelaunch` (BtCommon, type C# `BtTaskbar` :
+  `SHGetPropertyStoreForWindow`) pose sur chaque fenêtre `System.AppUserModel.RelaunchCommand`
+  (wscript + lanceur), `RelaunchDisplayNameResource` (« Biblio-Tech »),
+  `RelaunchIconResource` (`icone app.ico,0`) puis `System.AppUserModel.ID`
+  (`$script:BtAppId`, identique à l'AUMID du processus). Vérifié par relecture des propriétés.
+  Une épingle existante doit être détachée puis recréée.
+
 ## 1.1.9 — 2026-10-16
 
 - **Langage courant** (`BtAssist.ps1`) : « donne moi tout ce qui concerne les bornes evote »

@@ -1,4 +1,7 @@
 {
+    "1.1.10":  [
+                   "Épingler Biblio-Tech à la barre des tâches garde désormais l'icône du widget (et non celle de PowerShell) et relance bien le widget. Si vous l'aviez déjà épinglé : détachez l'ancienne épingle puis épinglez à nouveau."
+               ],
     "1.1.9":  [
                   "Langage courant : les formules de demande (« donne-moi tout ce qui concerne… », « sors-moi les infos sur… », « à propos de… ») sont ignorées ; seuls les vrais mots-clés sont cherchés (ex. « bornes · evote »)."
               ],

@@ -27,7 +27,7 @@ try { $cw = [BtNative]::GetConsoleWindow(); if ($cw -ne [IntPtr]::Zero) { [void]
 . (Join-Path $root 'lib\BtBrowse.ps1')
 . (Join-Path $root 'config.ps1')
 
-try { [void][BtNative]::SetCurrentProcessExplicitAppUserModelID('SNCF.BiblioTechWidget') } catch { }
+try { [void][BtNative]::SetCurrentProcessExplicitAppUserModelID($script:BtAppId) } catch { }
 
 # --- Garde mono-instance ---
 # Une 2e instance (raccourci relancé alors que l'appli est masquée dans la zone de
