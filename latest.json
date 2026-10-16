@@ -1,14 +1,10 @@
 {
-    "version":  "1.1.6",
-    "zip":  "BiblioTech-Widget_version1.1.6.zip",
-    "url":  "https://github.com/Lixirian/Biblio-Tech-Widget/releases/download/v1.1.6/BiblioTech-Widget_version1.1.6.zip",
-    "sha256":  "332C40BAF398B7D377511FE92B24ED7379A05FDAD6281EB113597337E4F4810D",
+    "version":  "1.1.7",
+    "zip":  "BiblioTech-Widget_version1.1.7.zip",
+    "url":  "https://github.com/Lixirian/Biblio-Tech-Widget/releases/download/v1.1.7/BiblioTech-Widget_version1.1.7.zip",
+    "sha256":  "339F8EDB0A4E5169890E220099F44584CB5D2EE9CB0D0E66B627CA9F6FF71B66",
     "date":  "2026-10-16",
     "notes":  [
-                  "Accueil : aperçu des fiches les plus commentées et des nouvelles fiches des 30 derniers jours.",
-                  "Nouvel onglet « Catégories » : toutes les fiches rangées par rubrique et sous-rubrique, pour s\u0027y retrouver sans chercher.",
-                  "Tableau de bord enrichi : commentaires sans réponse, délai de première réponse, comparaison avec la période précédente, jours et heures d\u0027activité, activité éditoriale, nouvelles consignes, fiches à revoir, répartition par rubrique, « J\u0027aime » ; tout est repris dans l\u0027export Excel.",
-                  "Les catégories se mettent à jour automatiquement à chaque ouverture (seulement ce qui a changé) ; un journal liste les catégories et fiches ajoutées, retirées ou déplacées.",
-                  "La pastille de mise à jour apparaît en 2 minutes environ après la publication d\u0027une nouvelle version (avant : jusqu\u0027à 35 minutes), avec une notification."
+                  "Interface simplifiée : les filtres Pages / Blogs / Pièces jointes et Plus récents sont retirés ; la barre propose désormais les onglets Accueil et Catégories."
               ]
 }
