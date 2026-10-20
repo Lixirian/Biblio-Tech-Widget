@@ -141,6 +141,9 @@ $script:BtHomeJs = @'
         n = n.nextElementSibling;
       }
       var ls = collect(all, 24);
+      // « Commentaires de l'espace … » (titre du site) -> « Derniers commentaires de l'espace … ».
+      // Émoji éventuel en tête conservé ; titre déjà « Derniers … » laissé tel quel.
+      if (!/derniers\s+commentaires/i.test(title)) title = title.replace(/^([^\p{L}\p{N}]*)commentaires(\s+de\s+l)/iu, '$1Derniers commentaires$2');
       if (ls.length) secs.push({ title: title, links: ls });
     });
     return { highlights: hl, sections: secs };
@@ -602,23 +605,57 @@ function New-BtLinkTile {
     return (New-BtTile $Ctx ([string]$Link.t) $sub $glyph $Color @{ Kind = $kind; Id = [string]$Link.id; Title = [string]$Link.t; Glyph = $glyph; Color = $Color; Item = $item })
 }
 
-# « Biblio-TECH met en avant » : un encadré daté de l'accueil = une tuile.
+# « Les dernières news de Biblio-TECH » (encadrés « Biblio-TECH met en avant » du site) : en
+# tête de l'accueil, dans un bandeau à la couleur d'accent, plus visible que les autres sections.
 function Add-BtHighlightTiles {
     param($Ctx, $List)
     $hls = @($Ctx.Home.Highlights)
     if (-not $hls.Count) { return }
-    [void]$List.Children.Add((New-BtSectionHeader 'Biblio-TECH met en avant' ([string][char]0xE789)))
+    $acc = Get-BtTone '#0088CE'
+    $band = New-Object System.Windows.Controls.Border
+    $band.CornerRadius = New-Object System.Windows.CornerRadius 16
+    $band.Background = Get-BtBrush 'AccentSoft'
+    $band.BorderBrush = Get-BtBrush $acc
+    $band.BorderThickness = New-BtThickness 1.5
+    $band.Padding = New-BtThickness 16 12 6 6
+    $band.Margin = New-BtThickness 0 12 10 8
+    $sp = New-Object System.Windows.Controls.StackPanel
+
+    $hd = New-Object System.Windows.Controls.StackPanel
+    $hd.Orientation = [System.Windows.Controls.Orientation]::Horizontal
+    $hd.Margin = New-BtThickness 0 0 0 10
+    $ic = New-Object System.Windows.Controls.Border
+    $ic.Width = 34; $ic.Height = 34
+    $ic.CornerRadius = New-Object System.Windows.CornerRadius 17
+    $ic.Background = Get-BtBrush $acc
+    $ic.Margin = New-BtThickness 0 0 10 0
+    $g = New-BtText -Text ([string][char]0xE789) -Size 16 -Color '#FFFFFF' -Icon
+    $g.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Center
+    $g.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
+    $ic.Child = $g
+    [void]$hd.Children.Add($ic)
+    $tx = New-Object System.Windows.Controls.StackPanel
+    $tx.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
+    [void]$tx.Children.Add((New-BtText -Text 'Les dernières news de Biblio-TECH' -Size 16 -Color $acc -Bold))
+    [void]$tx.Children.Add((New-BtText -Text 'À la une sur la page d''accueil du site' -Size 11 -Color 'Muted'))
+    [void]$hd.Children.Add($tx)
+    [void]$sp.Children.Add($hd)
+
     $wr = New-Object System.Windows.Controls.WrapPanel
     $i = 0
     foreach ($x in $hls) {
         $color = $script:BtTilePalette[($i + 4) % $script:BtTilePalette.Count]
         $glyph = Get-BtTileGlyph ([string]$x.title)
         if ($glyph -eq [string][char]0xE8B7) { $glyph = [string][char]0xE789 }
-        $sub = if ($x.date) { "Mis en avant le $($x.date)" } else { 'À la une' }
-        [void]$wr.Children.Add((New-BtTile $Ctx ([string]$x.title) $sub $glyph $color @{ Kind = 'highlight'; Id = "hl$i"; Title = [string]$x.title; Glyph = $glyph; Color = $color; Item = $x }))
+        $sub = if ($x.date) { "Publié le $($x.date)" } else { 'À la une' }
+        $tile = New-BtTile $Ctx ([string]$x.title) $sub $glyph $color @{ Kind = 'highlight'; Id = "hl$i"; Title = [string]$x.title; Glyph = $glyph; Color = $color; Item = $x }
+        $tile.Width = 214                                  # tuiles plus larges que les autres
+        [void]$wr.Children.Add($tile)
         $i++
     }
-    [void]$List.Children.Add($wr)
+    [void]$sp.Children.Add($wr)
+    $band.Child = $sp
+    [void]$List.Children.Add($band)
 }
 
 # --- Rendu -------------------------------------------------------------------------
@@ -641,12 +678,12 @@ function Render-BtHome {
     [void]$List.Children.Add($hero)
 
     # Sections de l'accueil telles que le site les montre à l'utilisateur connecté. Ordre :
-    #   1) la 1re section = celle du PROFIL (« TAM / Gestionnaire en Production »…) ;
-    #   2) « Biblio-TECH met en avant » juste en dessous ;
+    #   1) « Les dernières news de Biblio-TECH » (encadrés mis en avant), en bandeau ;
+    #   2) la section du PROFIL (« TAM / Gestionnaire en Production »…) ;
     #   3) les autres sections (« Débuter avec Biblio-TECH »…).
+    Add-BtHighlightTiles $Ctx $List
     $secs = @($h.Sections)
     for ($si = 0; $si -lt $secs.Count; $si++) {
-        if ($si -eq 1) { Add-BtHighlightTiles $Ctx $List }
         $st = Split-BtTitleEmoji ([string]$secs[$si].title)
         [void]$List.Children.Add((New-BtSectionHeader $st.Text ([string][char]0xE8B7)))
         $color = $script:BtTilePalette[$si % $script:BtTilePalette.Count]
@@ -654,7 +691,6 @@ function Render-BtHome {
         foreach ($l in @($secs[$si].links)) { [void]$wr.Children.Add((New-BtLinkTile $Ctx $l $st.Text $color)) }
         [void]$List.Children.Add($wr)
     }
-    if ($secs.Count -le 1) { Add-BtHighlightTiles $Ctx $List }
 
     # Accès rapides.
     [void]$List.Children.Add((New-BtSectionHeader 'Accès rapides' ([string][char]0xE945)))

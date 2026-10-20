@@ -1,4 +1,8 @@
 {
+    "1.1.25":  [
+                   "Accueil : « Les dernières news de Biblio-TECH » (anciennement « Biblio-TECH met en avant ») s'affichent désormais en tout premier, dans un bandeau bien visible, avant les rubriques de votre profil.",
+                   "Accueil : la rubrique « Commentaires de l'espace Biblio-TECH » s'intitule désormais « Derniers commentaires de l'espace Biblio-TECH »."
+               ],
     "1.1.24":  [
                    "Lecteur : chaque consigne ouverte depuis Biblio-Tech (recherche, accueil, tableau de bord) repart d'un historique vierge ; les boutons Précédent et Suivant ne concernent plus que les pages parcourues dans cette fenêtre."
                ],

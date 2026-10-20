@@ -1,5 +1,15 @@
 # Historique des versions
 
+## 1.1.25 — 2026-10-20
+
+- **Accueil : « Les dernières news de Biblio-TECH »** (encadrés « Biblio-TECH met en avant » du site) passe
+  en TÊTE, avant la section du profil (`Render-BtHome`), dans un bandeau `Add-BtHighlightTiles` :
+  fond `AccentSoft`, bordure et titre à la couleur d'accent (`Get-BtTone`), pastille d'icône, tuiles
+  plus larges (214 px), sous-titre « Publié le … ». Vérifié par captures `BT_TEST_SHOT` sombre / clair.
+- **Accueil** : la section « Commentaires de l'espace … » lue sur la page d'accueil Confluence est
+  renommée « Derniers commentaires de l'espace … » (`layoutOf`, BtHome ; émoji de tête conservé,
+  titre déjà « Derniers … » inchangé). Simple libellé : aucun changement de données ni de flux.
+
 ## 1.1.24 — 2026-10-20
 
 - **Historique du lecteur par ouverture** : `New-BtReaderWebView` (BtReader) recrée le WebView du
