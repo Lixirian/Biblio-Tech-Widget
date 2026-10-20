@@ -93,11 +93,32 @@ $script:BtHomeJs = @'
       var path = u.pathname + u.search;
       if (/\/display\/~|\/users\/|viewuserprofile|\/download\/attachments\//i.test(path)) return null;   // profils, fichiers
       var t = clean(a.textContent) || clean(a.getAttribute('title'));
-      if (!t) return null;
       var prev = a.previousElementSibling, e = emojiOf(a.querySelector('img[data-emoji-id], img[data-emoji-fallback]'))
         || emojiOf(prev && prev.matches('img[data-emoji-id], img[data-emoji-fallback]') ? prev : null);
+      t = clean((e ? e + ' ' : '') + t);
+      if (!t) return null;
       var m = path.match(/\/pages\/(\d+)|pageId=(\d+)/);
-      return { t: (e ? e + ' ' : '') + t, u: u.href, id: m ? (m[1] || m[2]) : '', ext: u.host !== bh };
+      return { t: t, u: u.href, id: m ? (m[1] || m[2]) : '', ext: u.host !== bh };
+    }
+    // Texte sans lettre ni chiffre = émoji seul.
+    function onlySymbols(t){ return !/[\p{L}\p{N}]/u.test(t); }
+    // Liens d'un bloc, dans l'ordre. Sur le site, l'émoji est souvent un lien À PART collé devant
+    // le vrai lien (« 💼 » puis « Documents de cadrage ») : il est rattaché au lien suivant au lieu
+    // de faire une tuile vide. Dédoublonnage par PAGE (id) : une liste de commentaires renvoie
+    // plusieurs fois vers la même consigne (?focusedCommentId=…).
+    function collect(as, max){
+      var ls = [], seen = {}, pend = '';
+      as.forEach(function(a){
+        var l = linkOf(a);
+        if (!l) return;
+        if (onlySymbols(l.t)) { pend = l.t; return; }
+        if (pend && /^[\p{L}\p{N}\[\(«"']/u.test(l.t)) l.t = pend + ' ' + l.t;
+        pend = '';
+        var k = l.id || l.u.split('#')[0];
+        if (seen[k] || ls.length >= max) return;
+        seen[k] = 1; ls.push(l);
+      });
+      return ls;
     }
     var hl = [], secs = [];
     Array.prototype.forEach.call(root.querySelectorAll('div.panel'), function(p){
@@ -105,8 +126,7 @@ $script:BtHomeJs = @'
       var h = p.querySelector('.panelHeader'), c = p.querySelector('.panelContent') || p;
       var title = clean(h ? h.textContent : '');
       if (!title) return;
-      var ls = [];
-      Array.prototype.forEach.call(c.querySelectorAll('a[href]'), function(a){ var l = linkOf(a); if (l && ls.length < 20) ls.push(l); });
+      var ls = collect(Array.prototype.slice.call(c.querySelectorAll('a[href]')), 20);
       var dm = title.match(/^(\d{1,2}\/\d{1,2}(?:\/\d{2,4})?)\s*(.*)$/);
       hl.push({ title: dm ? dm[2] : title, date: dm ? dm[1] : '', text: clean(c.textContent).slice(0, 500), links: ls });
     });
@@ -114,16 +134,13 @@ $script:BtHomeJs = @'
       if (secs.length >= 8 || h.closest('div.panel') || !vis(h)) return;
       var title = clean(h.textContent);
       if (!title) return;
-      var ls = [], seen = {}, n = h.nextElementSibling;
+      var all = [], n = h.nextElementSibling;
       while (n && !/^H[1-4]$/.test(n.tagName) && !(n.querySelector && n.querySelector('h1, h2, h3, h4'))) {
         var as = n.matches('a[href]') ? [n] : Array.prototype.slice.call(n.querySelectorAll('a[href]'));
-        as.forEach(function(a){
-          if (a.closest('div.panel') || !vis(a)) return;
-          var l = linkOf(a);
-          if (l && !seen[l.u] && ls.length < 24) { seen[l.u] = 1; ls.push(l); }
-        });
+        as.forEach(function(a){ if (!a.closest('div.panel') && vis(a)) all.push(a); });
         n = n.nextElementSibling;
       }
+      var ls = collect(all, 24);
       if (ls.length) secs.push({ title: title, links: ls });
     });
     return { highlights: hl, sections: secs };
@@ -582,6 +599,25 @@ function New-BtLinkTile {
     return (New-BtTile $Ctx ([string]$Link.t) $sub $glyph $Color @{ Kind = $kind; Id = [string]$Link.id; Title = [string]$Link.t; Glyph = $glyph; Color = $Color; Item = $item })
 }
 
+# « Biblio-TECH met en avant » : un encadré daté de l'accueil = une tuile.
+function Add-BtHighlightTiles {
+    param($Ctx, $List)
+    $hls = @($Ctx.Home.Highlights)
+    if (-not $hls.Count) { return }
+    [void]$List.Children.Add((New-BtSectionHeader 'Biblio-TECH met en avant' ([string][char]0xE789)))
+    $wr = New-Object System.Windows.Controls.WrapPanel
+    $i = 0
+    foreach ($x in $hls) {
+        $color = $script:BtTilePalette[($i + 4) % $script:BtTilePalette.Count]
+        $glyph = Get-BtTileGlyph ([string]$x.title)
+        if ($glyph -eq [string][char]0xE8B7) { $glyph = [string][char]0xE789 }
+        $sub = if ($x.date) { "Mis en avant le $($x.date)" } else { 'À la une' }
+        [void]$wr.Children.Add((New-BtTile $Ctx ([string]$x.title) $sub $glyph $color @{ Kind = 'highlight'; Id = "hl$i"; Title = [string]$x.title; Glyph = $glyph; Color = $color; Item = $x }))
+        $i++
+    }
+    [void]$List.Children.Add($wr)
+}
+
 # --- Rendu -------------------------------------------------------------------------
 # Accueil (sans recherche, hors onglet Catégories) : appelé par Render-BtResults.
 function Render-BtHome {
@@ -601,35 +637,23 @@ function Render-BtHome {
     [void]$hero.Children.Add($sub)
     [void]$List.Children.Add($hero)
 
-    # 1) Sections de l'accueil PROPRES AU PROFIL, telles que le site les montre à l'utilisateur
-    #    connecté (« TAM / Gestionnaire en Production », « Débuter avec Biblio-TECH »…).
-    $si = 0
-    foreach ($sec in @($h.Sections)) {
-        $st = Split-BtTitleEmoji ([string]$sec.title)
+    # Sections de l'accueil telles que le site les montre à l'utilisateur connecté. Ordre :
+    #   1) la 1re section = celle du PROFIL (« TAM / Gestionnaire en Production »…) ;
+    #   2) « Biblio-TECH met en avant » juste en dessous ;
+    #   3) les autres sections (« Débuter avec Biblio-TECH »…).
+    $secs = @($h.Sections)
+    for ($si = 0; $si -lt $secs.Count; $si++) {
+        if ($si -eq 1) { Add-BtHighlightTiles $Ctx $List }
+        $st = Split-BtTitleEmoji ([string]$secs[$si].title)
         [void]$List.Children.Add((New-BtSectionHeader $st.Text ([string][char]0xE8B7)))
-        $color = $script:BtTilePalette[$si % $script:BtTilePalette.Count]; $si++
+        $color = $script:BtTilePalette[$si % $script:BtTilePalette.Count]
         $wr = New-Object System.Windows.Controls.WrapPanel
-        foreach ($l in @($sec.links)) { [void]$wr.Children.Add((New-BtLinkTile $Ctx $l $st.Text $color)) }
+        foreach ($l in @($secs[$si].links)) { [void]$wr.Children.Add((New-BtLinkTile $Ctx $l $st.Text $color)) }
         [void]$List.Children.Add($wr)
     }
-    # 2) « Biblio-TECH met en avant » : un encadré daté = une tuile.
-    $hls = @($h.Highlights)
-    if ($hls.Count) {
-        [void]$List.Children.Add((New-BtSectionHeader 'Biblio-TECH met en avant' ([string][char]0xE789)))
-        $wr = New-Object System.Windows.Controls.WrapPanel
-        $i = 0
-        foreach ($x in $hls) {
-            $color = $script:BtTilePalette[($i + 4) % $script:BtTilePalette.Count]
-            $glyph = Get-BtTileGlyph ([string]$x.title)
-            if ($glyph -eq [string][char]0xE8B7) { $glyph = [string][char]0xE789 }
-            $sub = if ($x.date) { "Mis en avant le $($x.date)" } else { 'À la une' }
-            [void]$wr.Children.Add((New-BtTile $Ctx ([string]$x.title) $sub $glyph $color @{ Kind = 'highlight'; Id = "hl$i"; Title = [string]$x.title; Glyph = $glyph; Color = $color; Item = $x }))
-            $i++
-        }
-        [void]$List.Children.Add($wr)
-    }
+    if ($secs.Count -le 1) { Add-BtHighlightTiles $Ctx $List }
 
-    # 3) Accès rapides.
+    # Accès rapides.
     [void]$List.Children.Add((New-BtSectionHeader 'Accès rapides' ([string][char]0xE945)))
     $wp = New-Object System.Windows.Controls.WrapPanel
     $quick = @(

@@ -1,4 +1,8 @@
 {
+    "1.1.15":  [
+                   "Accueil : « Biblio-TECH met en avant » s'affiche juste sous les rubriques de votre profil, avant « Débuter avec Biblio-TECH ».",
+                   "Accueil : plus de tuiles sans texte (l'émoji placé devant un lien est rattaché à ce lien) ni de consignes en double dans « Commentaires de l'espace Biblio-TECH » (une consigne commentée plusieurs fois n'apparaît qu'une fois)."
+               ],
     "1.1.14":  [
                    "Accueil personnalisé : vous retrouvez en tête les rubriques de VOTRE profil, comme sur la page d'accueil du site (ex. « TAM / Gestionnaire en Production »), puis « Débuter avec Biblio-TECH » et les encadrés « Biblio-TECH met en avant ». Toutes les rubriques restent accessibles par la tuile « Toutes les rubriques ».",
                    "Thème : les pages du lecteur et le tableau de bord suivent le thème de Windows (sombre ou clair), y compris si vous le changez pendant l'utilisation."

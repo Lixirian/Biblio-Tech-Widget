@@ -1,5 +1,16 @@
 # Historique des versions
 
+## 1.1.15 — 2026-10-20
+
+- **Tuiles sans texte** : sur l'accueil du site, l'émoji est souvent un lien À PART collé devant
+  le vrai lien (même adresse) -> tuile vide. `collect()` (BtHomeJs) rattache un lien « émoji seul »
+  (`!/[\p{L}\p{N}]/u`) au lien suivant ; `linkOf` accepte un lien dont seul l'émoji est lisible.
+- **Doublons** (« Installer une Borne eVote » ×5 dans « Commentaires de l'espace ») : la liste des
+  commentaires pointe vers la même page avec `?focusedCommentId=…` ; dédoublonnage par id de page.
+- **Ordre** : 1re section (profil) -> « Biblio-TECH met en avant » (`Add-BtHighlightTiles`) ->
+  autres sections. Vérifié dans WebView2 sur une fausse page Confluence (émoji séparé, 5 liens de
+  commentaires vers 1 page) et en mode démo.
+
 ## 1.1.14 — 2026-10-20
 
 - **Accueil selon le profil** (ex. TAM) : la page d'accueil du site affiche des blocs propres au
