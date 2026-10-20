@@ -1,13 +1,12 @@
 {
-    "version":  "1.1.18",
-    "zip":  "BiblioTech-Widget_version1.1.18.zip",
-    "url":  "https://github.com/Lixirian/Biblio-Tech-Widget/releases/download/v1.1.18/BiblioTech-Widget_version1.1.18.zip",
-    "sha256":  "9E5522D539AEA2E338450A9BBB3483388C5A4DA0B93D49C86477332F284128BD",
-    "sig":  "KjAQSVHfhxueu3FoSCYxFcHBKvc29k0xtvfDGKe4NpVr9UUWh3ZQDXVJN6UtEXgBbmF41G+kPw1HKv+7fmsVRV+hYLLVLRTc4uoDgrNt2jKr8iIAY5Ks5BgMXy78t+duoIzvi7Bj79L6oEAZ5CtQr+GbvFc9ryq42u5WQTrRLEsgPlDgCAY4LbcZ2s/D9Rf6AbayJ0PLBdnv/tE+G7lffXztQEWS18QA59lxg7HrixNl2vi8C1ZxsgxqQAaANe590ckFvX5xOgeBW36X8chg1vifeSZ+o1Vt3EGLJ57eRP/v4KrfT+QRlLaixDoaI+rXm4mmWlum4k/C4zKNMI6QDsx5ZuyROWgGYJgZOylqZq2MkrHFosRDa8ZoVvBUXYaVDS8cTjV5so82yJboLmMf4N1o5UQVmIz/2KdPzsECXBZnMjZt6BlJZEUs4+p6Q6MGILwurgcIQZspkaBq6odwd8Ezupx+4DLOWQMQb8NLBtO4Gb7UuOwWI/Zh1bGy7wWS",
+    "version":  "1.1.19",
+    "zip":  "BiblioTech-Widget_version1.1.19.zip",
+    "url":  "https://github.com/Lixirian/Biblio-Tech-Widget/releases/download/v1.1.19/BiblioTech-Widget_version1.1.19.zip",
+    "sha256":  "11EA94E442E51010B9E0C964C8F5F8072E06E741952D5029499E2394217A3D79",
+    "sig":  "dtDGFdMgp+cYfQdq1BdzY8KHaKv1yFV7gCmUw70h48KLC77gNiXAX3Z+alpumRaeU3GEcsxBtwU7tzKOXFme9SkNWDmvJBSEfAOxtyU6/0o/yYpbpT5UziyqBJRtWJc1RZJTG5lMjY1Q5Q1hTCiDmK+eNYrHAXlZ6pYszfQ5TI5GBPL45OAItxuCBhwPeMW3Wd4Yp+x/46SjkP/Dx6IEbB+b4mwRnst0cpCf5qCqLZrW7Ukt4Ya9n7OKSOx9XcBa/2g1klWLnV4SRc353PHeSsJdk70OXxpQqhkn+W6w46+YjtT33zPQP7XENti1TeGCCbsCp6Dj7doDzFEAHDt3uFYdY5a06Qf1nBQiE5agrRX7vlskEzPtvAqSYZtVw1UF79vDW4tEJ7GkeGxPl9AmiThbqhxFclihuBijEEdqBQLRHlqdk34qmSxWmZjydSTPu/qQiotjI5gco3gR6dI/DujGIAecEI7Hln8bWysMvM5UI7dLRcj6gbeKHcN3920l",
     "date":  "2026-10-20",
     "notes":  [
-                  "Sécurité renforcée : le lecteur n\u0027affiche plus que Biblio-Tech ; tout autre site s\u0027ouvre dans votre navigateur habituel (protection contre les fausses pages de connexion).",
-                  "Sécurité : l\u0027export Excel du tableau de bord neutralise les formules qui pourraient être cachées dans des titres de pages.",
-                  "Fiabilité : une mise à jour impossible n\u0027empêche plus jamais Biblio-Tech de démarrer."
+                  "Tableau de bord plus facile à trouver : un bouton « Tableau de bord » bien visible en haut de la fenêtre, et une tuile dans les accès rapides de l\u0027accueil.",
+                  "Déploiement par le service informatique : l\u0027application complète (zip) peut être installée dans n\u0027importe quel dossier, sans mise à jour automatique ni connexion à GitHub."
               ]
 }
