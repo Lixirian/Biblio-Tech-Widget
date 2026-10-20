@@ -110,7 +110,8 @@ Toute l'interface suit le « mode des applications » de Windows, en direct. **J
 en dur** dans une nouvelle interface : XAML -> `{DynamicResource Bt<Rôle>}` (rôles de
 `$script:BtPalettes` dans BtUi, à compléter dans les DEUX palettes), code -> `Get-BtBrush '<Rôle>'`,
 couleur vive (tuile, type) -> `Get-BtTone`. Toute nouvelle fenêtre : `Set-BtThemeResources $win`
-après `XamlReader.Parse`, et l'ajouter à la liste de `Step-BtTheme`. Tests : `BT_THEME=light|dark`,
+(+ `Set-BtTitleBarTheme $win` si elle a un cadre Windows standard) après `XamlReader.Parse`,
+et l'ajouter à la liste de `Step-BtTheme`. Tests : `BT_THEME=light|dark`,
 `BT_THEME_FLIP_SEC`, captures `BT_TEST_SHOT` (jamais de copie d'écran).
 
 ## Règles de sécurité (revue 1.1.18 — à respecter dans toute évolution)

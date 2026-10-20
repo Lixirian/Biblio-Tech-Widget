@@ -664,6 +664,7 @@ function Show-BtDashboard {
     if (-not $d.Window) {
         $win = [System.Windows.Markup.XamlReader]::Parse($script:BtDashXaml)
         Set-BtThemeResources $win
+        Set-BtTitleBarTheme $win          # barre de titre Windows au thème
         $ico = New-BtImageSource (Get-BtAppIconPath 'png') 64
         if ($ico) { $win.Icon = $ico }
         Register-BtWindowIcon $win

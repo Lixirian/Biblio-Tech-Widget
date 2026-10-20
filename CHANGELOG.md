@@ -1,5 +1,15 @@
 # Historique des versions
 
+## 1.1.21 — 2026-10-20
+
+- **Barres de titre au thème** : les fenêtres à cadre Windows standard (tableau de bord, lecteur,
+  connexion) gardaient une barre de titre blanche en thème sombre. `Set-BtTitleBarTheme` (BtUi) :
+  `DwmSetWindowAttribute(DWMWA_USE_IMMERSIVE_DARK_MODE = 20, repli 19)` + `SetWindowPos(…,
+  SWP_FRAMECHANGED)`, appliqué avant l'affichage (pas de flash) et à chaque bascule
+  (`Step-BtTheme`). Vérifié en relisant l'attribut auprès de DWM (sombre / clair / bascule).
+  La fenêtre principale (barre dessinée par l'appli) et la fenêtre de mise à jour (sans cadre)
+  n'en ont pas besoin.
+
 ## 1.1.20 — 2026-10-20
 
 - **Toute l'interface suit le thème Windows** (« mode des applications », `AppsUseLightTheme`) :

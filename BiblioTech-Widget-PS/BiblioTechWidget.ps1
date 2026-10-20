@@ -266,6 +266,8 @@ function Start-BtAuth {
         $c.InfoRequested = $true
     })
     $w.Add_Closing({ param($s, $e) if (-not $script:Ctx.Quitting) { $e.Cancel = $true; Hide-BtAuthWindow } })
+    $w.Background = Get-BtBrush 'Panel'
+    Set-BtTitleBarTheme $w          # barre de titre Windows au thème (fenêtre de connexion)
     $w.Show()
     Start-BtSilentLogin $Ctx 'démarrage'
 }

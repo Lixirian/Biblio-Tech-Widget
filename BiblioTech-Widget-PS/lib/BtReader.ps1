@@ -77,6 +77,7 @@ function New-BtReaderWindow {
     param($Ctx)
     $win = [System.Windows.Markup.XamlReader]::Parse($script:BtReaderXaml)
     Set-BtThemeResources $win
+    Set-BtTitleBarTheme $win          # barre de titre Windows au thème
     $r = $Ctx.Reader
     $r.Window = $win
     $r.Ui = @{}

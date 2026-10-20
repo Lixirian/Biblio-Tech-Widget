@@ -272,7 +272,7 @@ function Step-BtTheme {
     Write-BtLog ("[THEME] Thème Windows : {0}." -f $(if ($d) { 'sombre' } else { 'clair' }))
     # Interface WPF : nouvelle palette, ressources des fenêtres ouvertes, éléments redessinés.
     Set-BtPalette $d
-    foreach ($w in @($Ctx.Window, $Ctx.Reader.Window, $Ctx.Dash.Window, $Ctx.AuthWindow)) { if ($w) { try { Set-BtThemeResources $w } catch { } } }
+    foreach ($w in @($Ctx.Window, $Ctx.Reader.Window, $Ctx.Dash.Window, $Ctx.AuthWindow)) { if ($w) { try { Set-BtThemeResources $w; Set-BtTitleBarTheme $w } catch { } } }
     try {
         Set-BtStatus $Ctx $Ctx.StatusKind $Ctx.StatusText
         Update-BtFooter $Ctx

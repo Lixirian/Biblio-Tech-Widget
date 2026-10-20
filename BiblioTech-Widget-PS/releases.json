@@ -1,4 +1,7 @@
 {
+    "1.1.21":  [
+                   "Thème : la barre de titre des fenêtres Tableau de bord, Lecteur et Connexion suit elle aussi le thème clair ou sombre de Windows."
+               ],
     "1.1.20":  [
                    "Thème clair / sombre : toute l'application (fenêtre, lecteur, tableau de bord) suit désormais le mode des applications de Windows, y compris si vous le changez pendant l'utilisation."
                ],

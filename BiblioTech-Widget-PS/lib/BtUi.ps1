@@ -48,6 +48,29 @@ function Set-BtThemeResources {
     foreach ($k in @($script:BtTheme.Keys)) { $Window.Resources["Bt$k"] = [System.Windows.Media.Brush](Get-BtBrush $k) }
 }
 
+# Barre de titre Windows (fenêtres à cadre standard : lecteur, tableau de bord, connexion) :
+# Windows ne la passe pas seul en sombre pour une application classique -> attribut DWM
+# « immersive dark mode » (20 ; 19 sur les premiers Windows 10), puis redessin du cadre.
+if (-not ([System.Management.Automation.PSTypeName]'BtDwm').Type) {
+    Add-Type -Namespace '' -Name 'BtDwm' -MemberDefinition @'
+[System.Runtime.InteropServices.DllImport("dwmapi.dll")]
+public static extern int DwmSetWindowAttribute(System.IntPtr hwnd, int attr, ref int value, int size);
+[System.Runtime.InteropServices.DllImport("user32.dll")]
+public static extern bool SetWindowPos(System.IntPtr hWnd, System.IntPtr after, int x, int y, int cx, int cy, uint flags);
+'@
+}
+function Set-BtTitleBarTheme {
+    param($Window)
+    if (-not $Window) { return }
+    try {
+        $h = (New-Object System.Windows.Interop.WindowInteropHelper $Window).EnsureHandle()
+        $v = [int]$(if ($script:BtIsDark) { 1 } else { 0 })
+        if ([BtDwm]::DwmSetWindowAttribute($h, 20, [ref]$v, 4) -ne 0) { [void][BtDwm]::DwmSetWindowAttribute($h, 19, [ref]$v, 4) }
+        # SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE | SWP_FRAMECHANGED : cadre redessiné.
+        [void][BtDwm]::SetWindowPos($h, [IntPtr]::Zero, 0, 0, 0, 0, 0x0037)
+    } catch { }
+}
+
 # Couleur vive (tuiles, types) : telle quelle en thème sombre, assombrie en thème clair pour
 # rester lisible sur fond blanc.
 function Get-BtTone {
