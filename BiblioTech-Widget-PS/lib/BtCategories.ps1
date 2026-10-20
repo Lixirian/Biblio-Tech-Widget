@@ -125,7 +125,7 @@ function Get-BtCategOf {
 function Start-BtCategScan {
     param($Ctx, [switch]$Manual, [switch]$Full)
     $c = $Ctx.Categ
-    if ($c.Probe.Phase -ne '') { if ($Manual) { Show-BtFlash $Ctx 'Analyse des catégories déjà en cours…' }; return }
+    if ($c.Probe.Phase -ne '' -or $c.Job) { if ($Manual) { Show-BtFlash $Ctx 'Analyse des catégories déjà en cours…' }; return }
     if (-not ($Ctx.Ready -and $Ctx.WebView -and $Ctx.WebView.CoreWebView2)) {
         if ($Manual) { Show-BtFlash $Ctx 'Connexion à Confluence requise pour analyser les catégories.' }
         return
@@ -149,9 +149,38 @@ function Start-BtCategScan {
     Start-BtProbe $Ctx $c.Probe ($script:BtCategJs.Replace('__P__', $p)) $script:BtCategPollJs 900 $c.Id
 }
 
+# Fonctions copiées dans les tâches de fond (index, fusion, journal, rapport, arborescence).
+$script:BtCategFns = @('Get-BtJsonSerializer', 'Get-BtCategIndexPath', 'Read-BtCategIndex', 'Save-BtCategIndex', 'Get-BtCategOf',
+    'Convert-BtCategItem', 'Write-BtCategJournal', 'Format-BtCategReport', 'Get-BtCategTree', 'Invoke-BtCategMerge')
+
+# Contexte minimal (données seulement) transmis à une tâche de fond.
+function New-BtCategBgCtx {
+    param($Ctx)
+    return @{ DataDir = $Ctx.DataDir; Config = $Ctx.Config; Categ = @{ Index = $Ctx.Categ.Index; Tree = $null } }
+}
+
 function Step-BtCategScan {
     param($Ctx)
     $c = $Ctx.Categ
+    # Tâche de fond en cours (chargement de l'index au démarrage, ou fusion d'une analyse).
+    if ($c.Job) {
+        if (-not (Test-BtBgJobDone $c.Job)) { return }
+        $job = $c.Job; $c.Job = $null
+        $o = Receive-BtBgJob $job
+        $c.Loaded = $true
+        if (-not $o.Error -and $o.Result) {
+            $c.Index = $o.Result.Idx
+            $c.Tree = $o.Result.Tree
+            if ($Ctx.Browse -and -not $Ctx.Search.ShownQuery) { Render-BtResults $Ctx }
+        }
+        if ($job.Name -eq 'catégories (fusion)' -and $c.Manual) { try { Start-Process notepad.exe -ArgumentList ('"' + (Join-Path $Ctx.DataDir 'categories-journal.log') + '"') } catch { } }
+        return
+    }
+    # Index lu (gros fichier JSON) et arborescence construite hors de la fenêtre, une fois.
+    if (-not $c.Loaded -and -not $c.Index) {
+        $c.Job = Start-BtBgJob 'catégories (chargement)' $script:BtCategFns { param($C) $i = Read-BtCategIndex $C; @{ Idx = $i; Tree = $(if ($i) { Get-BtCategTree $C } else { $null }) } } @(, (New-BtCategBgCtx $Ctx))
+        return
+    }
     if ($c.Probe.Phase -eq '') {
         # Automatique à CHAQUE ouverture, un peu après la connexion (laisse passer la 1re recherche).
         if ($Ctx.Ready -and -not $Ctx.Demo -and $c.AutoAt -and (Get-Date) -ge $c.AutoAt) {
@@ -164,15 +193,28 @@ function Step-BtCategScan {
     if ($r) { Complete-BtCategScan $Ctx $r }
 }
 
+# Réponse de l'analyse (sonde en mode brut : {state; id; raw}). Le décodage du JSON
+# (plusieurs Mo), la fusion, le journal, le rapport et l'arborescence partent en tâche de fond.
 function Complete-BtCategScan {
     param($Ctx, $R)
     $c = $Ctx.Categ
-    $new = @($R.items | Where-Object { $_ })
     if ($R.state -ne 'OK') {
-        Write-BtLog "[CATEG] Échec de l'analyse ($($R.state) $($R.error)) : index inchangé."
-        if ($c.Manual) { Show-BtFlash $Ctx "Analyse des catégories impossible : $($R.error)" }
+        $err = [string]$R.error
+        if (-not $err -and $R.raw) { $m = [regex]::Match([string]$R.raw, '"error":"((?:[^"\\]|\\.)*)"'); if ($m.Success) { $err = $m.Groups[1].Value } }
+        Write-BtLog "[CATEG] Échec de l'analyse ($($R.state) $err) : index inchangé."
+        if ($c.Manual) { Show-BtFlash $Ctx "Analyse des catégories impossible : $err" }
         return
     }
+    Write-BtLog ("[CATEG] Réponse reçue ({0} Ko) : traitement en arrière-plan." -f [int](([string]$R.raw).Length / 1024))
+    $c.Job = Start-BtBgJob 'catégories (fusion)' $script:BtCategFns { param($C, $Raw) Invoke-BtCategMerge $C $Raw } @((New-BtCategBgCtx $Ctx), [string]$R.raw)
+}
+
+# Exécuté en TÂCHE DE FOND : aucune interface ici. Renvoie @{ Idx; Tree }.
+function Invoke-BtCategMerge {
+    param($Ctx, [string]$Raw)
+    $c = $Ctx.Categ
+    $R = (Get-BtJsonSerializer).DeserializeObject($Raw)
+    $new = @($R['items'] | Where-Object { $_ })
     $old = Read-BtCategIndex $Ctx
     $oldItems = if ($old) { $old.Items } else { @{} }
     $items = @{}
@@ -195,7 +237,7 @@ function Complete-BtCategScan {
     $changes = Write-BtCategJournal $Ctx $oldItems $items ([bool]$old) $R.mode
     Save-BtCategIndex $Ctx $idx
     $c.Index = $idx
-    $c.Tree = $null                          # arborescence à reconstruire
+    $c.Tree = $null                          # arborescence à reconstruire (ci-dessous)
     # Rapport de synthèse régénéré depuis l'index.
     $path = Join-Path $Ctx.DataDir 'analyse-categories.txt'
     try {
@@ -205,8 +247,7 @@ function Complete-BtCategScan {
     } catch { Write-BtLog "[CATEG] Écriture du rapport KO : $($_.Exception.Message)" }
     Write-BtLog ("[CATEG] {0} : {1} fiche(s) dans l'index ({2} lue(s) en {3} s) ; {4}" -f $(if ($R.mode -eq 'full') { 'Analyse complète' } else { 'Mise à jour' }), $items.Count, $new.Count, [int]($R.ms / 1000), $changes)
     if ($R.truncated) { Write-BtLog "[CATEG] Limite CategScanMax ($($Ctx.Config.CategScanMax)) atteinte : index partiel." }
-    if ($Ctx.Browse) { Render-BtResults $Ctx }
-    if ($c.Manual) { try { Start-Process notepad.exe -ArgumentList ('"' + (Join-Path $Ctx.DataDir 'categories-journal.log') + '"') } catch { } }
+    return @{ Idx = $idx; Tree = (Get-BtCategTree $Ctx) }
 }
 
 function Convert-BtCategItem {

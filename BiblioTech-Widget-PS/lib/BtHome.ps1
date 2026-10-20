@@ -186,7 +186,7 @@ function Step-BtHomeDemo {
         $h.Fresh = @((Get-BtDemoResult 'consigne' 6).items | Where-Object { $_.type -eq 'page' } | Select-Object -First 3)
         $h.News = @((Get-BtDemoResult 'news' 0).items | Select-Object -First 4 | ForEach-Object { $_.type = 'blogpost'; $_ })
         $i = 0
-        $h.Rubrics = @('Consignes du moment', 'Poste de travail', 'Messagerie & Teams', 'Réseau & VPN', 'Impression', 'Habilitations & comptes',
+        $h.Rubrics = @('📢u-DOM', 'Consignes du moment', 'Poste de travail', 'Messagerie & Teams', 'Réseau & VPN', 'Impression', 'Habilitations & comptes',
                        'Téléphonie mobile', 'Applications métiers', 'Sécurité', 'FAQ') | ForEach-Object {
             $i++
             [pscustomobject]@{ id = [string](5000 + $i); type = 'page'; title = $_; excerpt = ''; url = "https://confluence.apps.eul.sncf.fr/pages/viewpage.action?pageId=$(5000 + $i)"
@@ -299,6 +299,26 @@ $script:BtTileGlyphs = @(
     @(0xE716, 'contact|[ée]quipe|annuaire|interlocut')
 )
 
+# Émoji en tête d'un titre Confluence (« 📢u-DOM ») : séparé du texte pour servir d'icône
+# (sinon WPF le colle au texte). Renvoie @{ Emoji ; Text }.
+function Split-BtTitleEmoji {
+    param([string]$Title)
+    $m = [regex]::Match([string]$Title, '^\s*((?:[\p{So}\p{Sk}\p{Cf}\p{IsMiscellaneousSymbols}\p{IsDingbats}\p{IsVariationSelectors}]|\p{Cs}\p{Cs})+)\s*')
+    if ($m.Success -and $m.Length -lt ([string]$Title).Length) { return @{ Emoji = $m.Groups[1].Value.Trim(); Text = ([string]$Title).Substring($m.Length).Trim() } }
+    return @{ Emoji = ''; Text = ([string]$Title).Trim() }
+}
+
+# Icône d'une tuile / d'un en-tête : l'émoji du titre s'il y en a un, sinon le pictogramme.
+function New-BtTitleIcon {
+    param([string]$Glyph, [string]$Emoji, [double]$Size, [string]$Color)
+    if ($Emoji) {
+        $t = New-BtText -Text $Emoji -Size ($Size - 1) -Color $Color
+        $t.FontFamily = New-Object System.Windows.Media.FontFamily 'Segoe UI Emoji'
+        return $t
+    }
+    return (New-BtText -Text $Glyph -Size $Size -Color $Color -Icon)
+}
+
 function Get-BtTileGlyph {
     param([string]$Title)
     $t = ([string]$Title).ToLowerInvariant()
@@ -318,6 +338,8 @@ function New-BtTile {
     $tile.Padding = New-BtThickness 14 12 12 10
     $tile.Margin = New-BtThickness 0 0 10 10
     $tile.Cursor = [System.Windows.Input.Cursors]::Hand
+    $sp_ = Split-BtTitleEmoji $Title
+    $Title = $sp_.Text
     $tile.ToolTip = $Title
     $tile.RenderTransformOrigin = New-Object System.Windows.Point(0.5, 0.5)
     $tg = New-Object System.Windows.Media.TransformGroup
@@ -344,7 +366,7 @@ function New-BtTile {
     $ic.Background = Get-BtBrush ('#2E' + $Color.TrimStart('#'))
     $ic.RenderTransformOrigin = New-Object System.Windows.Point(0.5, 0.5)
     $ic.RenderTransform = New-Object System.Windows.Media.RotateTransform 0
-    $g = New-BtText -Text $Glyph -Size 17 -Color $Color -Icon
+    $g = New-BtTitleIcon $Glyph $sp_.Emoji 17 $Color
     $g.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Center
     $ic.Child = $g
     [void]$top.Children.Add($ic)
@@ -540,16 +562,17 @@ function Render-BtHomeView {
     }
     $sp = New-Object System.Windows.Controls.StackPanel
     $sp.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
-    $crumb = (@('Accueil') + @($h.Nav | Select-Object -SkipLast 1 | ForEach-Object { $_.Title })) -join '  ›  '
+    $crumb = (@('Accueil') + @($h.Nav | Select-Object -SkipLast 1 | ForEach-Object { (Split-BtTitleEmoji $_.Title).Text })) -join '  ›  '
+    $vt = Split-BtTitleEmoji $View.Title
     [void]$sp.Children.Add((New-BtText -Text $crumb -Size 10.5 -Color 'Muted'))
     $tl = New-Object System.Windows.Controls.StackPanel
     $tl.Orientation = [System.Windows.Controls.Orientation]::Horizontal
-    if ($View.Glyph) {
-        $gi = New-BtText -Text $View.Glyph -Size 15 -Color $(if ($View.Color) { $View.Color } else { 'Accent' }) -Icon
+    if ($View.Glyph -or $vt.Emoji) {
+        $gi = New-BtTitleIcon $View.Glyph $vt.Emoji 15 $(if ($View.Color) { $View.Color } else { 'Accent' })
         $gi.Margin = New-BtThickness 0 0 8 0
         [void]$tl.Children.Add($gi)
     }
-    [void]$tl.Children.Add((New-BtText -Text $View.Title -Size 16 -Color 'Text' -Bold))
+    [void]$tl.Children.Add((New-BtText -Text $vt.Text -Size 16 -Color 'Text' -Bold))
     [void]$sp.Children.Add($tl)
     [void]$bar.Children.Add($sp)
     [void]$List.Children.Add($bar)
@@ -593,8 +616,8 @@ function Render-BtHomeView {
         }
     }
     if (-not $items.Count) { [void]$List.Children.Add((New-BtText -Text $empty -Size 11.5 -Color 'Muted')); return }
-    # Affichage par lots de 40 cartes : créer des centaines de cartes d'un coup fige la fenêtre.
-    if (-not $View.Show) { $View.Show = 40 }
+    # Affichage par lots de 25 cartes : créer des centaines de cartes d'un coup fige la fenêtre.
+    if (-not $View.Show) { $View.Show = 25 }
     foreach ($it in ($items | Select-Object -First $View.Show)) { [void]$List.Children.Add((New-BtResultCard $Ctx $it)) }
     if ($items.Count -gt $View.Show) {
         $b = New-Object System.Windows.Controls.Button
@@ -603,7 +626,7 @@ function Render-BtHomeView {
         $b.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Center
         $b.Margin = New-BtThickness 0 4 0 10
         $b.Tag = $View
-        $b.Add_Click({ param($x, $e) $x.Tag.Show += 40; Render-BtResults $script:Ctx })
+        $b.Add_Click({ param($x, $e) $x.Tag.Show += 25; Render-BtResults $script:Ctx })
         [void]$List.Children.Add($b)
     }
 }

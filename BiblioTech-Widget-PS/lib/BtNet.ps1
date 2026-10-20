@@ -44,9 +44,12 @@ $script:BtNetErrors = @('HostNameNotResolved', 'CannotConnect', 'ServerUnreachab
     'ConnectionTimedOut', 'ConnectionAborted', 'ConnectionReset', 'Disconnected', 'ProxyAuthenticationRequired')
 
 # --- Sonde générique kick -> poll ------------------------------------------
+# -Raw : pour les GROS résultats (plusieurs Mo), le JSON n'est pas décodé ici (ConvertFrom-Json
+# gèlerait la fenêtre) : seuls state / id sont lus en tête de texte, le texte brut (.raw) est
+# décodé ensuite dans une tâche de fond. Le JS doit déposer {state:…, id:…, …} dans cet ordre.
 function New-BtProbe {
-    param([string]$Name)
-    return @{ Name = $Name; Phase = ''; Task = $null; PollJs = ''; ExpectId = ''; Deadline = (Get-Date) }
+    param([string]$Name, [switch]$Raw)
+    return @{ Name = $Name; Phase = ''; Task = $null; PollJs = ''; ExpectId = ''; Deadline = (Get-Date); Raw = [bool]$Raw }
 }
 
 function Start-BtProbe {
@@ -76,7 +79,15 @@ function Step-BtProbe {
         return $null
     }
     $obj = $null
-    try { $raw = $Probe.Task.Result; if ($raw -and $raw -ne 'null') { $obj = $raw | ConvertFrom-Json } } catch { }
+    try {
+        $raw = $Probe.Task.Result
+        if ($raw -and $raw -ne 'null') {
+            if ($Probe.Raw) {
+                $m = [regex]::Match($raw.Substring(0, [Math]::Min(300, $raw.Length)), '^\{"state":"(\w+)","id":"([^"]*)"')
+                if ($m.Success) { $obj = [pscustomobject]@{ state = $m.Groups[1].Value; id = $m.Groups[2].Value; raw = $raw } }
+            } else { $obj = $raw | ConvertFrom-Json }
+        }
+    } catch { }
     $ready = ($obj -and -not ($obj -is [string]) -and $obj.state -and $obj.state -ne 'PENDING')
     if ($ready -and $Probe.ExpectId -and ([string]$obj.id -ne $Probe.ExpectId)) { $ready = $false }
     if ($ready) { $Probe.Phase = ''; return $obj }

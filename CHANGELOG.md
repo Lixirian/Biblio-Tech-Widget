@@ -1,5 +1,32 @@
 # Historique des versions
 
+## 1.1.13 — 2026-10-20
+
+- **Page Confluence visible après la validation SSO** : la fenêtre de connexion n'était masquée
+  qu'après la sonde d'identité (~1,5 s + chargement). Nouveau `NavigationStarting` : dès qu'une
+  navigation de 1er niveau repart vers l'hôte Confluence (hors `login/dologin/authenticate.action`),
+  la fenêtre passe hors écran (sans interrompre la navigation) et la fenêtre principale reprend le
+  focus ; une redirection finale vers une page de connexion la remontre. « Se connecter » ne montre
+  plus la fenêtre avant d'atterrir sur l'IdP. Vérifié avec faux Confluence + faux IdP (validation
+  après 9 s) et capture d'écran continue : IdP visible pendant la validation, page Confluence
+  jamais affichée ; relancement avec le même profil : connexion directe sans fenêtre.
+- **Émoji en tête de titre** (« 📢u-DOM ») : WPF le collait au texte. `Split-BtTitleEmoji`
+  le sépare (symboles, pictogrammes, paires de substitution, ZWJ / sélecteurs de variante) ;
+  il devient l'icône de la tuile et de l'en-tête de rubrique (police Segoe UI Emoji) et
+  disparaît du titre et du fil d'Ariane.
+- **« L'appli ne répond pas » pendant une requête** : deux gros consommateurs du thread de la
+  fenêtre. (1) L'analyse des catégories (~20 s après la connexion) : `ConvertFrom-Json` de
+  plusieurs Mo + fusion + journal + rapport sur ~8 000 fiches = ≥ 10 s de gel. Désormais : sonde
+  en mode brut (`New-BtProbe -Raw` : seuls state/id lus en tête), décodage
+  (`JavaScriptSerializer`), fusion, journal, rapport ET arborescence dans une tâche de fond
+  (`Start-BtBgJob` / `Receive-BtBgJob`, BtCommon : runspace séparé, copies des fonctions,
+  journal tamponné) ; l'index est aussi préchargé ainsi au démarrage. Mesure sur 8 000 fiches
+  simulées : 8,8 s de traitement hors fenêtre, tick de pompe ≤ 46 ms. (2) Rendu : ~9 ms par
+  carte, jusqu'à 120 cartes depuis 1.1.11 -> 25 au départ (`Search.ShowN`), « Afficher plus »
+  montre d'abord le reçu puis interroge Confluence ; rubriques par lots de 25.
+  `Write-BtLog` via `AppendAllText`. Diagnostic : `[LENT]` (étape de pompe ou affichage > 250 ms),
+  `[FOND]` (durée des tâches de fond).
+
 ## 1.1.12 — 2026-10-20
 
 - **Tuiles qui n'ouvraient rien** : l'ouverture était branchée sur `Completed` d'une

@@ -79,14 +79,15 @@ $script:Ctx = @{
     NetRetryAt = $null
     Search     = @{
         Probe = (New-BtProbe 'search'); Pending = $null; Active = $null
-        Typed = ''; DebounceAt = $null; ShownQuery = ''; Fresh = $false; Analysis = $null; Relaxed = $false; TitleIds = @()
+        Typed = ''; DebounceAt = $null; ShownQuery = ''; Fresh = $false; Analysis = $null; Relaxed = $false; TitleIds = @(); ShowN = 25
         Results = @(); Total = 0; More = $false; Error = $null; LastVia = ''; LastMs = 0
         Recent = @(); RecentError = $null
     }
     Update     = @{ Phase = ''; Job = $null; Manual = $false; Available = $null; Target = $null; NextCheck = (Get-Date).AddSeconds(10)
                     Source = 'release'; LastCheckAt = (Get-Date); ReleaseFailLogged = $false }
     Reader     = @{ Window = $null; WebView = $null; Ui = $null; Item = $null; Url = '' }
-    Categ      = @{ Probe = (New-BtProbe 'categ'); Id = ''; Manual = $false; Mode = ''; AutoAt = $null; StartedAt = $null; Index = $null; Tree = $null }
+    # Index des catégories : réponse de plusieurs Mo -> sonde en mode brut + tâche de fond (Job).
+    Categ      = @{ Probe = (New-BtProbe 'categ' -Raw); Job = $null; Loaded = $false; Id = ''; Manual = $false; Mode = ''; AutoAt = $null; StartedAt = $null; Index = $null; Tree = $null }
     # Accueil en tuiles (lib\BtHome.ps1) : Nav = pile des « pages suivantes » ouvertes depuis
     # les tuiles ; Kids = sous-pages des rubriques (id -> @{ Items; Error; At }).
     Home       = @{ Probe = (New-BtProbe 'home'); Id = ''; At = $null; Top = @(); Fresh = @(); News = @(); Rubrics = @(); HomeTitle = ''; Error = $null
@@ -195,6 +196,21 @@ function Start-BtAuth {
             $script:Ctx.Ready = $false
             $script:Ctx.NetRetryAt = (Get-Date).AddSeconds(3) })
     })
+    # Retour vers Confluence (fin de la validation SSO, réception SAML…) : la fenêtre de
+    # connexion est masquée AVANT l'affichage de la page, pour ne jamais montrer le vrai site
+    # Confluence à l'utilisateur. Simple déplacement hors écran : la navigation continue ; si
+    # Confluence renvoie finalement vers une page de connexion, NavigationCompleted la remontre.
+    $wv.add_NavigationStarting({ param($s, $e)
+        $c = $script:Ctx
+        $u = $null; try { $u = [uri]$e.Uri } catch { }
+        if (-not $u -or $u.Host -ne $c.ConfHost -or $u.AbsolutePath -match '(?i)/(login|dologin|authenticate)\.action') { return }
+        $w = $c.AuthWindow
+        if ($w -and $w.Left -gt -4000) {
+            Hide-BtAuthWindow
+            Write-BtLog '[AUTH] Retour vers Confluence : fenêtre de connexion masquée.'
+            if ($c.Window -and $c.Window.IsVisible) { try { $c.Window.Activate() | Out-Null } catch { } }
+        }
+    })
     $wv.add_NavigationCompleted({ param($s, $e)
         $c = $script:Ctx
         $u = $null; try { $u = $s.Source } catch { }
@@ -278,7 +294,8 @@ function Start-BtInteractiveLogin {
     $Ctx.LoginInteractive = $true
     $Ctx.AuthRetries = 0
     Set-BtAuthState $Ctx 'init'
-    Show-BtAuthWindow -Force
+    # Pas de Show ici : la fenêtre n'apparaît que sur la page de l'IdP (NavigationCompleted),
+    # jamais sur une page Confluence ; session encore valide -> connexion sans rien afficher.
     try { $Ctx.WebView.Source = [uri]$Ctx.HomeUrl } catch { }
 }
 
@@ -376,7 +393,7 @@ function Request-BtSearch {
         if (-not $Force -and $q.Length -lt [int]$Ctx.Config.MinQueryLength) { return }
         if (-not $Force -and $Start -eq 0 -and $q -eq $s.ShownQuery -and -not $s.Error) { return }
         $s.ShownQuery = $q
-        if ($Start -eq 0) { $s.Results = @(); $s.Error = $null; $s.Fresh = $true; $s.More = $false; $s.LastVia = '' }
+        if ($Start -eq 0) { $s.Results = @(); $s.Error = $null; $s.Fresh = $true; $s.More = $false; $s.LastVia = ''; $s.ShowN = 25 }
     } else { $s.RecentError = $null }
     $an = $null; $relax = $false; $tcql = ''
     if ($Kind -eq 'recent') { $cql = Get-BtCql $Ctx $null -Recent }
@@ -473,7 +490,10 @@ function Step-BtPump {
     $c = $script:Ctx
     if ($c.Quitting) { return }
     foreach ($step in @('Step-BtInfo', 'Step-BtSearch', 'Step-BtUpdate', 'Step-BtCategScan', 'Step-BtHome', 'Step-BtKeepSession')) {
+        $sw = [Diagnostics.Stopwatch]::StartNew()
         try { & $step $c } catch { Write-BtLog "[PUMP] $step : $($_.Exception.Message)" }
+        # Diagnostic : toute étape qui bloque la fenêtre plus de 250 ms est signalée.
+        if ($sw.ElapsedMilliseconds -gt 250) { Write-BtLog "[LENT] $step a bloqué la fenêtre $($sw.ElapsedMilliseconds) ms." }
     }
     try {
         # Fin de frappe -> recherche.

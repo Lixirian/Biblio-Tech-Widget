@@ -1,4 +1,9 @@
 {
+    "1.1.13":  [
+                   "Connexion : après la validation SSO, la fenêtre de connexion disparaît aussitôt ; la page Confluence n'apparaît plus brièvement à l'écran.",
+                   "Tuiles : quand le titre d'une rubrique commence par un émoji (ex. le haut-parleur de « u-DOM »), il devient l'icône de la tuile au lieu de chevaucher le texte.",
+                   "Fluidité : l'analyse des catégories (des milliers de fiches) tourne désormais en arrière-plan et ne fige plus la fenêtre ; les résultats s'affichent par lots de 25 (« Afficher plus » pour la suite)."
+               ],
     "1.1.12":  [
                    "Tuiles de l'accueil : la rubrique s'ouvre immédiatement au clic (en 1.1.11 rien ne s'ouvrait et l'appli semblait figée).",
                    "Connexion : une fois validée, la session SSO est conservée même si vous quittez et relancez Biblio-Tech, jusqu'à son expiration (12 h au plus). Plus de validation à chaque lancement."

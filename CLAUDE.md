@@ -27,7 +27,8 @@ powershell -STA -File BiblioTech-Widget-PS\BiblioTechWidget.ps1   # démo hors r
 ```
 
 Journal : `%LOCALAPPDATA%\BiblioTech-Widget\app_debug.log` (tags `[AUTH]`, `[SEARCH]`,
-`[MAJ]`, `[PUMP]`, `[ERREUR UI]`, `[LECTEUR]`, `[DOCK]`). Validation syntaxique :
+`[MAJ]`, `[PUMP]`, `[ERREUR UI]`, `[LECTEUR]`, `[DOCK]`, `[ACCUEIL]`, `[CATEG]`, `[FOND]`,
+`[LENT]` = fenêtre bloquée > 250 ms). Validation syntaxique :
 `[System.Management.Automation.Language.Parser]::ParseFile(...)` (faite aussi par le build).
 
 ⚠️ Les `.ps1` doivent rester en **UTF-8 avec BOM** (sinon PS 5.1 lit les accents en ANSI).
@@ -65,6 +66,9 @@ build-release.ps1       zip + release GitHub + latest.json (dans cet ordre)
 latest.json             manifeste lu par les postes (écrit UNIQUEMENT par le build)
 ```
 
+- **Thread de la fenêtre** : tout tourne sur la pompe (DispatcherTimer 200 ms). Un traitement
+  lourd de DONNÉES (gros JSON, index, rapports) passe par `Start-BtBgJob` (runspace, BtCommon) ;
+  les contrôles WPF ne se créent que sur le thread de la fenêtre (cartes par lots de 25).
 - **Kick → poll** : `ExecuteScriptAsync` ne résout pas les promesses ; le JS dépose son
   résultat dans `window.__btSearch` / `window.__btInfo`, sondé par `Step-BtProbe`
   (filtré par `id` pour ignorer un résultat périmé).

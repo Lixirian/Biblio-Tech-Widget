@@ -175,10 +175,58 @@ function Initialize-BtLog {
     } catch { }
 }
 
+# AppendAllText plutôt qu'Add-Content : bien moins coûteux sur le thread de la fenêtre.
+$script:BtLogEnc = New-Object System.Text.UTF8Encoding $true
 function Write-BtLog {
     param([string]$Message)
     if (-not $script:BtLogPath) { return }
-    try { Add-Content -LiteralPath $script:BtLogPath -Value ("{0} {1}" -f (Get-Date -Format 'HH:mm:ss'), $Message) -Encoding UTF8 } catch { }
+    try { [IO.File]::AppendAllText($script:BtLogPath, ("{0} {1}`r`n" -f (Get-Date -Format 'HH:mm:ss'), $Message), $script:BtLogEnc) } catch { }
+}
+
+# --- Tâches de fond (runspace) -----------------------------------------------
+# Les traitements lourds (gros JSON, index, rapports) tournent HORS du thread de la
+# fenêtre, qui reste fluide. Le runspace reçoit une COPIE des fonctions nommées ; le
+# script y est recréé à partir de son texte (un scriptblock passé tel quel s'exécuterait
+# sur le runspace de la fenêtre). Write-BtLog y alimente un tampon, recopié dans le journal
+# par le thread de la fenêtre à la réception (un seul thread écrit le journal).
+# Ne JAMAIS créer de contrôle WPF dans une tâche de fond : données uniquement.
+function Start-BtBgJob {
+    param([string]$Name, [string[]]$Functions, [scriptblock]$Script, [object[]]$Arguments = @())
+    $iss = [System.Management.Automation.Runspaces.InitialSessionState]::CreateDefault()
+    foreach ($f in $Functions) {
+        $iss.Commands.Add((New-Object System.Management.Automation.Runspaces.SessionStateFunctionEntry($f, (Get-Item -LiteralPath "function:$f").Definition)))
+    }
+    $iss.Commands.Add((New-Object System.Management.Automation.Runspaces.SessionStateFunctionEntry('Write-BtLog', 'param([string]$Message) [void]$global:BtBgLog.Add($Message)')))
+    $rs = [runspacefactory]::CreateRunspace($iss)
+    $rs.ApartmentState = [System.Threading.ApartmentState]::MTA
+    $rs.Open()
+    $ps = [PowerShell]::Create()
+    $ps.Runspace = $rs
+    [void]$ps.AddScript({
+        param($Body, $Arguments)
+        $global:BtBgLog = New-Object System.Collections.Generic.List[string]
+        $sw = [Diagnostics.Stopwatch]::StartNew()
+        try { $r = & ([scriptblock]::Create($Body)) @Arguments; $err = $null } catch { $r = $null; $err = $_.Exception.Message }
+        return @{ Result = $r; Error = $err; Log = $global:BtBgLog.ToArray(); Ms = $sw.ElapsedMilliseconds }
+    }.ToString()).AddArgument($Script.ToString()).AddArgument($Arguments)
+    return @{ Name = $Name; PS = $ps; Runspace = $rs; Handle = $ps.BeginInvoke(); Started = (Get-Date) }
+}
+
+function Test-BtBgJobDone { param($Job) return [bool]($Job -and $Job.Handle.IsCompleted) }
+
+# Résultat d'une tâche terminée : @{ Result; Error; Ms } (journal recopié au passage).
+function Receive-BtBgJob {
+    param($Job)
+    $o = $null
+    try {
+        foreach ($x in $Job.PS.EndInvoke($Job.Handle)) { if ($x -is [hashtable]) { $o = $x } }   # (déjà déballé : .BaseObject serait lu comme une clé)
+        if (-not $o) { $o = @{ Result = $null; Error = 'réponse vide'; Log = @(); Ms = 0 } }
+    } catch { $o = @{ Result = $null; Error = $_.Exception.Message; Log = @(); Ms = 0 } }
+    finally { try { $Job.PS.Dispose() } catch { }; try { $Job.Runspace.Dispose() } catch { } }
+    foreach ($l in @($o.Log)) { Write-BtLog $l }
+    if ($o.Error) { Write-BtLog "[FOND] $($Job.Name) : échec ($($o.Error))." }
+    else { Write-BtLog ("[FOND] {0} terminé en {1} ms (hors fenêtre)." -f $Job.Name, $o.Ms) }
+    return $o
 }
 
 # --- URL / navigateur -------------------------------------------------------

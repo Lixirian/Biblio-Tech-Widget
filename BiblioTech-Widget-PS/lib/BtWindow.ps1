@@ -485,7 +485,13 @@ function Invoke-BtAction {
         'login'   { Start-BtInteractiveLogin $Ctx }
         'retry'   { if ($Ctx.Search.ShownQuery) { Request-BtSearch $Ctx $Ctx.Search.ShownQuery 0 'search' -Force } else { Request-BtSearch $Ctx '' 0 'recent' } }
         'scopeAll' { $Ctx.State.Scope = 'all'; Save-BtState $Ctx.State; Render-BtFilters $Ctx; Request-BtSearch $Ctx $Ctx.Search.ShownQuery 0 'search' -Force }
-        'more'    { Request-BtSearch $Ctx $Ctx.Search.ShownQuery (@($Ctx.Search.Results).Count) 'search' -Force }
+        'more'    {
+            $s = $Ctx.Search
+            $n = [Math]::Max(25, [int]$s.ShowN)
+            $s.ShowN = $n + 25
+            if (@($s.Results).Count -gt $n) { Render-BtResults $Ctx }
+            else { Request-BtSearch $Ctx $s.ShownQuery (@($s.Results).Count) 'search' -Force }
+        }
         'copilot' {
             # Pas d'API : on ouvre l'agent dans le navigateur (SSO Microsoft 365 de l'utilisateur)
             # et la question est placée dans le presse-papiers.
@@ -562,7 +568,15 @@ function Render-BtFilters {
 }
 
 # --- Rendu de la liste ---------------------------------------------------------
+# Mesure du temps passé à (re)construire la liste : signalé au journal au-delà de 250 ms.
 function Render-BtResults {
+    param($Ctx)
+    $sw = [Diagnostics.Stopwatch]::StartNew()
+    try { Render-BtResultsCore $Ctx }
+    finally { if ($sw.ElapsedMilliseconds -gt 250) { Write-BtLog "[LENT] Affichage de la liste : $($sw.ElapsedMilliseconds) ms ($($Ctx.Ui.ResultsPanel.Children.Count) élément(s))." } }
+}
+
+function Render-BtResultsCore {
     param($Ctx)
     $ui = $Ctx.Ui
     if (-not $ui) { return }
@@ -603,8 +617,12 @@ function Render-BtResults {
         }
         $hdr = New-BtSectionHeader ('{0} résultat(s)' -f $s.Total) ([string][char]0xE721)
         [void]$list.Children.Add($hdr)
-        foreach ($it in $res) { [void]$list.Children.Add((New-BtResultCard $Ctx $it)) }
-        if ($s.More) {
+        # Cartes créées par lots de 25 (~10 ms chacune sur le thread de la fenêtre : 120 d'un
+        # coup la figeaient plus d'une seconde). « Afficher plus » montre d'abord les résultats
+        # déjà reçus, puis interroge Confluence.
+        $n = [Math]::Max(25, [int]$s.ShowN)
+        foreach ($it in ($res | Select-Object -First $n)) { [void]$list.Children.Add((New-BtResultCard $Ctx $it)) }
+        if ($s.More -or $res.Count -gt $n) {
             $b = New-Object System.Windows.Controls.Button
             $b.Style = $Ctx.Window.Resources['PrimaryBtn']
             $b.Content = if ($busy) { 'Chargement…' } else { 'Afficher plus de résultats' }
