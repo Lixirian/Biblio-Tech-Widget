@@ -1,5 +1,14 @@
 # Historique des versions
 
+## 1.1.24 — 2026-10-20
+
+- **Historique du lecteur par ouverture** : `New-BtReaderWebView` (BtReader) recrée le WebView du
+  lecteur à chaque `Open-BtReader` (sauf le tout premier) : WebView2 n'offrant pas d'API pour vider
+  l'historique, c'est le seul moyen pour que Précédent / Suivant ne ramènent plus la consigne d'une
+  ouverture précédente (et que Suivant ne soit plus perdu). Session SSO conservée (profil partagé) ;
+  l'ancien WebView est retiré puis libéré, ses événements tardifs ignorés. Testé en démo avec un
+  serveur local : après réouverture, Précédent / Suivant inactifs, puis actifs après un clic interne.
+
 ## 1.1.23 — 2026-10-20
 
 - **Liens du tableau de bord -> lecteur intégré** : un écouteur de clic (BtDashboard) intercepte

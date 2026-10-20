@@ -1,4 +1,7 @@
 {
+    "1.1.24":  [
+                   "Lecteur : chaque consigne ouverte depuis Biblio-Tech (recherche, accueil, tableau de bord) repart d'un historique vierge ; les boutons Précédent et Suivant ne concernent plus que les pages parcourues dans cette fenêtre."
+               ],
     "1.1.23":  [
                    "Tableau de bord : un clic sur une consigne ou un commentaire l'ouvre dans le lecteur de Biblio-Tech, et la page défile jusqu'au commentaire concerné (mis en évidence). Ctrl + clic l'ouvre dans votre navigateur."
                ],

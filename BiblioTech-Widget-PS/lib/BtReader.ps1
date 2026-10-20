@@ -85,10 +85,38 @@ function New-BtReaderWindow {
     $ico = New-BtImageSource (Get-BtAppIconPath 'png') 64
     if ($ico) { $win.Icon = $ico }
     Register-BtWindowIcon $win
+    New-BtReaderWebView $Ctx
 
+    $r.Ui.BackBtn.Add_Click({ try { if ($script:Ctx.Reader.WebView.CanGoBack) { $script:Ctx.Reader.WebView.GoBack() } } catch { } })
+    $r.Ui.FwdBtn.Add_Click({ try { if ($script:Ctx.Reader.WebView.CanGoForward) { $script:Ctx.Reader.WebView.GoForward() } } catch { } })
+    $r.Ui.ReloadBtn.Add_Click({ try { $script:Ctx.Reader.WebView.Reload() } catch { } })
+    $r.Ui.ReadBtn.Add_Click({
+        $script:Ctx.State.ReaderMode = -not $script:Ctx.State.ReaderMode
+        Save-BtState $script:Ctx.State
+        Update-BtReaderMode $script:Ctx
+    })
+    $r.Ui.PinBtn.Add_Click({ $it = $script:Ctx.Reader.Item; if ($it) { Invoke-BtTogglePin $script:Ctx $it; Update-BtReaderPin $script:Ctx } })
+    $r.Ui.CopyBtn.Add_Click({ $u = if ($script:Ctx.Reader.Url) { $script:Ctx.Reader.Url } else { [string]$script:Ctx.Reader.Item.url }; try { [System.Windows.Clipboard]::SetText($u) } catch { } })
+    $r.Ui.WebBtn.Add_Click({ $u = if ($script:Ctx.Reader.Url) { $script:Ctx.Reader.Url } else { [string]$script:Ctx.Reader.Item.url }; Open-BtExternal $u })
+    $win.Add_Closing({ param($s, $e) if (-not $script:Ctx.Quitting) { $e.Cancel = $true; $s.Hide() } })
+    return $win
+}
+
+# (Re)crée le WebView du lecteur. Appelé à chaque ouverture depuis l'appli : l'historique
+# (Précédent / Suivant) repart de zéro et ne reflète que les clics faits dans le lecteur
+# (WebView2 n'a pas d'API pour vider l'historique). La session SSO est conservée : profil partagé.
+function New-BtReaderWebView {
+    param($Ctx)
+    $r = $Ctx.Reader
+    if ($r.WebView) {
+        try { [void]$r.Ui.Host.Children.Remove($r.WebView); $r.WebView.Dispose() } catch { }
+    }
     $wv = New-BtWebView $Ctx
     $r.WebView = $wv
+    $r.Used = $false
     [void]$r.Ui.Host.Children.Add($wv)
+    $r.Ui.BackBtn.IsEnabled = $false
+    $r.Ui.FwdBtn.IsEnabled = $false
 
     $wv.add_CoreWebView2InitializationCompleted({ param($s, $e)
         if (-not $e.IsSuccess) { Write-BtLog "[LECTEUR] Init WebView2 KO : $($e.InitializationException.Message)"; return }
@@ -122,6 +150,7 @@ function New-BtReaderWindow {
     })
     $r.Ui.Host.Background = if ($Ctx.Dark) { Get-BtBrush 'Panel' } else { [System.Windows.Media.Brushes]::White }
     $wv.add_NavigationCompleted({ param($s, $e)
+        if ($s -ne $script:Ctx.Reader.WebView) { return }    # ancien WebView en cours de remplacement
         Update-BtReaderMode $script:Ctx
         Invoke-BtReaderFocusComment $script:Ctx
         try {
@@ -132,20 +161,6 @@ function New-BtReaderWindow {
             $script:Ctx.Reader.Ui.FwdBtn.IsEnabled = $s.CanGoForward
         } catch { }
     })
-
-    $r.Ui.BackBtn.Add_Click({ try { if ($script:Ctx.Reader.WebView.CanGoBack) { $script:Ctx.Reader.WebView.GoBack() } } catch { } })
-    $r.Ui.FwdBtn.Add_Click({ try { if ($script:Ctx.Reader.WebView.CanGoForward) { $script:Ctx.Reader.WebView.GoForward() } } catch { } })
-    $r.Ui.ReloadBtn.Add_Click({ try { $script:Ctx.Reader.WebView.Reload() } catch { } })
-    $r.Ui.ReadBtn.Add_Click({
-        $script:Ctx.State.ReaderMode = -not $script:Ctx.State.ReaderMode
-        Save-BtState $script:Ctx.State
-        Update-BtReaderMode $script:Ctx
-    })
-    $r.Ui.PinBtn.Add_Click({ $it = $script:Ctx.Reader.Item; if ($it) { Invoke-BtTogglePin $script:Ctx $it; Update-BtReaderPin $script:Ctx } })
-    $r.Ui.CopyBtn.Add_Click({ $u = if ($script:Ctx.Reader.Url) { $script:Ctx.Reader.Url } else { [string]$script:Ctx.Reader.Item.url }; try { [System.Windows.Clipboard]::SetText($u) } catch { } })
-    $r.Ui.WebBtn.Add_Click({ $u = if ($script:Ctx.Reader.Url) { $script:Ctx.Reader.Url } else { [string]$script:Ctx.Reader.Item.url }; Open-BtExternal $u })
-    $win.Add_Closing({ param($s, $e) if (-not $script:Ctx.Quitting) { $e.Cancel = $true; $s.Hide() } })
-    return $win
 }
 
 # -Url : adresse à afficher si elle diffère de celle de l'élément (lien vers un commentaire).
@@ -156,6 +171,8 @@ function Open-BtReader {
     if (-not $script:BtWebView2Ok -or (Get-BtReaderNavPolicy $Ctx $url $false) -ne 'stay') { Open-BtExternal $url; return }
     $r = $Ctx.Reader
     if (-not $r.Window) { New-BtReaderWindow $Ctx | Out-Null }
+    elseif ($r.Used) { New-BtReaderWebView $Ctx }       # nouvel historique pour chaque ouverture
+    $r.Used = $true
     $r.Item = $Item
     $r.Url = $url
     $r.Ui.TitleText.Text = Get-BtPlainText ([string]$Item.title)
