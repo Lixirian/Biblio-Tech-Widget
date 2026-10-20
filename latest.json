@@ -1,11 +1,11 @@
 {
-    "version":  "1.1.20",
-    "zip":  "BiblioTech-Widget_version1.1.20.zip",
-    "url":  "https://github.com/Lixirian/Biblio-Tech-Widget/releases/download/v1.1.20/BiblioTech-Widget_version1.1.20.zip",
-    "sha256":  "18AACF50AC7CDC754757923E407D9BEA628563FC2C9ED8FFFEF17D871A2914EC",
-    "sig":  "HWud2orEZbwf/2R2N5YVvM0FP1kvzZcc+Zb7rPJpySoIraLoAYB4mJSs7/MSKw75njB0F1KQ1BaDqbrTePSinrfgOgotHJncpPDfHdoiTfISpfwVAgtQ3/WMCHr/C6Zf6CWFmH5kctW3dzRbe8QpbUI/M9Tl7LjTHumCdViJYxHuQNc38FwFENaRll9bxwrFYJBXxGGF964KFjeB7X7K2caBD7JGg7SMU6bGI9gsbXMkbNvLz6djnjHQNtc3iV+xwQjNXhfvwsuyIcEd8YllzSpOKwOatDyq72nV9b44P02k/GXWax7ycNjJeet32YoB/3rhSjFacI+IvKmyt12D9WlU9bDzNbmPvV/fNLjlCfdRknvcQqwc5DPU/GTD99V22Vnex0rXcxBW3flt/eC2TxIOz5WQHR7IDDSeO60AaYlf1hVUqAGptpWeTNxN6Z1DTDIFJjWMDeN/Dn+IiXA5Utpatk4jLJZTIRtwYQGv5Ye5Qq5EBAIsMUJx6x63vqUc",
+    "version":  "1.1.21",
+    "zip":  "BiblioTech-Widget_version1.1.21.zip",
+    "url":  "https://github.com/Lixirian/Biblio-Tech-Widget/releases/download/v1.1.21/BiblioTech-Widget_version1.1.21.zip",
+    "sha256":  "6DE0A4673083DD4A798BEA1ED3DE79FCA2CCE2AAA845B448AE4E0559CE428C10",
+    "sig":  "rw7g4R/T0tAttWN2+SbXWbwWhX2Zr1yn+5+8m27wbB86ksj6MAJoYBE0TuhjXApCkTT0uejgpmncW0vBve9xWbQLUI0y6haaJGxC5bzEfkvEz3oqzHV0Te4ut/Vb2hUjSweUjqI6120c8x3rdybAfQWex1xThuplUg+SD0gyIrEpJSGXnvP3LFpFzifFog0326NhTMEVJ/zOTBLtunipTLymSsQuYDiZT2IgsjTNWrZWkJH3RtKrf11dLhph7zMO+uTA3fAXFF50ZFfYvLJf6IgExkD7vsGNO3xGJfY5725xLrQFceXklgYtVHgANHUi9zlzdFDYJHioHYFZ1j/KjeojtABRCbM4WMrmaxBPMCPrj6ik1LLUZwEba9BdNUmaRebwCp5a+hSpYAQTYf5X5wsqF7HXIFYIejdVqii+++Oy9vVvE55jrcaBsT+qqKLbeCxYujBX+Ll72MWTtXW7ZwjdqtV/nCrL80gVj0zhNuDyyXxWFoiZI0GnqwQ03jRU",
     "date":  "2026-10-20",
     "notes":  [
-                  "Thème clair / sombre : toute l\u0027application (fenêtre, lecteur, tableau de bord) suit désormais le mode des applications de Windows, y compris si vous le changez pendant l\u0027utilisation."
+                  "Thème : la barre de titre des fenêtres Tableau de bord, Lecteur et Connexion suit elle aussi le thème clair ou sombre de Windows."
               ]
 }
