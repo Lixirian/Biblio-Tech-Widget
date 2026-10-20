@@ -1,11 +1,11 @@
 {
-    "version":  "1.1.16",
-    "zip":  "BiblioTech-Widget_version1.1.16.zip",
-    "url":  "https://github.com/Lixirian/Biblio-Tech-Widget/releases/download/v1.1.16/BiblioTech-Widget_version1.1.16.zip",
-    "sha256":  "058123721F7560106F34BAAE8DBD58A1D0B921871D3A36D4547AF13A4A6999C6",
-    "sig":  "qKd19p7wcdMaqh/COj9mciR2f3dR/YSGUMliIE7aecmpI03wciY4FPT55P3Pj+fWek//l4Judg8dM3Bc8ipx9xSkj8YE5CHI99JKaDQFaUxT3EsOFDsQ0dL7Ybgy/K6xVQSMH5koggrLMqkhGd+v2gv89Xyq88VQ6P92k1njfbg6lNfLenEstYmGGOBnQkMon2/PFRGhLDSOKueDzaGcFOJ2qgQGDE1wl+AzhDR4vm+aYrl1tah1YiHvzLD1aTyN8RqlIlLXeFXmAG0pMlfvbKy3nt23wZSxXgg095FM8/LXJFHn4RPHalQ2gHN+czMHWHFVt2gykSLjPkwL+KDfowuT8STKfleiNy3YtxOOoR7nz7+aCOeL6WY9yCD2obQ2J9YR7m6/Yf4C0deTVvQyQk8/xkxe52mOdPFfDgBFx3q9LCVMntGRtozo2qHdBZQj5MLNt/sbXBRHaxq/KQWhr6xylEWOMNqkFud7VKxblC0YVvzPJQyH8Lj0At8JqmJL",
+    "version":  "1.1.17",
+    "zip":  "BiblioTech-Widget_version1.1.17.zip",
+    "url":  "https://github.com/Lixirian/Biblio-Tech-Widget/releases/download/v1.1.17/BiblioTech-Widget_version1.1.17.zip",
+    "sha256":  "66A08930C8A62A03116E032C0EE73F6A7A04A7F8F5A66326B5016A6482843679",
+    "sig":  "uVz9YEDSR97UISTxt5+m8OtdSxYQTnNR5FJ8iUiQ9otWKnncp8JLu4F/cSh5Go5JyPnyVLDDarOPtFNSw1Ubu/6nq6j23HtW+x5tgneVZKOC29LMe+PWfSRlYrLE3AZ4woepIZgFUaPKdmZHFPUhstCxyXyrbPWFuyR+7juJNK8bofk6TIwNe1MUwhQRSEmkBWdrROs5Yix0mj+pGaI+FrXqve59S59KjTtcoUzl70wnuHT1NMeMl/bB+9hUtnDFHBldgGBz8TkY4eHP+STbAZBMVxaOtrU5ZCRECqTr0U3Sob/03foCef5TgTS7f8bPgFYxAN53bZcpvWsZivg8UMDO/rSOdeCZuD8nttfzWLrnmaEh7UcqWhl8P21TZWsRWiBm3VTDyH9SsYkNDvPORCq+rV3lPTWIeld3xGfnvI+VIgAcbtvGgCPKG2/nFfvYZDi3J+krubVLwY7eINpZpT7D0y8oK8cKp7B5ARJQvqtd/r4S1Z6RBHvmnKj6fQtE",
     "date":  "2026-10-20",
     "notes":  [
-                  "Sécurité : chaque mise à jour est désormais signée par l\u0027éditeur de Biblio-Tech. Une mise à jour non signée, ou modifiée en route, est automatiquement refusée."
+                  "L\u0027intégration Microsoft 365 Copilot est retirée (bouton « Demander à Copilot » et option de licence) : la recherche en langage courant reste assurée par l\u0027assistant intégré."
               ]
 }
