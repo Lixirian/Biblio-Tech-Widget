@@ -492,13 +492,6 @@ function Invoke-BtAction {
             if (@($s.Results).Count -gt $n) { Render-BtResults $Ctx }
             else { Request-BtSearch $Ctx $s.ShownQuery (@($s.Results).Count) 'search' -Force }
         }
-        'copilot' {
-            # Pas d'API : on ouvre l'agent dans le navigateur (SSO Microsoft 365 de l'utilisateur)
-            # et la question est placée dans le presse-papiers.
-            try { [System.Windows.Clipboard]::SetText([string]$Ctx.Search.ShownQuery) } catch { }
-            Open-BtExternal ([string]$Ctx.Config.CopilotAgentUrl)
-            Show-BtFlash $Ctx 'Question copiée : collez-la dans Copilot avec Ctrl+V.'
-        }
         'clearHistory' { $Ctx.State.History = @(); Save-BtState $Ctx.State; Render-BtResults $Ctx }
     }
 }
@@ -597,10 +590,9 @@ function Render-BtResultsCore {
     $q = [string]$s.ShownQuery
     if ($q) {
         $an = $s.Analysis
-        $copilot = [bool]($Ctx.State.CopilotLicensed -and $Ctx.Config.CopilotAgentUrl)
         $hasSyn = $an -and @($an.Groups | Where-Object { @($_).Count -gt 1 }).Count
-        if ($an -and ($an.Natural -or $an.IntentLabel -or $hasSyn -or $copilot)) {
-            [void]$list.Children.Add((New-BtUnderstandingCard $Ctx (Get-BtUnderstanding $an ([bool]$s.Relaxed)) $copilot))
+        if ($an -and ($an.Natural -or $an.IntentLabel -or $hasSyn)) {
+            [void]$list.Children.Add((New-BtUnderstandingCard $Ctx (Get-BtUnderstanding $an ([bool]$s.Relaxed))))
         }
         if ($busy -and $s.Fresh) { for ($i = 0; $i -lt 4; $i++) { [void]$list.Children.Add((New-BtSkeletonCard)) }; return }
         if ($s.Error) {
@@ -665,11 +657,6 @@ function Initialize-BtTray {
     [void]$m.Items.Add((New-Object System.Windows.Forms.ToolStripSeparator))
     $auto = & $add 'Lancer au démarrage de Windows' { param($s, $e) $s.Checked = Set-BtAutoStart (-not $s.Checked) }
     $auto.Checked = Test-BtAutoStartEnabled
-    $cop = & $add 'J''ai une licence Microsoft 365 Copilot' { param($s, $e)
-        $script:Ctx.State.CopilotLicensed = -not $script:Ctx.State.CopilotLicensed; Save-BtState $script:Ctx.State; $s.Checked = $script:Ctx.State.CopilotLicensed
-        Render-BtResults $script:Ctx }
-    $cop.Checked = [bool]$Ctx.State.CopilotLicensed
-    if (-not $Ctx.Config.CopilotAgentUrl) { $cop.Enabled = $false; $cop.Text += ' (agent pas encore publié)' }
     $null = & $add 'Mode lecture dans le lecteur' { param($s, $e)
         $script:Ctx.State.ReaderMode = -not $script:Ctx.State.ReaderMode; Save-BtState $script:Ctx.State; $s.Checked = $script:Ctx.State.ReaderMode
         Update-BtReaderMode $script:Ctx }

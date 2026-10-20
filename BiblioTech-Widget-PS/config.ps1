@@ -7,7 +7,7 @@
 $Config = @{
     # Version de l'application. À INCRÉMENTER à chaque publication (build-release.ps1
     # lit cette valeur pour nommer le zip, la release GitHub et latest.json).
-    Version            = '1.1.16'
+    Version            = '1.1.17'
 
     # ----- Confluence -----
     # URL de l'instance (sans slash final).
@@ -53,12 +53,6 @@ $Config = @{
     WindowHeight       = 740
     # Raccourci global pour afficher la fenêtre, recherche prête à la saisie.
     Hotkey             = 'Ctrl+Alt+K'
-
-    # ----- Agent Microsoft 365 Copilot (utilisateurs licenciés) -----
-    # Lien de l'agent « Biblio-Tech » une fois publié par l'admin M365 (voir
-    # copilot-agent\LISEZMOI-DSI.md). Vide = bouton masqué ; les utilisateurs sans
-    # licence utilisent l'assistant local (lib\BtAssist.ps1), toujours actif.
-    CopilotAgentUrl    = ''
 
     # ----- Mise à jour automatique (GitHub) -----
     # Dépôt PUBLIC 'propriétaire/nom' : lecture anonyme, AUCUN jeton stocké.

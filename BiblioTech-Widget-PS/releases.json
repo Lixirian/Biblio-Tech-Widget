@@ -1,4 +1,7 @@
 {
+    "1.1.17":  [
+                   "L'intégration Microsoft 365 Copilot est retirée (bouton « Demander à Copilot » et option de licence) : la recherche en langage courant reste assurée par l'assistant intégré."
+               ],
     "1.1.16":  [
                    "Sécurité : chaque mise à jour est désormais signée par l'éditeur de Biblio-Tech. Une mise à jour non signée, ou modifiée en route, est automatiquement refusée."
                ],

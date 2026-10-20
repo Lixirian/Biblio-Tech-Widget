@@ -15,7 +15,6 @@ function New-BtState {
         Type       = 'all'        # 'all' | 'page' | 'blogpost' | 'attachment'
         Sort       = 'relevance'  # 'relevance' | 'recent'
         ReaderMode = $true        # mode lecture (chrome Confluence masqué) dans le lecteur
-        CopilotLicensed = $false  # l'utilisateur a une licence M365 Copilot -> bouton « Demander à Copilot »
         CategScanVersion = ''     # version pour laquelle l'analyse des catégories a déjà été faite
         History    = @()
         Pins       = @()
@@ -28,7 +27,6 @@ function New-BtState {
             }
             if ($j.PSObject.Properties.Name -contains 'ReaderMode') { $st.ReaderMode = [bool]$j.ReaderMode }
             if ($j.PSObject.Properties.Name -contains 'Maximized') { $st.Maximized = [bool]$j.Maximized }
-            if ($j.PSObject.Properties.Name -contains 'CopilotLicensed') { $st.CopilotLicensed = [bool]$j.CopilotLicensed }
             if ($j.History) { $st.History = @($j.History | ForEach-Object { [string]$_ } | Where-Object { $_ }) }
             if ($j.Pins) {
                 $st.Pins = @($j.Pins | ForEach-Object {
@@ -46,7 +44,7 @@ function Save-BtState {
     param($State)
     try {
         $o = [ordered]@{}
-        foreach ($k in @('Version', 'Bounds', 'Maximized', 'Scope', 'Type', 'Sort', 'ReaderMode', 'CopilotLicensed', 'CategScanVersion', 'History', 'Pins')) { $o[$k] = $State[$k] }
+        foreach ($k in @('Version', 'Bounds', 'Maximized', 'Scope', 'Type', 'Sort', 'ReaderMode', 'CategScanVersion', 'History', 'Pins')) { $o[$k] = $State[$k] }
         $json = $o | ConvertTo-Json -Depth 5
         $tmp = $State.Path + '.tmp'
         [System.IO.File]::WriteAllText($tmp, $json, (New-Object System.Text.UTF8Encoding $false))

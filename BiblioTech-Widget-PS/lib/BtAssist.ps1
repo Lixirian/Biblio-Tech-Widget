@@ -1,7 +1,6 @@
 ﻿# ============================================================================
 #  Assistant de recherche en langage courant (LOCAL : aucune IA externe, aucune
-#  donnée envoyée hors de Confluence). Utilisé quand l'utilisateur n'a pas de
-#  licence Microsoft 365 Copilot (sinon : agent Copilot Biblio-Tech).
+#  donnée envoyée hors de Confluence).
 #
 #  « mon vpn se déconnecte sans arrêt depuis cette semaine, que faire ? »
 #    -> intention : résoudre un incident

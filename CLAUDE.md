@@ -11,7 +11,7 @@ de l'espace KM, recherche sur tout le site, **consignes (pages) uniquement**). M
 *SNOW Widget* (`..\Service now vue bureau`) — machines d'état non bloquantes, aucune donnée
 d'identification stockée — mais **volontairement en fenêtre** (pas d'AppBar) pour cohabiter
 avec lui. Distribution et mises à jour via **GitHub** (dépôt public `Lixirian/Biblio-Tech-Widget`).
-Agent **Microsoft 365 Copilot** pour les utilisateurs licenciés dans `copilot-agent/`.
+Aucune intégration Copilot (agent M365 retiré en 1.1.17 à la demande de l'utilisateur).
 
 **Contraintes (cybersécurité SNCF)** : aucun `.exe`, aucun jeton/identifiant stocké.
 Les requêtes Confluence partent **de la page** chargée dans WebView2 (`fetch`
@@ -61,7 +61,6 @@ launcher/               bootstrap.ps1 + Biblio-Tech.vbs ; livrés dans chaque zi
 Biblio-Tech.cmd         FICHIER UNIQUE distribué (install / MAJ / réparation / lancement) :
                         en-tête batch + bootstrap.ps1 embarqué. GÉNÉRÉ par le build (ne pas
                         éditer : modifier launcher\bootstrap.ps1). UTF-8 sans BOM, CRLF.
-copilot-agent/          agent déclaratif M365 Copilot (appPackage/, build-agent.ps1, LISEZMOI-DSI.md)
 build-release.ps1       zip + release GitHub + latest.json (dans cet ordre)
 latest.json             manifeste lu par les postes (écrit UNIQUEMENT par le build)
 ```
@@ -83,9 +82,6 @@ latest.json             manifeste lu par les postes (écrit UNIQUEMENT par le bu
   relance automatique `-Relaxed` (OR des notions). Le scraping DOM reçoit `Keywords`.
 - **Fenêtre** : X / Alt+F4 = `Hide-BtMainWindow` (zone de notification) ; une 2e instance
   signale `Global\BiblioTechWidgetShow` à la 1re puis s'arrête.
-- **Copilot** : aucune API (contraintes SNCF). `CopilotAgentUrl` (config) + case « licence »
-  (state) → bouton qui ouvre l'agent dans le navigateur et copie la question. La licence
-  n'est pas détectée automatiquement (il faudrait un jeton Graph, interdit).
 - **MAJ** : uniquement si `AppRoot` = `%LOCALAPPDATA%\BiblioTech-Widget\app`
   (`Test-BtInstalledCopy`) — jamais sur le dossier de dev. Les requêtes GitHub passent
   par un runspace (proxy système + identifiants Windows pour le proxy seulement).

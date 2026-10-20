@@ -1,5 +1,12 @@
 # Historique des versions
 
+## 1.1.17 — 2026-10-20
+
+- **Copilot retiré** (demande de l'utilisateur) : dossier `copilot-agent/` supprimé ;
+  `CopilotAgentUrl` (config), préférence `CopilotLicensed` (state), action `copilot`, bouton
+  « Demander à Copilot » du bandeau « Compris » et case du menu retirés. L'assistant local
+  (`BtAssist.ps1`) reste seul en charge du langage courant. Ligne Copilot retirée de la note DSI.
+
 ## 1.1.16 — 2026-10-20
 
 - **Mises à jour signées** (risque traité : compte GitHub compromis -> version piégée diffusée à

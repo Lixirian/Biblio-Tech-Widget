@@ -28,17 +28,13 @@ la session SSO déjà ouverte sur le poste. Même socle technique que le *SNOW W
 | Filtrer | Type (pages, blogs, pièces jointes) · pertinence / plus récents |
 | Garder une page sous la main | 📌 Épingler (visible sur l'accueil) |
 | Fermer | **X** masque la fenêtre (l'appli reste prête dans la zone de notification) · **… > Quitter** l'arrête |
-| Licence Microsoft 365 Copilot | **… > J'ai une licence Microsoft 365 Copilot** : bouton **Demander à Copilot** vers l'agent Biblio-Tech |
 
 ## Recherche en langage courant
 
-- **Sans licence Copilot** : assistant **local** (`lib/BtAssist.ps1`), sans IA externe ni coût.
-  Il repère l'intention (incident, procédure, nouveautés…), retire les mots vides, ajoute
-  les synonymes métier et les variantes (`déconnex*`) et tient compte d'une période
-  (« cette semaine »). Si aucune fiche ne réunit toutes les notions, il élargit tout seul.
-- **Avec licence Microsoft 365 Copilot** : agent Copilot **Biblio-Tech** (`copilot-agent/`),
-  qui répond en résumant les fiches et en citant les sources. Son déploiement relève de la
-  DSI : voir `copilot-agent/LISEZMOI-DSI.md`.
+Assistant **local** (`lib/BtAssist.ps1`), sans IA externe ni coût. Il repère l'intention
+(incident, procédure, nouveautés…), retire les mots vides, ajoute les synonymes métier et
+les variantes (`déconnex*`) et tient compte d'une période (« cette semaine »). Si aucune
+fiche ne réunit toutes les notions, il élargit tout seul.
 
 ## Mises à jour
 

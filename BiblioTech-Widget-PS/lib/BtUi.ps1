@@ -322,10 +322,9 @@ function New-BtSkeletonCard {
 }
 
 # Bandeau « Compris : … » : ce que l'assistant local a retenu de la demande
-# (intention, notions + synonymes, période). Bouton « Demander à Copilot »
-# uniquement pour les utilisateurs déclarés licenciés Microsoft 365 Copilot.
+# (intention, notions + synonymes, période).
 function New-BtUnderstandingCard {
-    param($Ctx, [string]$Text, [bool]$ShowCopilot)
+    param($Ctx, [string]$Text)
     $card = New-Object System.Windows.Controls.Border
     $card.CornerRadius = New-Object System.Windows.CornerRadius 10
     $card.Background = Get-BtBrush 'AccentSoft'
@@ -334,18 +333,6 @@ function New-BtUnderstandingCard {
     $card.Padding = New-BtThickness 12 8 8 8
     $card.Margin = New-BtThickness 0 4 0 6
     $dp = New-Object System.Windows.Controls.DockPanel
-    if ($ShowCopilot) {
-        $b = New-Object System.Windows.Controls.Button
-        try { $b.Style = $Ctx.Window.Resources['PrimaryBtn'] } catch { }
-        $b.Content = 'Demander à Copilot ↗'
-        $b.Padding = New-BtThickness 12 5 12 5
-        $b.Margin = New-BtThickness 10 0 0 0
-        $b.ToolTip = 'Ouvre l''agent Copilot Biblio-Tech (votre question est copiée : collez-la avec Ctrl+V)'
-        $b.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
-        [System.Windows.Controls.DockPanel]::SetDock($b, [System.Windows.Controls.Dock]::Right)
-        $b.Add_Click({ param($s, $e) Invoke-BtAction $script:Ctx 'copilot' })
-        [void]$dp.Children.Add($b)
-    }
     $g = New-BtText -Text ([string][char]0xE945) -Size 14 -Color 'Accent' -Icon
     $g.Margin = New-BtThickness 0 0 9 0
     [System.Windows.Controls.DockPanel]::SetDock($g, [System.Windows.Controls.Dock]::Left)
