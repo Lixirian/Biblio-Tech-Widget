@@ -1,12 +1,11 @@
 {
-    "version":  "1.1.13",
-    "zip":  "BiblioTech-Widget_version1.1.13.zip",
-    "url":  "https://github.com/Lixirian/Biblio-Tech-Widget/releases/download/v1.1.13/BiblioTech-Widget_version1.1.13.zip",
-    "sha256":  "6DE4DEE8C722957A18A637588575D751AAF3EDE83C62A872E5167A05F5968F51",
+    "version":  "1.1.14",
+    "zip":  "BiblioTech-Widget_version1.1.14.zip",
+    "url":  "https://github.com/Lixirian/Biblio-Tech-Widget/releases/download/v1.1.14/BiblioTech-Widget_version1.1.14.zip",
+    "sha256":  "BD5A3D07563D8612A714FE20F1FA56845A38CF35D82389594680FF7445A55CFE",
     "date":  "2026-10-20",
     "notes":  [
-                  "Connexion : après la validation SSO, la fenêtre de connexion disparaît aussitôt ; la page Confluence n\u0027apparaît plus brièvement à l\u0027écran.",
-                  "Tuiles : quand le titre d\u0027une rubrique commence par un émoji (ex. le haut-parleur de « u-DOM »), il devient l\u0027icône de la tuile au lieu de chevaucher le texte.",
-                  "Fluidité : l\u0027analyse des catégories (des milliers de fiches) tourne désormais en arrière-plan et ne fige plus la fenêtre ; les résultats s\u0027affichent par lots de 25 (« Afficher plus » pour la suite)."
+                  "Accueil personnalisé : vous retrouvez en tête les rubriques de VOTRE profil, comme sur la page d\u0027accueil du site (ex. « TAM / Gestionnaire en Production »), puis « Débuter avec Biblio-TECH » et les encadrés « Biblio-TECH met en avant ». Toutes les rubriques restent accessibles par la tuile « Toutes les rubriques ».",
+                  "Thème : les pages du lecteur et le tableau de bord suivent le thème de Windows (sombre ou clair), y compris si vous le changez pendant l\u0027utilisation."
               ]
 }
