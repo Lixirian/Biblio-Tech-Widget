@@ -138,6 +138,14 @@ $script:BtDashJs = @'
     log('EXPORT:' + JSON.stringify(last));
   };
   $('ht').onclick = function(){ exportHtml(); };
+  // Liens des listes -> lecteur de l'appli (commentaire : la page défile jusqu'à lui) ;
+  // Ctrl / Maj + clic -> navigateur. L'hôte revalide l'URL (Confluence seulement).
+  document.addEventListener('click', function(e){
+    var a = e.target && e.target.closest ? e.target.closest('a[href]') : null;
+    if (!a || e.button !== 0) return;
+    e.preventDefault();
+    log('OPEN:' + JSON.stringify({ u: a.href, t: a.textContent || '', ext: !!(e.ctrlKey || e.shiftKey) }));
+  });
 
   // ---------- rendus ----------
   function bars(list, max, link, suffix){
@@ -993,6 +1001,20 @@ function Export-BtDashboardHtml {
     }
 }
 
+# Clic sur un lien du tableau de bord : lecteur intégré (Confluence uniquement, sinon
+# navigateur via Open-BtReader) ou navigateur si Ctrl / Maj. L'élément épinglable est la
+# PAGE (sans focusedCommentId) ; le lecteur, lui, s'ouvre sur le commentaire.
+function Open-BtDashboardLink {
+    param($Ctx, [string]$Json)
+    $o = $null; try { $o = $Json | ConvertFrom-Json } catch { }
+    $u = if ($o) { [string]$o.u } else { '' }
+    if (-not (Test-BtHttpUrl $u)) { return }
+    if ($o.ext) { Open-BtExternal $u; return }
+    $page = ($u -replace '#.*$', '') -replace '([?&])focusedCommentId=\d+&?', '$1' -replace '[?&]$', ''
+    $t = ([string]$o.t -replace '[\r\n\x00-\x1F]', ' ').Trim()
+    Open-BtReader $Ctx ([pscustomobject]@{ url = $page; title = $t.Substring(0, [Math]::Min(300, $t.Length)) }) -Url $u
+}
+
 function Show-BtDashboard {
     param($Ctx)
     if ($Ctx.Demo) { Show-BtFlash $Ctx 'Tableau de bord indisponible en mode démonstration.'; return }
@@ -1030,6 +1052,7 @@ function Show-BtDashboard {
                 $m = ''; try { $m = [string]$b.TryGetWebMessageAsString() } catch { }
                 if ($m.StartsWith('EXPORT:')) { Export-BtDashboardExcel $script:Ctx $m.Substring(7) }
                 elseif ($m.StartsWith('EXPORTHTML:')) { Export-BtDashboardHtml $script:Ctx $m.Substring(11) }
+                elseif ($m.StartsWith('OPEN:')) { Open-BtDashboardLink $script:Ctx $m.Substring(5) }
                 elseif ($m) {
                     # Une ligne de journal, bornée : pas d'injection de fausses lignes.
                     $m = ($m -replace '[\r\n\x00-\x1F]', ' ')

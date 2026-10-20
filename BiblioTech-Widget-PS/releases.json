@@ -1,4 +1,7 @@
 {
+    "1.1.23":  [
+                   "Tableau de bord : un clic sur une consigne ou un commentaire l'ouvre dans le lecteur de Biblio-Tech, et la page défile jusqu'au commentaire concerné (mis en évidence). Ctrl + clic l'ouvre dans votre navigateur."
+               ],
     "1.1.22":  [
                    "Tableau de bord : nouveau bouton « Exporter en page HTML ». La page enregistrée dans Téléchargements s'ouvre dans votre navigateur et se met en forme à volonté : déplacer, élargir, retirer ou réajouter les encarts, renommer les titres, ajouter des notes, puis « Enregistrer la page ».",
                    "Pour vos présentations : mode « Présenter » (un encart par écran, en plein écran), image PNG de chaque graphique pour PowerPoint, données de chaque encart en CSV et données complètes en JSON (Power BI), impression ou PDF, thème clair ou sombre au choix."

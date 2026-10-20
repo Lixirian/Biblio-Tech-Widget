@@ -28,7 +28,7 @@
 #                                 demandé, contrôle qu'elle correspond à la clé publique livrée).
 #  Prérequis : git + gh authentifié (gh auth login) avec droits sur le dépôt.
 # ============================================================================
-param([switch]$NoPublish, [switch]$NewSigningKey, [switch]$ExportSigningKey, [switch]$ImportSigningKey, [string]$KeyBackup = '')
+param([switch]$NoPublish, [switch]$SkipDocCheck, [switch]$NewSigningKey, [switch]$ExportSigningKey, [switch]$ImportSigningKey, [string]$KeyBackup = '')
 $ErrorActionPreference = 'Stop'
 $repo = $PSScriptRoot
 $src  = Join-Path $repo 'BiblioTech-Widget-PS'
@@ -134,6 +134,33 @@ try {
     if ($rel.PSObject.Properties.Name -contains $ver) { $notes = @($rel.$ver | ForEach-Object { [string]$_ }) }
 } catch { Write-Host "Avertissement : releases.json illisible ($($_.Exception.Message))" -ForegroundColor Yellow }
 if (-not $notes.Count) { Write-Host "Avertissement : aucune note pour $ver dans releases.json." -ForegroundColor Yellow }
+
+# Note DSI et fiche cybersécurité (hors dépôt, ..\Biblio-Tech - Note DSI) : elles doivent
+# décrire la version publiée. Simple avertissement en essai ; publication refusée sinon
+# (-SkipDocCheck pour passer outre, ex. depuis un poste sans ces documents).
+$docDir = Join-Path (Split-Path -Parent $PSScriptRoot) 'Biblio-Tech - Note DSI'
+$docLate = @()
+if (Test-Path -LiteralPath $docDir) {
+    Add-Type -AssemblyName System.IO.Compression, System.IO.Compression.FileSystem
+    foreach ($doc in Get-ChildItem -LiteralPath $docDir -Filter '*.docx' | Where-Object { $_.Name -notlike '~$*' }) {
+        $docVer = ''
+        try {
+            $fs = [IO.File]::Open($doc.FullName, 'Open', 'Read', 'ReadWrite')   # lisible même ouvert dans Word
+            try {
+                $zipDoc = New-Object IO.Compression.ZipArchive($fs, [IO.Compression.ZipArchiveMode]::Read)
+                $rd = New-Object IO.StreamReader($zipDoc.GetEntry('word/document.xml').Open(), [Text.Encoding]::UTF8)
+                $plain = $rd.ReadToEnd() -replace '<[^>]+>', ''; $rd.Dispose(); $zipDoc.Dispose()
+                $docVer = [regex]::Match($plain, '(?i)version\s+(?:de l.outil|analys[ée]e)\s*:\s*(\d+(?:\.\d+)+)').Groups[1].Value
+            } finally { $fs.Dispose() }
+        } catch { }
+        if ($docVer -ne $ver) { $docLate += "$($doc.Name) (version indiquée : $(if ($docVer) { $docVer } else { 'introuvable' }))" }
+    }
+} else { Write-Host "Avertissement : dossier des documents DSI introuvable ($docDir), contrôle ignoré." -ForegroundColor Yellow }
+if ($docLate.Count) {
+    $docMsg = "Documents DSI / cybersécurité à mettre à jour pour la $ver :`n  " + ($docLate -join "`n  ")
+    if ($NoPublish -or $SkipDocCheck) { Write-Host "Avertissement : $docMsg" -ForegroundColor Yellow }
+    else { throw "$docMsg`n(revoir leur contenu, les mettre à jour via Word, ou relancer avec -SkipDocCheck)" }
+}
 
 # Validation syntaxique de tous les scripts avant de publier.
 $bad = @()

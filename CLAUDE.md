@@ -94,7 +94,12 @@ latest.json             manifeste lu par les postes (écrit UNIQUEMENT par le bu
 ## Publication
 
 1. `Version` ++ dans `config.ps1` ; 2. notes dans `releases.json` ;
-3. `powershell -ExecutionPolicy Bypass -File build-release.ps1` (`-NoPublish` = essai).
+3. **Note DSI + fiche cybersécurité** (`..\Biblio-Tech - Note DSI\`, HORS dépôt) : à CHAQUE
+   version, relire ce que la version change (sécurité, flux, données, installation) et les mettre
+   à jour — numéro de version (« Version de l'outil » / « Version analysée ») et contenu.
+   Uniquement via Word COM, en place, après sauvegarde (jamais régénérées : retouches manuelles).
+   Le build refuse de publier si leur version ≠ `Version` (`-SkipDocCheck` pour passer outre) ;
+4. `powershell -ExecutionPolicy Bypass -File build-release.ps1` (`-NoPublish` = essai).
 Le build commit + push le code, crée la release `v<X>` (assets : zip de version +
 `Biblio-Tech.cmd`), PUIS écrit/pousse `latest.json`.
 

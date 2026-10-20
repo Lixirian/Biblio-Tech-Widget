@@ -123,6 +123,7 @@ function New-BtReaderWindow {
     $r.Ui.Host.Background = if ($Ctx.Dark) { Get-BtBrush 'Panel' } else { [System.Windows.Media.Brushes]::White }
     $wv.add_NavigationCompleted({ param($s, $e)
         Update-BtReaderMode $script:Ctx
+        Invoke-BtReaderFocusComment $script:Ctx
         try {
             $u = [string]$s.Source
             $script:Ctx.Reader.Url = $u
@@ -147,9 +148,10 @@ function New-BtReaderWindow {
     return $win
 }
 
+# -Url : adresse à afficher si elle diffère de celle de l'élément (lien vers un commentaire).
 function Open-BtReader {
-    param($Ctx, $Item)
-    $url = [string]$Item.url
+    param($Ctx, $Item, [string]$Url = '')
+    $url = if ($Url) { $Url } else { [string]$Item.url }
     if (-not (Test-BtHttpUrl $url)) { return }
     if (-not $script:BtWebView2Ok -or (Get-BtReaderNavPolicy $Ctx $url $false) -ne 'stay') { Open-BtExternal $url; return }
     $r = $Ctx.Reader
@@ -175,6 +177,34 @@ function Update-BtReaderPin {
     $p = Test-BtPinned $Ctx.State $r.Item
     $r.Ui.PinIcon.Text = if ($p) { [string][char]0xE840 } else { [string][char]0xE718 }
     $r.Ui.PinIcon.Foreground = Get-BtBrush $(if ($p) { 'Accent' } else { 'IconFg' })
+}
+
+# Lien vers un commentaire (?focusedCommentId=N) : la page défile jusqu'à lui et le met en
+# évidence. Confluence le fait déjà, mais le mode lecture décale la mise en page après coup ;
+# les commentaires se chargent parfois en différé -> nouvelles tentatives pendant ~6 s.
+function Invoke-BtReaderFocusComment {
+    param($Ctx)
+    try {
+        $cw = $Ctx.Reader.WebView.CoreWebView2
+        $u = [uri]$cw.Source
+        if ($u.Host -ne $Ctx.ConfHost -or $u.Query -notmatch '[?&]focusedCommentId=(\d{1,19})') { return }
+        $js = @'
+(function(id){
+  var n = 0;
+  (function go(){
+    var el = document.getElementById('comment-' + id) || document.getElementById('comment-thread-' + id)
+          || document.querySelector('[data-comment-id="' + id + '"]');
+    if (!el) { if (++n < 30) setTimeout(go, 200); return; }
+    el.scrollIntoView({ block: 'center' });
+    el.style.transition = 'box-shadow .4s';
+    el.style.boxShadow = '0 0 0 3px #0088CE';
+    el.style.borderRadius = '6px';
+    setTimeout(function(){ el.style.boxShadow = ''; }, 4000);
+  })();
+})(__ID__)
+'@.Replace('__ID__', ($Matches[1] | ConvertTo-Json))
+        [void]$cw.ExecuteScriptAsync($js)
+    } catch { }
 }
 
 # Applique (ou retire) le CSS du mode lecture sur la page courante du lecteur.

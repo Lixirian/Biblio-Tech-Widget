@@ -1,5 +1,16 @@
 # Historique des versions
 
+## 1.1.23 — 2026-10-20
+
+- **Liens du tableau de bord -> lecteur intégré** : un écouteur de clic (BtDashboard) intercepte
+  les liens des listes et poste `OPEN:{u,t,ext}` ; `Open-BtDashboardLink` revalide l'URL
+  (`Test-BtHttpUrl`, puis `Open-BtReader` -> politique du lecteur : Confluence seulement, le
+  reste au navigateur). Ctrl / Maj + clic -> navigateur. L'élément épinglable est la page sans
+  `focusedCommentId` ; `Open-BtReader` accepte `-Url` pour afficher le commentaire.
+- **Défilement jusqu'au commentaire** : `Invoke-BtReaderFocusComment` (lecteur, à chaque
+  navigation) cherche `#comment-N` / `#comment-thread-N` / `[data-comment-id]` (essais
+  pendant ~6 s), le centre et l'encadre 4 s. Le mode lecture ne masque plus `#comments-section`
+  quand l'URL vise un commentaire.
 ## 1.1.22 — 2026-10-20
 
 - **Export « page HTML » du tableau de bord** (bouton `#ht`) : `exportHtml()` (BtDashboard) clone les

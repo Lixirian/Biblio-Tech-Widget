@@ -260,8 +260,10 @@ function Get-BtReaderCssJS {
   if (!on) { if (el) el.parentNode.removeChild(el); return 'off'; }
   if (el) return 'on';
   el = document.createElement('style'); el.id = id;
+  // Lien vers un commentaire (focusedCommentId) : la zone des commentaires reste visible.
+  var cm = /[?&]focusedCommentId=/.test(location.search) ? '' : '#comments-section,';
   el.textContent = '#header,#navigation,.ia-fixed-sidebar,.ia-splitter-left,#footer,#app-switcher,.aui-header,'
-    + '#likes-and-labels-container,#comments-section,.page-metadata-banner,#editor-preload-container{display:none!important}'
+    + '#likes-and-labels-container,' + cm + '.page-metadata-banner,#editor-preload-container{display:none!important}'
     + '#main,.ia-splitter #main{margin:0 auto!important;padding:28px 48px!important;max-width:1100px;border:0!important}'
     + '#content,.ia-content-container{margin:0!important}body{background:#fff!important}';
   (document.head || document.documentElement).appendChild(el);
