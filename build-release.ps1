@@ -9,14 +9,111 @@
 #   4. SEULEMENT ENSUITE : écrit latest.json (version, url, sha256, notes) puis
 #      commit + push -> les postes voient la pastille « Mise à jour ».
 #      (Ordre volontaire : latest.json n'annonce jamais un zip pas encore en ligne.)
+#  SIGNATURE : chaque version est signée (RSA 3072, SHA-256) avec une clé PRIVÉE qui ne
+#  quitte jamais ce poste : %USERPROFILE%\.biblio-tech-signing\ (chiffrée par DPAPI pour
+#  l'utilisateur Windows courant ; JAMAIS dans le dépôt, GitHub ou SynologyDrive). Le texte
+#  signé est « BiblioTech-Widget|<version>|<SHA-256 du zip> » ; la signature va dans
+#  latest.json (champ sig). L'appli et le lanceur embarquent la clé PUBLIQUE et refusent
+#  tout zip non signé par elle : un compte GitHub compromis ne suffit plus à diffuser du code.
 #  Usage :  powershell -ExecutionPolicy Bypass -File build-release.ps1 [-NoPublish]
+#           ... -NewSigningKey  : crée la clé (une seule fois) et inscrit la clé publique dans
+#                                 config.ps1 et launcher\bootstrap.ps1. Clé perdue = les postes
+#                                 refuseront les MAJ : redistribuer Biblio-Tech.cmd.
+#           ... -ExportSigningKey [-KeyBackup <fichier>] : SAUVEGARDE de la clé, chiffrée par un
+#                                 mot de passe (AES-256, PBKDF2-SHA256 600 000 itérations) ; à garder
+#                                 sur une clé USB / un gestionnaire de mots de passe (pas sur GitHub).
+#           ... -ImportSigningKey -KeyBackup <fichier> : nouveau PC -> restaure la clé (mot de passe
+#                                 demandé, contrôle qu'elle correspond à la clé publique livrée).
 #  Prérequis : git + gh authentifié (gh auth login) avec droits sur le dépôt.
 # ============================================================================
-param([switch]$NoPublish)
+param([switch]$NoPublish, [switch]$NewSigningKey, [switch]$ExportSigningKey, [switch]$ImportSigningKey, [string]$KeyBackup = '')
 $ErrorActionPreference = 'Stop'
 $repo = $PSScriptRoot
 $src  = Join-Path $repo 'BiblioTech-Widget-PS'
 $dist = Join-Path $repo 'dist'
+
+# --- Clé de signature des versions --------------------------------------------
+Add-Type -AssemblyName System.Security
+$keyDir  = Join-Path $env:USERPROFILE '.biblio-tech-signing'
+$keyFile = Join-Path $keyDir 'release-key.dpapi'
+$pubFiles = @((Join-Path $src 'config.ps1'), (Join-Path $repo 'launcher\bootstrap.ps1'))
+function New-BtRsa { $p = New-Object System.Security.Cryptography.CspParameters 24; return New-Object System.Security.Cryptography.RSACryptoServiceProvider(3072, $p) }
+if ($NewSigningKey) {
+    if (Test-Path -LiteralPath $keyFile) { throw "Une clé existe déjà ($keyFile). La remplacer couperait les mises à jour des postes : supprimez-la d'abord si c'est voulu." }
+    $rsa = New-BtRsa
+    $priv = [Text.Encoding]::UTF8.GetBytes($rsa.ToXmlString($true))
+    New-Item -ItemType Directory -Path $keyDir -Force | Out-Null
+    [IO.File]::WriteAllBytes($keyFile, [Security.Cryptography.ProtectedData]::Protect($priv, $null, 'CurrentUser'))
+    $pub = $rsa.ToXmlString($false)
+    foreach ($f in $pubFiles) {
+        $t = [IO.File]::ReadAllText($f, [Text.Encoding]::UTF8)
+        $t2 = [regex]::Replace($t, "(ReleasePublicKey\s*=\s*)'[^']*'", ('${1}' + "'" + $pub + "'"))
+        if ($t2 -eq $t) { throw "ReleasePublicKey introuvable dans $f" }
+        [IO.File]::WriteAllText($f, $t2, (New-Object Text.UTF8Encoding $true))
+    }
+    Write-Host "Clé de signature créée : $keyFile (chiffrée DPAPI). Clé publique inscrite dans config.ps1 et bootstrap.ps1." -ForegroundColor Green
+    return
+}
+# Sauvegarde : 'BTKEY1' | sel (16) | IV (16) | AES-256-CBC(clé XML) | HMAC-SHA256 (32) du tout.
+function Read-BtSecret([string]$Prompt) {
+    $s = Read-Host $Prompt -AsSecureString
+    return [Runtime.InteropServices.Marshal]::PtrToStringBSTR([Runtime.InteropServices.Marshal]::SecureStringToBSTR($s))
+}
+function Get-BtBackupKeys([byte[]]$Salt, [switch]$Confirm) {
+    $plain = Read-BtSecret 'Mot de passe de la sauvegarde'
+    if ($plain.Length -lt 12) { throw 'Mot de passe trop court (12 caractères minimum).' }
+    if ($Confirm -and (Read-BtSecret 'Confirmez le mot de passe') -ne $plain) { throw 'Les deux mots de passe diffèrent.' }
+    $kdf = New-Object System.Security.Cryptography.Rfc2898DeriveBytes($plain, $Salt, 600000, [System.Security.Cryptography.HashAlgorithmName]::SHA256)
+    $b = $kdf.GetBytes(64)
+    return @{ Aes = $b[0..31]; Mac = $b[32..63] }
+}
+if ($ExportSigningKey) {
+    if (-not (Test-Path -LiteralPath $keyFile)) { throw "Aucune clé à sauvegarder ($keyFile)." }
+    if (-not $KeyBackup) { $KeyBackup = Join-Path ([Environment]::GetFolderPath('Desktop')) 'biblio-tech-signing-key.backup' }
+    if (Test-Path -LiteralPath $KeyBackup) { throw "$KeyBackup existe déjà." }
+    $plainKey = [Security.Cryptography.ProtectedData]::Unprotect([IO.File]::ReadAllBytes($keyFile), $null, 'CurrentUser')
+    $salt = New-Object byte[] 16; $iv = New-Object byte[] 16
+    $rng = New-Object System.Security.Cryptography.RNGCryptoServiceProvider; $rng.GetBytes($salt); $rng.GetBytes($iv)
+    $k = Get-BtBackupKeys $salt -Confirm
+    $aes = [System.Security.Cryptography.Aes]::Create(); $aes.Key = [byte[]]$k.Aes; $aes.IV = $iv
+    $ct = $aes.CreateEncryptor().TransformFinalBlock($plainKey, 0, $plainKey.Length)
+    $body = [byte[]]([Text.Encoding]::ASCII.GetBytes('BTKEY1') + $salt + $iv + $ct)
+    $mac = (New-Object System.Security.Cryptography.HMACSHA256 (, [byte[]]$k.Mac)).ComputeHash($body)
+    [IO.File]::WriteAllBytes($KeyBackup, [byte[]]($body + $mac))
+    Write-Host "Sauvegarde chiffrée écrite : $KeyBackup" -ForegroundColor Green
+    Write-Host 'Rangez-la HORS du dépôt et de GitHub (clé USB, gestionnaire de mots de passe) et notez le mot de passe.' -ForegroundColor Yellow
+    return
+}
+if ($ImportSigningKey) {
+    if (-not $KeyBackup -or -not (Test-Path -LiteralPath $KeyBackup)) { throw 'Indiquez la sauvegarde : -KeyBackup <fichier>.' }
+    if (Test-Path -LiteralPath $keyFile) { throw "Une clé est déjà présente sur ce poste ($keyFile)." }
+    $all = [IO.File]::ReadAllBytes($KeyBackup)
+    if ($all.Length -lt 6 + 32 + 32 -or [Text.Encoding]::ASCII.GetString($all, 0, 6) -ne 'BTKEY1') { throw 'Fichier de sauvegarde invalide.' }
+    $body = $all[0..($all.Length - 33)]; $mac = $all[($all.Length - 32)..($all.Length - 1)]
+    $salt = $all[6..21]; $iv = $all[22..37]; $ct = [byte[]]$all[38..($all.Length - 33)]
+    $k = Get-BtBackupKeys ([byte[]]$salt)
+    $calc = (New-Object System.Security.Cryptography.HMACSHA256 (, [byte[]]$k.Mac)).ComputeHash([byte[]]$body)
+    if ([Convert]::ToBase64String($calc) -ne [Convert]::ToBase64String([byte[]]$mac)) { throw 'Mot de passe incorrect ou sauvegarde altérée.' }
+    $aes = [System.Security.Cryptography.Aes]::Create(); $aes.Key = [byte[]]$k.Aes; $aes.IV = [byte[]]$iv
+    $plainKey = $aes.CreateDecryptor().TransformFinalBlock($ct, 0, $ct.Length)
+    $rsa = New-BtRsa; $rsa.FromXmlString([Text.Encoding]::UTF8.GetString($plainKey))
+    foreach ($f in $pubFiles) {
+        $p = [regex]::Match([IO.File]::ReadAllText($f, [Text.Encoding]::UTF8), "ReleasePublicKey\s*=\s*'([^']*)'").Groups[1].Value
+        if ($p -ne $rsa.ToXmlString($false)) { throw "Cette clé ne correspond pas à la clé publique de $f : restauration annulée." }
+    }
+    New-Item -ItemType Directory -Path $keyDir -Force | Out-Null
+    [IO.File]::WriteAllBytes($keyFile, [Security.Cryptography.ProtectedData]::Protect($plainKey, $null, 'CurrentUser'))
+    Write-Host "Clé restaurée sur ce poste : $keyFile" -ForegroundColor Green
+    return
+}
+if (-not (Test-Path -LiteralPath $keyFile)) { throw "Clé de signature introuvable ($keyFile). Première fois : -NewSigningKey ; nouveau PC : -ImportSigningKey -KeyBackup <fichier>." }
+$signer = New-BtRsa
+$signer.FromXmlString([Text.Encoding]::UTF8.GetString([Security.Cryptography.ProtectedData]::Unprotect([IO.File]::ReadAllBytes($keyFile), $null, 'CurrentUser')))
+# La clé publique livrée (appli + lanceur) doit correspondre à la clé privée : sinon les postes refuseraient tout.
+foreach ($f in $pubFiles) {
+    $p = [regex]::Match([IO.File]::ReadAllText($f, [Text.Encoding]::UTF8), "ReleasePublicKey\s*=\s*'([^']*)'").Groups[1].Value
+    if ($p -ne $signer.ToXmlString($false)) { throw "La clé publique de $f ne correspond pas à la clé de signature." }
+}
 
 $cfg = Get-Content -LiteralPath (Join-Path $src 'config.ps1') -Raw -Encoding UTF8
 $ver = [regex]::Match($cfg, "Version\s*=\s*'([^']+)'").Groups[1].Value
@@ -98,11 +195,20 @@ Get-ChildItem -LiteralPath $dist -Filter 'BiblioTech-Widget_version*.zip' | Wher
 $sha = (Get-FileHash -LiteralPath $zip -Algorithm SHA256).Hash
 Write-Host ("OK : {0}.zip ({1} Ko) sha256={2}" -f $name, [int]((Get-Item $zip).Length / 1KB), $sha) -ForegroundColor Green
 
+# Signature « BiblioTech-Widget|<version>|<SHA-256> » (lie le zip à SA version : pas de rejeu
+# d'un ancien zip légitime annoncé comme nouvelle version), vérifiée aussitôt.
+$signed = [Text.Encoding]::UTF8.GetBytes("BiblioTech-Widget|$ver|$($sha.ToUpperInvariant())")
+$sig = [Convert]::ToBase64String($signer.SignData($signed, 'SHA256'))
+$check = New-BtRsa; $check.FromXmlString($signer.ToXmlString($false))
+if (-not $check.VerifyData($signed, 'SHA256', [Convert]::FromBase64String($sig))) { throw 'Signature de la version invalide (contrôle interne).' }
+Write-Host 'Version signée (clé locale).' -ForegroundColor Green
+
 $manifest = [ordered]@{
     version = $ver
     zip     = "$name.zip"
     url     = "https://github.com/$gh/releases/download/v$ver/$name.zip"
     sha256  = $sha
+    sig     = $sig
     date    = (Get-Date -Format 'yyyy-MM-dd')
     notes   = $notes
 }

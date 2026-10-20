@@ -7,7 +7,7 @@
 $Config = @{
     # Version de l'application. À INCRÉMENTER à chaque publication (build-release.ps1
     # lit cette valeur pour nommer le zip, la release GitHub et latest.json).
-    Version            = '1.1.15'
+    Version            = '1.1.16'
 
     # ----- Confluence -----
     # URL de l'instance (sans slash final).
@@ -65,6 +65,10 @@ $Config = @{
     # latest.json (branche UpdateBranch) annonce la version + l'URL du zip (asset de
     # la release) + son empreinte SHA-256 (vérifiée avant installation).
     GitHubRepo             = 'Lixirian/Biblio-Tech-Widget'
+    # Clé PUBLIQUE de signature des versions (inscrite par build-release.ps1 -NewSigningKey).
+    # Une mise à jour dont la signature (latest.json, champ sig) n'est pas valide pour cette
+    # clé est REFUSÉE. Ce n'est pas un secret : la clé privée reste sur le poste de publication.
+    ReleasePublicKey       = '<RSAKeyValue><Modulus>+yrGL/TD1Xq9ztPWRuXBh5EicDd0WSpuid7ylmqZhYDEDvqsOXwgfrrZi2pTdW65FPQy1pzLtDtz7+VEjn+fRUTR5RFanIBxhQEkL1yPl1h2dMXc5UWbTBRoF13ZI2wLxxiPhWuTpHEIxtmmHyZ/c8mpaW2xSDMvVRGgm3SOSuLrkmgm9LOFJWDRSYV8cuim0rA5X1/DUTP3LPwbkbQJYjlsxi6dYR8xJk1Fn37uQfbw9vL/TwG5LhawOKZbABax2Lf8vfYeEihcJCbu/cSQD7cPfGWjO4xDcbYVMFnTdFhrQ/5ghdWNYn1p/v7sB7ap10UHXYUiHsp10c4mQ1ltD8zPBe8tq5wRi5q2L/Or6vm2yKWZQ9hlT50Gy67UN+MTGeM6A/WGiLo7SUa1sPrFBbvDMdi539P5o+2t7w+oRKdaNHnpDhy2a0FZVl38jhbGH0BhpwO0CaqrcAe1n+0VSKaZnKpd1J/aRFA8eLTKTOm+EgRNsB4efZl67V3yOtbh</Modulus><Exponent>AQAB</Exponent></RSAKeyValue>'
     UpdateBranch           = 'main'
     # Contrôle ~10 s après le lancement, puis à cette cadence (secondes, min. 60).
     UpdateCheckIntervalSec = 120

@@ -1,4 +1,7 @@
 {
+    "1.1.16":  [
+                   "Sécurité : chaque mise à jour est désormais signée par l'éditeur de Biblio-Tech. Une mise à jour non signée, ou modifiée en route, est automatiquement refusée."
+               ],
     "1.1.15":  [
                    "Accueil : « Biblio-TECH met en avant » s'affiche juste sous les rubriques de votre profil, avant « Débuter avec Biblio-TECH ».",
                    "Accueil : plus de tuiles sans texte (l'émoji placé devant un lien est rattaché à ce lien) ni de consignes en double dans « Commentaires de l'espace Biblio-TECH » (une consigne commentée plusieurs fois n'apparaît qu'une fois)."

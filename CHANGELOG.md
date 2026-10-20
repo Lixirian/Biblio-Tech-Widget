@@ -1,5 +1,23 @@
 # Historique des versions
 
+## 1.1.16 — 2026-10-20
+
+- **Mises à jour signées** (risque traité : compte GitHub compromis -> version piégée diffusée à
+  tous les postes ; l'empreinte SHA-256 venait du même `latest.json` que le zip). Clé RSA 3072
+  générée par `build-release.ps1 -NewSigningKey`, privée dans `%USERPROFILE%\.biblio-tech-signing\`
+  (DPAPI utilisateur, hors dépôt / GitHub / SynologyDrive ; `.gitignore` : `*.backup`, `*.dpapi`).
+  Le build signe « BiblioTech-Widget|<version>|<SHA-256> » (champ `sig` de latest.json) et vérifie
+  que la clé publique livrée (`Config.ReleasePublicKey`, `$ReleasePublicKey` du lanceur) correspond.
+  L'appli (`Test-BtReleaseSignature`) et le lanceur (`Test-ReleaseSignature`, embarqué dans
+  `Biblio-Tech.cmd` : un poste NEUF vérifie déjà) REFUSENT un zip sans empreinte, sans signature
+  ou mal signé ; le lanceur n'installe plus de version plus ancienne que l'installée.
+  Changement de PC : `-ExportSigningKey` (sauvegarde AES-256 + HMAC, PBKDF2-SHA256 600 000 it.,
+  mot de passe ≥ 12 car.) / `-ImportSigningKey -KeyBackup <fichier>` (contrôle de correspondance).
+  Tests : 6 cas (valide, zip modifié, version modifiée, sans signature, autre clé, illisible) sur
+  les DEUX fonctions ; export / mauvais mot de passe refusé / import identique.
+  Transition : c'est le code INSTALLÉ qui vérifie -> 1.1.16 s'installe encore sans contrôle de
+  signature, les versions suivantes sont protégées.
+
 ## 1.1.15 — 2026-10-20
 
 - **Tuiles sans texte** : sur l'accueil du site, l'émoji est souvent un lien À PART collé devant

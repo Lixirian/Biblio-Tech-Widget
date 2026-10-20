@@ -97,7 +97,14 @@ latest.json             manifeste lu par les postes (écrit UNIQUEMENT par le bu
 1. `Version` ++ dans `config.ps1` ; 2. notes dans `releases.json` ;
 3. `powershell -ExecutionPolicy Bypass -File build-release.ps1` (`-NoPublish` = essai).
 Le build commit + push le code, crée la release `v<X>` (assets : zip de version +
-`Biblio-Tech.cmd`), PUIS écrit/pousse `latest.json`. Ajouter une entrée en tête
+`Biblio-Tech.cmd`), PUIS écrit/pousse `latest.json`.
+
+**Signature** : le build SIGNE chaque version (clé privée RSA dans
+`%USERPROFILE%\.biblio-tech-signing\`, DPAPI, jamais dans le dépôt) ; l'appli et le lanceur
+refusent toute MAJ non signée par la clé publique `ReleasePublicKey` (config.ps1 + bootstrap.ps1).
+Nouveau PC : `build-release.ps1 -ImportSigningKey -KeyBackup <fichier>` (sauvegarde faite avec
+`-ExportSigningKey`). Ne JAMAIS régénérer la clé (`-NewSigningKey`) sans nécessité : les postes
+installés refuseraient les MAJ jusqu'à réinstallation via `Biblio-Tech.cmd`. Ajouter une entrée en tête
 de `CHANGELOG.md` à chaque version.
 
 ## Points à valider sur le terrain (réseau SNCF)

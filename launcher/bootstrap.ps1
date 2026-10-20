@@ -12,6 +12,9 @@
 # ============================================================================
 param([switch]$Repair, [string]$Repo = 'Lixirian/Biblio-Tech-Widget', [string]$Branch = 'main')
 $ErrorActionPreference = 'Stop'
+# Clé PUBLIQUE de signature des versions (inscrite par build-release.ps1 -NewSigningKey) :
+# embarquée ici pour qu'un poste NEUF (rien dans AppData) vérifie déjà le zip téléchargé.
+$ReleasePublicKey = '<RSAKeyValue><Modulus>+yrGL/TD1Xq9ztPWRuXBh5EicDd0WSpuid7ylmqZhYDEDvqsOXwgfrrZi2pTdW65FPQy1pzLtDtz7+VEjn+fRUTR5RFanIBxhQEkL1yPl1h2dMXc5UWbTBRoF13ZI2wLxxiPhWuTpHEIxtmmHyZ/c8mpaW2xSDMvVRGgm3SOSuLrkmgm9LOFJWDRSYV8cuim0rA5X1/DUTP3LPwbkbQJYjlsxi6dYR8xJk1Fn37uQfbw9vL/TwG5LhawOKZbABax2Lf8vfYeEihcJCbu/cSQD7cPfGWjO4xDcbYVMFnTdFhrQ/5ghdWNYn1p/v7sB7ap10UHXYUiHsp10c4mQ1ltD8zPBe8tq5wRi5q2L/Or6vm2yKWZQ9hlT50Gy67UN+MTGeM6A/WGiLo7SUa1sPrFBbvDMdi539P5o+2t7w+oRKdaNHnpDhy2a0FZVl38jhbGH0BhpwO0CaqrcAe1n+0VSKaZnKpd1J/aRFA8eLTKTOm+EgRNsB4efZl67V3yOtbh</Modulus><Exponent>AQAB</Exponent></RSAKeyValue>'
 $dataDir  = Join-Path $env:LOCALAPPDATA 'BiblioTech-Widget'
 $appDir   = Join-Path $dataDir 'app'
 $lchDir   = Join-Path $dataDir 'launcher'
@@ -91,14 +94,27 @@ function Stop-RunningApp {
     if ($procs.Count) { Start-Sleep -Seconds 2 }
 }
 
+# Signature RSA/SHA-256 de « BiblioTech-Widget|<version>|<SHA-256> » (cf. build-release.ps1).
+function Test-ReleaseSignature([string]$Version, [string]$Sha, [string]$Sig) {
+    if (-not $ReleasePublicKey -or -not $Sig -or -not $Version) { return $false }
+    try {
+        $rsa = New-Object System.Security.Cryptography.RSACryptoServiceProvider((New-Object System.Security.Cryptography.CspParameters 24))
+        $rsa.FromXmlString($ReleasePublicKey)
+        return $rsa.VerifyData([Text.Encoding]::UTF8.GetBytes("BiblioTech-Widget|$Version|$Sha"), 'SHA256', [Convert]::FromBase64String($Sig))
+    } catch { return $false }
+}
+
 function Install-App($m) {
     $url = [string]$m.url
     if (-not $url) { $url = 'https://github.com/{0}/releases/download/v{1}/{2}' -f $Repo, $m.version, $m.zip }
     L "Version $($m.version) : téléchargement..."
     $tmpZip = Join-Path $env:TEMP ('biblio_' + [guid]::NewGuid().ToString('N') + '.zip')
     (New-WebClient).DownloadFile($url, $tmpZip)
-    $sha = (Get-FileHash -LiteralPath $tmpZip -Algorithm SHA256).Hash
-    if ($m.sha256 -and $sha -ne ([string]$m.sha256).ToUpperInvariant()) { throw "empreinte SHA-256 invalide (fichier corrompu ou altéré)" }
+    $sha = (Get-FileHash -LiteralPath $tmpZip -Algorithm SHA256).Hash.ToUpperInvariant()
+    # Empreinte ET signature OBLIGATOIRES (un manifeste sans l'une ou l'autre est refusé).
+    if (-not $m.sha256 -or $sha -ne ([string]$m.sha256).ToUpperInvariant()) { Remove-Item -LiteralPath $tmpZip -Force -ErrorAction SilentlyContinue; throw "empreinte SHA-256 absente ou invalide (fichier corrompu ou altéré)" }
+    if (-not (Test-ReleaseSignature ([string]$m.version) $sha ([string]$m.sig))) { Remove-Item -LiteralPath $tmpZip -Force -ErrorAction SilentlyContinue; throw "signature de la version $($m.version) absente ou invalide : installation refusée" }
+    L "Signature de la version $($m.version) vérifiée."
     $tmp = Join-Path $env:TEMP ('biblio_' + [guid]::NewGuid().ToString('N'))
     Expand-Archive -LiteralPath $tmpZip -DestinationPath $tmp -Force
     $inner = Get-ChildItem -LiteralPath $tmp -Directory | Where-Object { Test-Path (Join-Path $_.FullName 'BiblioTechWidget.ps1') } | Select-Object -First 1
@@ -171,6 +187,9 @@ try {
         if (-not $m) {
             if (-not $healthy) { throw 'impossible de télécharger l''application (GitHub injoignable)' }
             L "Réparation impossible hors ligne : lancement de la version $installed."
+        } elseif ($installed -and $healthy -and (Compare-Version ([string]$m.version) $installed) -lt 0) {
+            # Jamais de retour à une version plus ancienne que celle en place.
+            L "Version publiée $($m.version) plus ancienne que l'installée ($installed) : ignorée."
         } else {
             L "Installation automatique : $reason."
             Install-App $m

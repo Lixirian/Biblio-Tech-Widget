@@ -139,7 +139,7 @@ function Complete-BtUpdateCheck {
         $j = ([string]$R.Text).TrimStart([char]0xFEFF) | ConvertFrom-Json
         $m = @{
             Version = [string]$j.version; Zip = [string]$j.zip; Url = [string]$j.url
-            Sha256 = ([string]$j.sha256).ToUpperInvariant(); Date = [string]$j.date
+            Sha256 = ([string]$j.sha256).ToUpperInvariant(); Sig = [string]$j.sig; Date = [string]$j.date
             Notes = @($j.notes | ForEach-Object { [string]$_ } | Where-Object { $_ })
         }
         if (-not $m.Url -and $m.Zip) { $m.Url = 'https://github.com/{0}/releases/download/v{1}/{2}' -f $Ctx.Config.GitHubRepo, $m.Version, $m.Zip }
@@ -248,6 +248,20 @@ function Invoke-BtPromptAndUpdate {
     Write-BtLog "[MAJ] Téléchargement : $($m.Url)"
 }
 
+# Signature RSA/SHA-256 de « BiblioTech-Widget|<version>|<SHA-256 du zip> » par la clé privée
+# de l'éditeur (build-release.ps1) ; vérifiée avec Config.ReleasePublicKey. Le lien version +
+# empreinte empêche de faire passer un ancien zip légitime pour une nouvelle version.
+function Test-BtReleaseSignature {
+    param($Ctx, [string]$Version, [string]$Sha, [string]$Sig)
+    $pub = [string]$Ctx.Config.ReleasePublicKey
+    if (-not $pub -or -not $Sig -or -not $Version) { return $false }
+    try {
+        $rsa = New-Object System.Security.Cryptography.RSACryptoServiceProvider((New-Object System.Security.Cryptography.CspParameters 24))
+        $rsa.FromXmlString($pub)
+        return $rsa.VerifyData([Text.Encoding]::UTF8.GetBytes("BiblioTech-Widget|$Version|$Sha"), 'SHA256', [Convert]::FromBase64String($Sig))
+    } catch { Write-BtLog "[MAJ] Vérification de signature impossible : $($_.Exception.Message)"; return $false }
+}
+
 function Complete-BtUpdateDownload {
     param($Ctx, $R)
     $t = $Ctx.Update.Target
@@ -257,12 +271,20 @@ function Complete-BtUpdateDownload {
         return
     }
     $sha = (Get-FileHash -LiteralPath $t.Zip -Algorithm SHA256).Hash.ToUpperInvariant()
-    if ($t.Manifest.Sha256 -and $sha -ne $t.Manifest.Sha256) {
-        Write-BtLog "[MAJ] Empreinte SHA-256 invalide (attendu $($t.Manifest.Sha256), obtenu $sha) : mise à jour annulée."
+    # Empreinte ET signature OBLIGATOIRES : un manifeste qui n'en a pas est refusé.
+    if (-not $t.Manifest.Sha256 -or $sha -ne $t.Manifest.Sha256) {
+        Write-BtLog "[MAJ] Empreinte SHA-256 absente ou invalide (attendu '$($t.Manifest.Sha256)', obtenu $sha) : mise à jour annulée."
         Remove-Item -LiteralPath $t.Zip -Force -ErrorAction SilentlyContinue
         Show-BtFlash $Ctx 'Mise à jour annulée : fichier corrompu (empreinte invalide).'
         return
     }
+    if (-not (Test-BtReleaseSignature $Ctx $t.Manifest.Version $sha $t.Manifest.Sig)) {
+        Write-BtLog "[MAJ] SIGNATURE absente ou invalide pour la version $($t.Manifest.Version) : mise à jour REFUSÉE (fichier non publié par l'éditeur ?)."
+        Remove-Item -LiteralPath $t.Zip -Force -ErrorAction SilentlyContinue
+        Show-BtFlash $Ctx 'Mise à jour refusée : signature invalide. Prévenez l''administrateur de Biblio-Tech.'
+        return
+    }
+    Write-BtLog "[MAJ] Signature de la version $($t.Manifest.Version) vérifiée."
     Start-BtUpdater $Ctx $t.Zip $t.Manifest.Version
 }
 

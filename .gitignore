@@ -14,3 +14,8 @@ desktop.ini
 *.tmp
 # Paquet de l'agent Copilot (régénéré par copilot-agent\build-agent.ps1)
 copilot-agent/build/
+
+# Clé PRIVÉE de signature des versions : ne doit JAMAIS être versionnée
+*.backup
+*.dpapi
+.biblio-tech-signing/
