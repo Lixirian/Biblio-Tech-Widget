@@ -1,12 +1,11 @@
 {
-    "version":  "1.1.22",
-    "zip":  "BiblioTech-Widget_version1.1.22.zip",
-    "url":  "https://github.com/Lixirian/Biblio-Tech-Widget/releases/download/v1.1.22/BiblioTech-Widget_version1.1.22.zip",
-    "sha256":  "33A1039DB64D52966DADD428ABFF5E348C7CA61F78F8B1E3BEF668EE36209014",
-    "sig":  "qINIjvDucBjG2LdEg6wPte3Ajlg58mDVz5gTuotxoyGdIUJmsY3C/2baCEIlia5sC/D32AmSGhnK0EEJ7598w8VXsGYxgetAwT/AU0zB2qEnXWGEnrSOOTmv5RjffJssZ41lPl4EFo0GGZAD39W1eBdc+3cNqzqLYsfg6KWeHcJiHGnJCyUYG7fiyNNbFLFvOTZUSO0DTCJi2+eDoWqekOFq8CTC1aeIaxUkThqlDsgx+7CiKxd6dsWKZhjCcG7Q4Na/2q+inpOzamomBfaqaVU/bpzThYv6Y/FnMipYryO5kuA98puCaQUYwh9agGFuBe5gpWehyTbk6k5KQP8pe5AARYn3IrsZsaZqh3N2HdgBSfvTwLlML+iA0TGttCxzHGVc5huZO9vBtUZrhCPZnihWNIiBGuLTFiY5VlDPZ7nYuyUilae+hRkM/8BpBT5LsQoHRlvlo9F1JMK+diPq0I4VbvW9PhhehIVyteWojj0iTQNOFaIWZWi6M8mOHdRa",
+    "version":  "1.1.23",
+    "zip":  "BiblioTech-Widget_version1.1.23.zip",
+    "url":  "https://github.com/Lixirian/Biblio-Tech-Widget/releases/download/v1.1.23/BiblioTech-Widget_version1.1.23.zip",
+    "sha256":  "25A034C99A1D502ED0FDF0D41F63FD5F5FC566A6810589AFBB9DE84D75E388E0",
+    "sig":  "m42RLXR8hjgZobTcHUVguWi4tnOP+HkO9ReHivbRgQKMZSieZnpVWJEy1qdhkr0xNvV1xmo5V2o5QG9gpgUVjkcuZ4Op4eNuVcwDWggX5U4zmzbc/wZCu+dmmLpTMoA0VzIzFM4mCzHgpxHeZawTb81Dr6Tubf8f675EZ7R3Pu6xMFsjU5mJBTnWNyUngxOaOXynhOKllwzC2+1465QWMFPs16SuUO0Oj7XOYSvvP3CPSTchvPGdSOowXHaESKVcPGhfsExbL6TMQRw3HkxJEY6j7bMzqq47BuOlQmA2OjjtQM32rAos1Y4z1hWHu0qLKIGMYTBd5Es8ATm6IlFJk7iUraT41kKF/p5TN8JWmFnmJcQMRBDVvZBTAU/J2QLiNEkArGE3kdMOCpkwdTCtYjz0h5hwEqTVZGB1lphpA0SMzvC+Y11Z6XHrVUjEMwLQw/XkC56qRuMQA+RZhPYpoeWiSVxH18fDKhsP5E2eYksH1MTmsOxYIvbpy06iCKgD",
     "date":  "2026-10-20",
     "notes":  [
-                  "Tableau de bord : nouveau bouton « Exporter en page HTML ». La page enregistrée dans Téléchargements s\u0027ouvre dans votre navigateur et se met en forme à volonté : déplacer, élargir, retirer ou réajouter les encarts, renommer les titres, ajouter des notes, puis « Enregistrer la page ».",
-                  "Pour vos présentations : mode « Présenter » (un encart par écran, en plein écran), image PNG de chaque graphique pour PowerPoint, données de chaque encart en CSV et données complètes en JSON (Power BI), impression ou PDF, thème clair ou sombre au choix."
+                  "Tableau de bord : un clic sur une consigne ou un commentaire l\u0027ouvre dans le lecteur de Biblio-Tech, et la page défile jusqu\u0027au commentaire concerné (mis en évidence). Ctrl + clic l\u0027ouvre dans votre navigateur."
               ]
 }
