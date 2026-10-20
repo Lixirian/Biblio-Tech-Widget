@@ -1,10 +1,12 @@
 {
-    "version":  "1.1.10",
-    "zip":  "BiblioTech-Widget_version1.1.10.zip",
-    "url":  "https://github.com/Lixirian/Biblio-Tech-Widget/releases/download/v1.1.10/BiblioTech-Widget_version1.1.10.zip",
-    "sha256":  "A4E22E42DF46A823A68EA91FA38DFA41B83E419DAFC5AA5CC9B1C58D6CD542BA",
-    "date":  "2026-10-16",
+    "version":  "1.1.11",
+    "zip":  "BiblioTech-Widget_version1.1.11.zip",
+    "url":  "https://github.com/Lixirian/Biblio-Tech-Widget/releases/download/v1.1.11/BiblioTech-Widget_version1.1.11.zip",
+    "sha256":  "0059B19F5175355BE0911CA778C0A14E21ABFD5F5C2C67DF6755A535577A06A6",
+    "date":  "2026-10-20",
     "notes":  [
-                  "Épingler Biblio-Tech à la barre des tâches garde désormais l\u0027icône du widget (et non celle de PowerShell) et relance bien le widget. Si vous l\u0027aviez déjà épinglé : détachez l\u0027ancienne épingle puis épinglez à nouveau."
+                  "Nouvel accueil en tuiles, basé sur la page « Bienvenue dans votre Biblio-TECH » : accès rapides (dernières news, nouvelles consignes, plus commentées, mises à jour récentes) et une tuile par rubrique. Les tuiles s\u0027animent au survol et au clic, puis ouvrent la rubrique (sous-rubriques et consignes) ; retour avec la flèche ou Échap.",
+                  "Recherche : seules les consignes s\u0027affichent (plus de pièces jointes ni de billets de blog).",
+                  "Recherche à plusieurs mots (ex. « CIP CATI ») : les sigles trouvent aussi leurs formes accolées ou déclinées, pour ne plus manquer de consignes."
               ]
 }
