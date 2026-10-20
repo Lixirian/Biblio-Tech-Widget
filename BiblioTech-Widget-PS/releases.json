@@ -1,4 +1,8 @@
 {
+    "1.1.22":  [
+                   "Tableau de bord : nouveau bouton « Exporter en page HTML ». La page enregistrée dans Téléchargements s'ouvre dans votre navigateur et se met en forme à volonté : déplacer, élargir, retirer ou réajouter les encarts, renommer les titres, ajouter des notes, puis « Enregistrer la page ».",
+                   "Pour vos présentations : mode « Présenter » (un encart par écran, en plein écran), image PNG de chaque graphique pour PowerPoint, données de chaque encart en CSV et données complètes en JSON (Power BI), impression ou PDF, thème clair ou sombre au choix."
+               ],
     "1.1.21":  [
                    "Thème : la barre de titre des fenêtres Tableau de bord, Lecteur et Connexion suit elle aussi le thème clair ou sombre de Windows."
                ],

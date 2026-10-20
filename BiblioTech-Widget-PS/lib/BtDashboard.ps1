@@ -63,9 +63,10 @@ $script:BtDashJs = @'
   }
 
   document.title = 'Biblio-Tech · Tableau de bord';
-  document.head.innerHTML = '<meta charset="utf-8"><title>Biblio-Tech · Tableau de bord</title><style>' + `
-    :root{--bg:#0F172A;--card:#111C33;--line:#22314F;--txt:#E2E8F0;--mut:#94A3B8;--acc:#0088CE;--acc2:#F59E0B;--ok:#22C55E;--ko:#EF4444;--hdr:#0B1220;--btn:#16223D;--row:#1A2742;--tag:#3B2A0B;color-scheme:dark}
-    @media (prefers-color-scheme: light){:root{--bg:#F4F6FA;--card:#FFFFFF;--line:#D5DCE7;--txt:#1E293B;--mut:#5B6B82;--acc2:#B45309;--ok:#15803D;--ko:#DC2626;--hdr:#FFFFFF;--btn:#EEF2F7;--row:#E6EBF2;--tag:#FDF0D9;color-scheme:light}}
+  // Palettes sombre / claire (reprises par l'export « page HTML », où le thème peut être forcé).
+  var VD = '--bg:#0F172A;--card:#111C33;--line:#22314F;--txt:#E2E8F0;--mut:#94A3B8;--acc:#0088CE;--acc2:#F59E0B;--ok:#22C55E;--ko:#EF4444;--hdr:#0B1220;--btn:#16223D;--row:#1A2742;--tag:#3B2A0B;color-scheme:dark';
+  var VL = '--bg:#F4F6FA;--card:#FFFFFF;--line:#D5DCE7;--txt:#1E293B;--mut:#5B6B82;--acc2:#B45309;--ok:#15803D;--ko:#DC2626;--hdr:#FFFFFF;--btn:#EEF2F7;--row:#E6EBF2;--tag:#FDF0D9;color-scheme:light';
+  var CSS = `
     *{box-sizing:border-box} body{margin:0;background:var(--bg);color:var(--txt);font:13px "Segoe UI",sans-serif}
     header{position:sticky;top:0;z-index:2;background:var(--hdr);border-bottom:2px solid var(--acc);padding:12px 22px;display:flex;gap:12px;align-items:center;flex-wrap:wrap}
     h1{font-size:17px;margin:0 14px 0 0;font-weight:600} label{color:var(--mut)}
@@ -92,12 +93,13 @@ $script:BtDashJs = @'
     svg text{fill:var(--mut);font-size:11px}
     .scroll{max-height:330px;overflow:auto}
     @media (max-width:950px){.two{grid-template-columns:1fr}}
-  ` + '</style>';
+  `;
+  document.head.innerHTML = '<meta charset="utf-8"><title>Biblio-Tech · Tableau de bord</title><style>:root{' + VD + '} @media (prefers-color-scheme: light){:root{' + VL + '}}' + CSS + '</style>';
   document.body.innerHTML = `
     <header><h1>📊 Tableau de bord Biblio-Tech</h1>
       <label>Du <input type="date" id="from"></label><label>au <input type="date" id="to"></label>
       <button data-d="1">Aujourd'hui</button><button data-d="7">7 j</button><button data-d="30">30 j</button><button data-d="90">90 j</button>
-      <button class="pri" id="go">Actualiser</button><button id="xl" title="Classeur Excel avec graphiques et liens, enregistré dans Téléchargements">⬇ Exporter Excel</button><span id="st"></span></header>
+      <button class="pri" id="go">Actualiser</button><button id="xl" title="Classeur Excel avec graphiques et liens, enregistré dans Téléchargements">⬇ Exporter Excel</button><button id="ht" title="Page autonome à agencer (déplacer, retirer, ajouter des encarts), à présenter ou à reprendre dans PowerPoint / Power BI ; enregistrée dans Téléchargements">⬇ Exporter en page HTML</button><span id="st"></span></header>
     <main>
       <div class="kpis" id="kpis"></div>
       <div class="card"><h2>Commentaires par jour</h2>
@@ -135,6 +137,7 @@ $script:BtDashJs = @'
     $('st').textContent = 'Export Excel en cours…';
     log('EXPORT:' + JSON.stringify(last));
   };
+  $('ht').onclick = function(){ exportHtml(); };
 
   // ---------- rendus ----------
   function bars(list, max, link, suffix){
@@ -440,6 +443,318 @@ $script:BtDashJs = @'
     return next().then(function(r){ viewTried = true; return r; });
   }
 
+  // ---------- export « page HTML » autonome ----------
+  // Encarts déjà rendus (clonés, nettoyés) + données + moteur d'édition (btExportApp) dans un
+  // seul fichier, sans bibliothèque externe. Les téléchargements étant bloqués dans ce WebView,
+  // la page est confiée à l'hôte (message EXPORTHTML:) qui l'écrit dans Téléchargements.
+  function exportHtml(){
+    if (!last || !last.done) { $('st').textContent = 'Rien à exporter : attendez la fin du chargement.'; return; }
+    var blocks = [];
+    function san(root){
+      Array.prototype.forEach.call(root.querySelectorAll('script,iframe,object,embed,foreignObject,link,meta,style,form,input'), function(e){ e.remove(); });
+      Array.prototype.forEach.call(root.querySelectorAll('*'), function(e){
+        Array.prototype.slice.call(e.attributes).forEach(function(a){ if (/^on/i.test(a.name) || a.name === 'contenteditable') e.removeAttribute(a.name); });
+        if (e.tagName === 'A') {
+          if (!/^https:\/\//i.test(e.getAttribute('href') || '')) e.removeAttribute('href');
+          e.setAttribute('target', '_blank'); e.setAttribute('rel', 'noopener noreferrer');
+        }
+      });
+      return root;
+    }
+    function add(id, title, nodes, w){
+      var s = document.createElement('section'); s.className = 'bk card'; s.setAttribute('data-id', id); s.setAttribute('data-w', w);
+      var h = document.createElement('h2'); h.className = 'bk-t'; h.textContent = title; s.appendChild(h);
+      var b = document.createElement('div'); b.className = 'bk-b'; nodes.forEach(function(n){ b.appendChild(n); }); s.appendChild(b);
+      blocks.push(san(s).outerHTML);
+    }
+    add('kpis', 'Indicateurs clés', [$('kpis').cloneNode(true)], 6);
+    Array.prototype.forEach.call(document.querySelectorAll('main .card'), function(c, i){
+      var k = c.cloneNode(true), h = k.querySelector('h2'), note = h && h.querySelector('.note'), nt = note ? note.textContent.replace(/^\s*—\s*/, '') : '', nodes = [];
+      if (note) note.remove();
+      var title = h ? h.textContent.trim() : 'Encart';
+      if (h) h.remove();
+      if (nt) { var p = document.createElement('p'); p.className = 'note'; p.textContent = nt; nodes.push(p); }
+      Array.prototype.slice.call(k.childNodes).forEach(function(n){ nodes.push(n); });
+      var idEl = c.querySelector('div[id]');
+      add(idEl ? idEl.id : 'bloc' + i, title, nodes, c.parentNode.classList.contains('two') ? 3 : 6);
+    });
+    // JSON dans un <script type="application/json"> : « < » échappé (pas de sortie du bloc).
+    var data = JSON.stringify(last).replace(/</g, '\\u003c').replace(/\u2028/g, '\\u2028').replace(/\u2029/g, '\\u2029');
+    var sub = 'Du ' + fr(last.from) + ' au ' + fr(last.to) + ' · exporté le ' + new Date().toLocaleString('fr-FR') + (P.ver ? ' · Biblio-Tech ' + P.ver : '') + (last.truncated ? ' · limite de chargement atteinte' : '');
+    var html = '<!doctype html>\n<html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'
+      + '<meta http-equiv="Content-Security-Policy" content="default-src \'none\'; style-src \'unsafe-inline\'; script-src \'unsafe-inline\'; img-src data: blob:">'
+      + '<title>' + esc('Biblio-Tech · Tableau de bord du ' + fr(last.from) + ' au ' + fr(last.to)) + '</title><style>'
+      + ':root{' + VD + '} @media (prefers-color-scheme: light){:root:not([data-theme=dark]){' + VL + '}} :root[data-theme=light]{' + VL + '}'
+      + CSS + EXPORT_CSS + '</style></head><body>'
+      + '<header class="top"><div><h1 id="ttl">📊 Tableau de bord Biblio-Tech</h1><div class="sub">' + esc(sub) + '</div></div><div class="tb" id="tb"></div></header>'
+      + '<main id="grid">' + blocks.join('') + '</main>'
+      + '<script type="application/json" id="bt-data">' + data + '</' + 'script>'
+      + '<script>(' + btExportApp.toString() + ')();</' + 'script></body></html>';
+    $('st').textContent = 'Export de la page HTML en cours…';
+    log('EXPORTHTML:' + last.from + '|' + last.to + '|' + html);
+  }
+
+  var EXPORT_CSS = `
+    header.top{justify-content:space-between} header.top h1{font-size:19px} .sub{color:var(--mut);margin-top:3px}
+    .tb{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+    #grid{grid-template-columns:repeat(6,minmax(0,1fr))}
+    .bk{grid-column:span 6;position:relative} .bk[data-w="2"]{grid-column:span 2} .bk[data-w="3"]{grid-column:span 3} .bk[data-w="4"]{grid-column:span 4}
+    @media (max-width:950px){.bk[data-w]{grid-column:span 6}}
+    .bk[hidden],.kpi[hidden]{display:none!important}
+    .bk-t{font-size:14px;margin:0 0 10px;font-weight:600;padding-right:170px}
+    .bk-tools{position:absolute;top:8px;right:10px;display:flex;gap:4px;align-items:center;opacity:0;transition:opacity .15s}
+    .bk:hover .bk-tools,.editing .bk-tools{opacity:1}
+    .bk-tools button{padding:2px 8px;font-size:11px}
+    .ed{display:none!important} .editing .ed{display:inline-block!important}
+    .editing .bk{outline:1px dashed var(--acc);outline-offset:2px}
+    .bk-grip{cursor:grab;padding:0 6px;color:var(--mut);user-select:none;font-size:16px}
+    .bk.drag{opacity:.35}
+    .bk.over-b{box-shadow:-5px -5px 0 var(--acc2)} .bk.over-a{box-shadow:5px 5px 0 var(--acc2)}
+    [contenteditable]{outline:1px dotted var(--mut);border-radius:4px;cursor:text}
+    .note-txt{min-height:60px;white-space:pre-wrap;font-size:14px;line-height:1.5}
+    .editing .note-txt:empty::before{content:'Saisissez votre texte…';color:var(--mut)}
+    .kpi{position:relative} .kpi-x{position:absolute;top:4px;right:4px;padding:0 6px!important;font-size:11px}
+    .addwrap{position:relative;display:inline-block}
+    #addm{position:absolute;right:0;top:115%;z-index:5;background:var(--card);border:1px solid var(--line);border-radius:8px;padding:6px;min-width:280px;max-height:70vh;overflow:auto;box-shadow:0 8px 24px rgba(0,0,0,.3)}
+    #addm button{display:block;width:100%;text-align:left;border-radius:6px;margin:2px 0} #addm p{margin:6px;color:var(--mut)}
+    .toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:var(--card);border:1px solid var(--acc);border-radius:8px;padding:8px 16px;z-index:60}
+    .pres{position:fixed;inset:0;z-index:50;background:var(--bg);display:flex;flex-direction:column;justify-content:center;padding:4vh 5vw;cursor:pointer}
+    .pres .bk{font-size:17px;max-height:88vh;overflow:auto;outline:none} .pres .bk-t{font-size:28px;padding-right:0;margin-bottom:18px}
+    .pres .scroll{max-height:none} .pres .kpi b{font-size:38px} .pres svg{max-height:62vh} .pres svg[style*="height"]{height:52vh!important}
+    .pres svg[width="220"]{width:340px;height:340px} .pres td{max-width:900px}
+    .pres-f{position:fixed;bottom:12px;right:22px;color:var(--mut);font-size:12px}
+    @media print{
+      *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+      header.top{position:static} .tb,.bk-tools,.kpi-x,.toast{display:none!important}
+      .scroll{max-height:none;overflow:visible} .bk{break-inside:avoid} td{white-space:normal}
+    }
+  `;
+
+  // Moteur de la page exportée (sérialisé par toString : aucune variable extérieure ici).
+  function btExportApp(){
+    var D = document, dirty = false, data = {};
+    function $(s, r){ return (r || D).querySelector(s); }
+    function $$(s, r){ return Array.prototype.slice.call((r || D).querySelectorAll(s)); }
+    try { data = JSON.parse($('#bt-data').textContent); } catch(e){}
+    var grid = $('#grid'), WS = [2, 3, 4, 6], WL = { 2: '⅓', 3: '½', 4: '⅔', 6: 'Pleine' };
+    function el(tag, cls, text){ var e = D.createElement(tag); if (cls) e.className = cls; if (text !== undefined) e.textContent = text; return e; }
+    function btn(label, title, fn, cls){ var b = el('button', cls, label); b.type = 'button'; if (title) b.title = title; b.onclick = function(ev){ ev.stopPropagation(); fn(b); }; return b; }
+    function editing(){ return D.body.classList.contains('editing'); }
+    function touch(){ dirty = true; }
+    function toast(m){ var t = el('div', 'toast', m); D.body.appendChild(t); setTimeout(function(){ t.remove(); }, 3500); }
+    function name(bk){ var t = $('.bk-t', bk); return (t ? t.textContent.trim() : '') || 'Encart'; }
+    function fileBase(){ return 'Biblio-Tech tableau de bord ' + (data.from || '') + ' au ' + (data.to || ''); }
+    function save(blob, fname){
+      var a = el('a'); a.href = URL.createObjectURL(blob); a.download = fname.replace(/[\\\/:*?"<>|\u0000-\u001f]+/g, '-').slice(0, 150);
+      D.body.appendChild(a); a.click(); setTimeout(function(){ URL.revokeObjectURL(a.href); a.remove(); }, 2000);
+    }
+
+    // --- outils de chaque encart ---
+    function tools(bk){
+      $$('.bk-tools', bk).forEach(function(t){ t.remove(); });
+      $$('.kpi-x', bk).forEach(function(t){ t.remove(); });
+      var t = el('div', 'bk-tools'), g = el('span', 'bk-grip ed', '⠿');
+      g.title = 'Glisser pour déplacer l\'encart';
+      g.onmousedown = function(){ bk.draggable = true; };
+      t.appendChild(g);
+      t.appendChild(btn('↔ ' + WL[bk.getAttribute('data-w')], 'Largeur de l\'encart (⅓, ½, ⅔, pleine)', function(b){
+        var w = WS[(WS.indexOf(+bk.getAttribute('data-w')) + 1) % WS.length]; bk.setAttribute('data-w', w); b.textContent = '↔ ' + WL[w]; touch(); }, 'ed'));
+      if ($('.bk-b svg, .bk-b .row', bk)) t.appendChild(btn('PNG', 'Enregistrer en image (pour PowerPoint)', function(){ png(bk); }));
+      if ($('.bk-b table, .bk-b .row, .bk-b .kpi', bk)) t.appendChild(btn('CSV', 'Enregistrer les données de l\'encart (Excel, Power BI)', function(){ csv(bk); }));
+      t.appendChild(btn('✕', 'Retirer l\'encart (il reste disponible dans « + Ajouter »)', function(){
+        if (bk.classList.contains('bk-note')) bk.remove(); else bk.hidden = true; touch(); }, 'ed'));
+      bk.insertBefore(t, bk.firstChild);
+      $$('.kpi', bk).forEach(function(k){ k.appendChild(btn('✕', 'Retirer cet indicateur', function(){ k.hidden = true; touch(); }, 'kpi-x ed')); });
+    }
+
+    // --- glisser-déposer (poignée ⠿) ---
+    var dragged = null;
+    function clearOver(){ $$('.over-a,.over-b').forEach(function(b){ b.classList.remove('over-a', 'over-b'); }); }
+    grid.addEventListener('dragstart', function(e){
+      var b = e.target.closest && e.target.closest('.bk');
+      if (!b || !editing()) { e.preventDefault(); return; }
+      dragged = b; b.classList.add('drag'); e.dataTransfer.effectAllowed = 'move';
+      try { e.dataTransfer.setData('text/plain', b.getAttribute('data-id')); } catch(x){}
+    });
+    grid.addEventListener('dragend', function(){ if (dragged) { dragged.classList.remove('drag'); dragged.draggable = false; } dragged = null; clearOver(); });
+    function target(e){
+      var b = e.target.closest && e.target.closest('.bk'); if (!b || b === dragged || b.parentNode !== grid) return null;
+      var r = b.getBoundingClientRect();
+      return { b: b, after: (e.clientX - r.left) / r.width + (e.clientY - r.top) / r.height > 1 };
+    }
+    grid.addEventListener('dragover', function(e){
+      if (!dragged) return; e.preventDefault(); clearOver();
+      var t = target(e); if (t) t.b.classList.add(t.after ? 'over-a' : 'over-b');
+    });
+    grid.addEventListener('drop', function(e){
+      if (!dragged) return; e.preventDefault();
+      var t = target(e); clearOver();
+      if (t) { grid.insertBefore(dragged, t.after ? t.b.nextSibling : t.b); touch(); }
+    });
+    grid.addEventListener('input', touch);
+    D.addEventListener('mouseup', function(){ if (!dragged) $$('.bk[draggable=true]').forEach(function(b){ b.draggable = false; }); });
+
+    // --- mode édition ---
+    var bEdit, bAdd, bTheme, menu = null;
+    function setEdit(on){
+      D.body.classList.toggle('editing', on);
+      bEdit.textContent = on ? '✓ Terminer la mise en page' : '✎ Modifier la mise en page';
+      $$('.bk-t, #ttl, .note-txt').forEach(function(e){ if (on) e.setAttribute('contenteditable', 'plaintext-only'); else e.removeAttribute('contenteditable'); });
+      if (!on) closeMenu();
+    }
+    function closeMenu(){ if (menu) { menu.remove(); menu = null; } }
+    function openMenu(){
+      if (menu) { closeMenu(); return; }
+      menu = el('div'); menu.id = 'addm';
+      menu.appendChild(btn('📝 Note de texte libre', 'Encart de commentaire ou de conclusion', function(){
+        var s = el('section', 'bk card bk-note'); s.setAttribute('data-id', 'note-' + Date.now()); s.setAttribute('data-w', '6');
+        var h = el('h2', 'bk-t', 'Note'), b = el('div', 'bk-b'), tx = el('div', 'note-txt');
+        b.appendChild(tx); s.appendChild(h); s.appendChild(b); grid.insertBefore(s, grid.firstChild.nextSibling);
+        tools(s); setEdit(true); touch(); closeMenu(); tx.focus(); s.scrollIntoView({ block: 'center' });
+      }));
+      var hb = $$('.bk[hidden]'), hk = $$('.kpi[hidden]');
+      menu.appendChild(el('p', '', hb.length || hk.length ? 'Encarts retirés :' : 'Aucun encart retiré.'));
+      hb.forEach(function(b){ menu.appendChild(btn('＋ ' + name(b), 'Réafficher cet encart', function(){ b.hidden = false; touch(); closeMenu(); b.scrollIntoView({ block: 'center' }); })); });
+      hk.forEach(function(k){ var l = $('span', k); menu.appendChild(btn('＋ Indicateur : ' + (l ? l.textContent : ''), 'Réafficher cet indicateur', function(){ k.hidden = false; touch(); closeMenu(); })); });
+      bAdd.parentNode.appendChild(menu);
+    }
+    D.addEventListener('click', function(e){ if (menu && !e.target.closest('.addwrap')) closeMenu(); });
+
+    // --- thème (auto / clair / sombre), conservé à l'enregistrement ---
+    var TH = ['', 'light', 'dark'], THL = { '': 'Auto', light: 'Clair', dark: 'Sombre' };
+    function themeLabel(){ bTheme.textContent = '◐ Thème : ' + THL[D.documentElement.getAttribute('data-theme') || '']; }
+
+    // --- enregistrer la page avec sa mise en page ---
+    function savePage(){
+      var was = editing(); if (was) setEdit(false); closeMenu();
+      var html = '<!doctype html>\n' + D.documentElement.outerHTML;
+      if (was) setEdit(true);
+      save(new Blob([html], { type: 'text/html;charset=utf-8' }), fileBase() + ' (mise en page).html');
+      dirty = false; toast('Page enregistrée dans Téléchargements : rouvrez ce nouveau fichier pour retrouver la mise en page.');
+    }
+    window.addEventListener('beforeunload', function(e){ if (dirty) { e.preventDefault(); e.returnValue = ''; } });
+
+    // --- présentation : un encart par écran ---
+    function present(){
+      var list = $$('.bk').filter(function(b){ return !b.hidden; }); if (!list.length) return;
+      if (editing()) setEdit(false);
+      var ov = el('div', 'pres'), i = 0;
+      function show(){
+        ov.innerHTML = ''; var c = list[i].cloneNode(true);
+        $$('.bk-tools,.kpi-x', c).forEach(function(x){ x.remove(); });
+        c.removeAttribute('draggable');
+        ov.appendChild(c); ov.appendChild(el('div', 'pres-f', (i + 1) + ' / ' + list.length + '  ·  ← → ou clic pour naviguer  ·  Échap pour quitter'));
+      }
+      function go(n){ i = Math.max(0, Math.min(list.length - 1, n)); show(); }
+      function key(e){
+        if (e.key === 'ArrowRight' || e.key === 'PageDown' || e.key === ' ' || e.key === 'Enter') { go(i + 1); e.preventDefault(); }
+        else if (e.key === 'ArrowLeft' || e.key === 'PageUp' || e.key === 'Backspace') { go(i - 1); e.preventDefault(); }
+        else if (e.key === 'Home') go(0); else if (e.key === 'End') go(list.length - 1);
+        else if (e.key === 'Escape') close();
+      }
+      function fsc(){ if (!D.fullscreenElement && ov.isConnected) close(); }
+      function close(){
+        D.removeEventListener('keydown', key); D.removeEventListener('fullscreenchange', fsc); ov.remove();
+        if (D.fullscreenElement && D.exitFullscreen) D.exitFullscreen().catch(function(){});
+      }
+      ov.onclick = function(e){ if (e.target.closest('a')) return; go(i + 1 < list.length ? i + 1 : 0); };
+      D.addEventListener('keydown', key);
+      D.body.appendChild(ov); show();
+      if (ov.requestFullscreen) ov.requestFullscreen().then(function(){ D.addEventListener('fullscreenchange', fsc); }, function(){});
+    }
+
+    // --- image PNG d'un encart (graphique SVG ou liste à barres) ---
+    function fg(){ return getComputedStyle(D.body).color; }
+    function canvasOut(cv, bk){ try { cv.toBlob(function(b){ if (b) save(b, name(bk) + '.png'); else toast('Image impossible.'); }, 'image/png'); } catch(e){ toast('Image impossible : ' + e.message); } }
+    function png(bk){
+      var pad = 20, bg = getComputedStyle(bk).backgroundColor, cv = el('canvas'), x = cv.getContext('2d'), s = 2;
+      var sv = $('.bk-b svg', bk);
+      if (!sv) return pngRows(bk);
+      var r = sv.getBoundingClientRect(), k = sv.cloneNode(true), o = $$('*', sv), c = $$('*', k);
+      // Les couleurs viennent de variables CSS : on les fige dans l'image.
+      o.forEach(function(e, i){
+        var cs = getComputedStyle(e), t = c[i];
+        if (e.tagName === 'text') { t.setAttribute('fill', cs.fill); t.setAttribute('font-size', cs.fontSize); t.setAttribute('font-family', 'Segoe UI, sans-serif'); t.removeAttribute('style'); }
+        else if (e.tagName === 'line') { t.setAttribute('stroke', cs.stroke); t.removeAttribute('style'); }
+      });
+      k.setAttribute('xmlns', 'http://www.w3.org/2000/svg'); k.setAttribute('width', r.width); k.setAttribute('height', r.height); k.removeAttribute('style');
+      var leg = $$('.bk-b i', bk).filter(function(i){ return i.style.background; }).map(function(i){ return { c: getComputedStyle(i).backgroundColor, t: i.parentNode.textContent.replace(/\s+/g, ' ').trim() }; });
+      var Wd = Math.max(Math.ceil(r.width) + 2 * pad, 480), lines = [], row = [], lx = 0;
+      x.font = '13px Segoe UI, sans-serif';
+      leg.forEach(function(L){ var w = 36 + x.measureText(L.t).width; if (lx + w > Wd - 2 * pad && row.length) { lines.push(row); row = []; lx = 0; } row.push({ L: L, x: lx }); lx += w; });
+      if (row.length) lines.push(row);
+      var top = pad + 32, Ht = top + Math.ceil(r.height) + (lines.length ? 14 + lines.length * 22 : 0) + pad;
+      cv.width = Wd * s; cv.height = Ht * s; x.scale(s, s);
+      x.fillStyle = bg; x.fillRect(0, 0, Wd, Ht);
+      x.fillStyle = fg(); x.font = '600 16px Segoe UI, sans-serif'; x.fillText(name(bk), pad, pad + 16);
+      var img = new Image();
+      img.onload = function(){
+        x.drawImage(img, pad, top, r.width, r.height);
+        x.font = '13px Segoe UI, sans-serif';
+        lines.forEach(function(rw, li){ var y = top + r.height + 14 + li * 22;
+          rw.forEach(function(it){ x.fillStyle = it.L.c; x.fillRect(pad + it.x, y + 2, 12, 12); x.fillStyle = fg(); x.fillText(it.L.t, pad + it.x + 18, y + 12); }); });
+        canvasOut(cv, bk);
+      };
+      img.onerror = function(){ toast('Image impossible.'); };
+      img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(new XMLSerializer().serializeToString(k));
+    }
+    function pngRows(bk){
+      var rows = $$('.bk-b .row', bk).map(function(rw){ return { k: (rw.firstElementChild || rw).textContent.trim(), n: +(($('.num', rw) || {}).textContent || 0) }; });
+      if (!rows.length) return;
+      var pad = 20, s = 2, Wd = 820, lw = 380, rh = 28, top = pad + 36, Ht = top + rows.length * rh + pad, max = Math.max.apply(null, rows.map(function(r){ return r.n; })) || 1;
+      var cv = el('canvas'), x = cv.getContext('2d'), acc = getComputedStyle($('.bar', bk) || bk).backgroundColor;
+      cv.width = Wd * s; cv.height = Ht * s; x.scale(s, s);
+      x.fillStyle = getComputedStyle(bk).backgroundColor; x.fillRect(0, 0, Wd, Ht);
+      x.fillStyle = fg(); x.font = '600 16px Segoe UI, sans-serif'; x.fillText(name(bk), pad, pad + 16);
+      x.font = '13px Segoe UI, sans-serif';
+      rows.forEach(function(r, i){
+        var y = top + i * rh, t = r.k;
+        while (t.length > 3 && x.measureText(t).width > lw - 10) t = t.slice(0, -2);
+        if (t !== r.k) t = t.replace(/.$/, '…');
+        x.fillStyle = fg(); x.fillText(t, pad, y + 15);
+        x.fillStyle = acc; x.fillRect(pad + lw, y + 6, Math.max(3, (Wd - 2 * pad - lw - 50) * r.n / max), 10);
+        x.fillStyle = fg(); x.textAlign = 'right'; x.fillText(String(r.n), Wd - pad, y + 15); x.textAlign = 'left';
+      });
+      canvasOut(cv, bk);
+    }
+
+    // --- CSV d'un encart (« ; » + BOM : ouverture directe dans Excel FR) ---
+    function cell(v){
+      v = String(v === null || v === undefined ? '' : v).replace(/\s+/g, ' ').trim();
+      if (/^[=+\-@]/.test(v)) v = '\'' + v;     // pas de formule exécutée à l'ouverture
+      return /[";]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v;
+    }
+    function csv(bk){
+      var rows = [], tb = $('.bk-b table', bk);
+      if (tb) $$('tr', tb).forEach(function(tr, i){
+        var r = $$('th,td', tr).map(function(c){ return c.textContent; }), a = $('a[href]', tr);
+        r.push(i === 0 ? 'Lien' : (a ? a.href : '')); rows.push(r); });
+      else if ($('.bk-b .row', bk)) { rows.push(['Libellé', 'Valeur', 'Lien']);
+        $$('.bk-b .row', bk).forEach(function(rw){ var a = $('a[href]', rw); rows.push([(rw.firstElementChild || rw).textContent, ($('.num', rw) || {}).textContent, a ? a.href : '']); }); }
+      else { rows.push(['Indicateur', 'Valeur', 'Détail']);
+        $$('.bk-b .kpi', bk).filter(function(k){ return !k.hidden; }).forEach(function(k){ rows.push([($('span', k) || {}).textContent, ($('b', k) || {}).textContent, ($('small', k) || {}).textContent]); }); }
+      save(new Blob(['﻿' + rows.map(function(r){ return r.map(cell).join(';'); }).join('\r\n')], { type: 'text/csv;charset=utf-8' }), name(bk) + '.csv');
+    }
+
+    // --- barre d'outils ---
+    var tb = $('#tb'); tb.innerHTML = '';
+    bEdit = btn('', 'Déplacer (poignée ⠿), redimensionner, retirer ou ajouter des encarts ; cliquer un titre pour le renommer', function(){ setEdit(!editing()); }, 'pri');
+    var wrap = el('span', 'addwrap ed'); bAdd = btn('+ Ajouter ▾', 'Réafficher un encart retiré ou ajouter une note', openMenu); wrap.appendChild(bAdd);
+    bTheme = btn('', 'Thème de la page (Auto suit Windows)', function(){
+      var h = D.documentElement, c = TH[(TH.indexOf(h.getAttribute('data-theme') || '') + 1) % TH.length];
+      if (c) h.setAttribute('data-theme', c); else h.removeAttribute('data-theme'); themeLabel(); touch(); });
+    [bEdit, wrap,
+     btn('💾 Enregistrer la page', 'Télécharger cette page avec sa mise en page (nouveau fichier .html)', savePage),
+     btn('▶ Présenter', 'Un encart par écran, en plein écran', present),
+     btn('🖨 Imprimer / PDF', 'Imprimer ou enregistrer en PDF (choisir « Microsoft Print to PDF »)', function(){ setEdit(false); window.print(); }),
+     btn('⬇ Données (JSON)', 'Toutes les données du tableau de bord (import Power BI : Obtenir des données > JSON)', function(){
+       save(new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' }), fileBase() + ' (données).json'); }),
+     bTheme].forEach(function(b){ tb.appendChild(b); });
+    $$('.bk').forEach(tools);
+    $$('[contenteditable]').forEach(function(e){ e.removeAttribute('contenteditable'); });
+    D.body.classList.remove('editing'); setEdit(false); themeLabel();
+  }
+
   run();
   return 'ok';
 })(__P__)
@@ -655,6 +970,29 @@ function Export-BtDashboardExcel {
     }
 }
 
+# Page HTML autonome construite par le tableau de bord (« de|à|<html> ») -> Téléchargements.
+function Export-BtDashboardHtml {
+    param($Ctx, [string]$Msg)
+    $say = { param($t) try { [void]$script:Ctx.Dash.WebView.CoreWebView2.ExecuteScriptAsync("document.getElementById('st').textContent = " + (ConvertTo-Json ([string]$t))) } catch { } }
+    try {
+        # Dates au format strict (elles entrent dans le NOM du fichier : pas de « ..\ »).
+        if ($Msg -notmatch '^(\d{4}-\d{2}-\d{2})\|(\d{4}-\d{2}-\d{2})\|') { throw 'période invalide' }
+        $from = $Matches[1]; $to = $Matches[2]; $html = $Msg.Substring(22)
+        if (-not $html.StartsWith('<!doctype html>') -or $html.Length -gt 40MB) { throw 'contenu inattendu' }
+        $dir = $null
+        try { $dir = (New-Object -ComObject Shell.Application).NameSpace('shell:Downloads').Self.Path } catch { }
+        if (-not $dir -or -not (Test-Path $dir)) { $dir = [Environment]::GetFolderPath('MyDocuments') }
+        $path = Join-Path $dir ("Biblio-Tech tableau de bord {0} au {1} ({2}).html" -f $from, $to, (Get-Date -Format 'yyyy-MM-dd HH\hmm'))
+        [IO.File]::WriteAllText($path, $html, (New-Object System.Text.UTF8Encoding($false)))
+        Write-BtLog "[DASH] Export HTML -> $path ($([Math]::Round($html.Length / 1KB)) Ko)"
+        & $say "Page HTML enregistrée : $path"
+        try { Start-Process -FilePath $path } catch { }
+    } catch {
+        Write-BtLog "[DASH] Export HTML KO : $($_.Exception.Message)"
+        & $say "Export HTML impossible : $($_.Exception.Message)"
+    }
+}
+
 function Show-BtDashboard {
     param($Ctx)
     if ($Ctx.Demo) { Show-BtFlash $Ctx 'Tableau de bord indisponible en mode démonstration.'; return }
@@ -691,6 +1029,7 @@ function Show-BtDashboard {
                 if ($src -ne $script:Ctx.ConfHost) { Write-BtLog "[SECU] Message web ignoré (origine $src)."; return }
                 $m = ''; try { $m = [string]$b.TryGetWebMessageAsString() } catch { }
                 if ($m.StartsWith('EXPORT:')) { Export-BtDashboardExcel $script:Ctx $m.Substring(7) }
+                elseif ($m.StartsWith('EXPORTHTML:')) { Export-BtDashboardHtml $script:Ctx $m.Substring(11) }
                 elseif ($m) {
                     # Une ligne de journal, bornée : pas d'injection de fausses lignes.
                     $m = ($m -replace '[\r\n\x00-\x1F]', ' ')
@@ -706,7 +1045,7 @@ function Show-BtDashboard {
                 try { $s.NavigateToString('<body style="background:#0F172A;color:#E2E8F0;font:14px Segoe UI;padding:40px">Connexion à Confluence requise : connectez-vous depuis la fenêtre principale de Biblio-Tech puis rouvrez le tableau de bord.</body>') } catch { }
                 return
             }
-            $p = @{ base = $c.Config.BaseUrl.TrimEnd('/'); space = [string]$c.Config.SpaceKey; max = [int]$c.Config.DashMaxComments } | ConvertTo-Json -Compress
+            $p = @{ base = $c.Config.BaseUrl.TrimEnd('/'); space = [string]$c.Config.SpaceKey; max = [int]$c.Config.DashMaxComments; ver = [string]$c.Config.Version } | ConvertTo-Json -Compress
             try { [void]$s.CoreWebView2.ExecuteScriptAsync($script:BtDashJs.Replace('__P__', $p)) } catch { Write-BtLog "[DASH] Injection KO : $($_.Exception.Message)" }
         })
         $win.Add_Closing({ param($s, $e) if (-not $script:Ctx.Quitting) { $e.Cancel = $true; $s.Hide() } })

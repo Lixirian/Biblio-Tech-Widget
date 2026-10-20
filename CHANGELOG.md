@@ -1,5 +1,24 @@
 # Historique des versions
 
+## 1.1.22 — 2026-10-20
+
+- **Export « page HTML » du tableau de bord** (bouton `#ht`) : `exportHtml()` (BtDashboard) clone les
+  encarts déjà rendus (indicateurs + chaque `.card`), les nettoie (`san()` : retrait des
+  `script`/`iframe`/`foreignObject`…, des attributs `on*`, liens limités à `https://`), et
+  assemble un fichier unique : CSS du tableau de bord (palettes `VD`/`VL` désormais en variables,
+  thème forçable par `data-theme`), `EXPORT_CSS`, données `last` en JSON (`<` échappé) et le
+  moteur `btExportApp` (sérialisé par `toString()`). CSP en `<meta>` : aucun accès réseau.
+- Le WebView du tableau de bord bloquant les téléchargements, la page part vers l'hôte
+  (`EXPORTHTML:<de>|<à>|<html>`) : `Export-BtDashboardHtml` vérifie l'origine (gestionnaire
+  existant), valide les dates (nom de fichier), écrit dans Téléchargements (UTF-8) et l'ouvre.
+- Page exportée : mode édition (poignée ⠿ de glisser-déposer, largeur ⅓ / ½ / ⅔ / pleine,
+  retrait et réajout via « + Ajouter », indicateurs retirables un à un, titres et notes en
+  `contenteditable="plaintext-only"`), « Enregistrer la page » (nouveau .html avec la mise en
+  page), « Présenter » (plein écran, flèches / Échap), PNG (SVG aux couleurs figées ou listes à
+  barres redessinées sur canvas), CSV par encart (`;` + BOM, formules neutralisées), JSON
+  complet, impression / PDF. Testé hors réseau sur un banc d'essai (réponses Confluence simulées,
+  titre piégé `<img onerror>` bien échappé).
+
 ## 1.1.21 — 2026-10-20
 
 - **Barres de titre au thème** : les fenêtres à cadre Windows standard (tableau de bord, lecteur,

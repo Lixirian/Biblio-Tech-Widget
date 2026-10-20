@@ -55,6 +55,8 @@ BiblioTech-Widget-PS/
   lib/BtHome.ps1        accueil en TUILES (page HomePageId) : accès rapides + rubriques
                         (sous-pages lues dans Confluence), tuiles animées, pile de navigation
   lib/BtDashboard.ps1   tableau de bord (page injectée dans une origine Confluence) + export Excel (COM)
+                        + export « page HTML » autonome (exportHtml / btExportApp -> message
+                        EXPORTHTML: -> Export-BtDashboardHtml écrit dans Téléchargements)
 launcher/               bootstrap.ps1 + Biblio-Tech.vbs ; livrés dans chaque zip et copiés dans
                         %LOCALAPPDATA%\…\launcher : les raccourcis y pointent -> MAJ / réparation
                         auto à chaque lancement
