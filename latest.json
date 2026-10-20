@@ -1,12 +1,11 @@
 {
-    "version":  "1.1.11",
-    "zip":  "BiblioTech-Widget_version1.1.11.zip",
-    "url":  "https://github.com/Lixirian/Biblio-Tech-Widget/releases/download/v1.1.11/BiblioTech-Widget_version1.1.11.zip",
-    "sha256":  "0059B19F5175355BE0911CA778C0A14E21ABFD5F5C2C67DF6755A535577A06A6",
+    "version":  "1.1.12",
+    "zip":  "BiblioTech-Widget_version1.1.12.zip",
+    "url":  "https://github.com/Lixirian/Biblio-Tech-Widget/releases/download/v1.1.12/BiblioTech-Widget_version1.1.12.zip",
+    "sha256":  "1A5FC74EEA7F4358731E36974C817D8CBE039C39E3CF0E78F1E0B68978208C86",
     "date":  "2026-10-20",
     "notes":  [
-                  "Nouvel accueil en tuiles, basé sur la page « Bienvenue dans votre Biblio-TECH » : accès rapides (dernières news, nouvelles consignes, plus commentées, mises à jour récentes) et une tuile par rubrique. Les tuiles s\u0027animent au survol et au clic, puis ouvrent la rubrique (sous-rubriques et consignes) ; retour avec la flèche ou Échap.",
-                  "Recherche : seules les consignes s\u0027affichent (plus de pièces jointes ni de billets de blog).",
-                  "Recherche à plusieurs mots (ex. « CIP CATI ») : les sigles trouvent aussi leurs formes accolées ou déclinées, pour ne plus manquer de consignes."
+                  "Tuiles de l\u0027accueil : la rubrique s\u0027ouvre immédiatement au clic (en 1.1.11 rien ne s\u0027ouvrait et l\u0027appli semblait figée).",
+                  "Connexion : une fois validée, la session SSO est conservée même si vous quittez et relancez Biblio-Tech, jusqu\u0027à son expiration (12 h au plus). Plus de validation à chaque lancement."
               ]
 }
