@@ -317,11 +317,17 @@ function New-BtWindow {
         } elseif ($e.Key -eq [System.Windows.Input.Key]::Escape) {
             $e.Handled = $true
             if ($s.Text) { $s.Text = '' }
+            elseif (-not $script:Ctx.Browse) { [void](Pop-BtHomeNav $script:Ctx) }
         }
     })
     $ui.SearchBox.Add_GotKeyboardFocus({ param($s, $e) $script:Ctx.Ui.SearchShell.BorderBrush = Get-BtBrush 'Accent' })
     $ui.SearchBox.Add_LostKeyboardFocus({ param($s, $e) $script:Ctx.Ui.SearchShell.BorderBrush = Get-BtBrush '#2B3A5C' })
     $ui.ClearBtn.Add_Click({ $script:Ctx.Ui.SearchBox.Text = ''; $script:Ctx.Ui.SearchBox.Focus() | Out-Null })
+    # Bouton « précédent » de la souris : page précédente de l'accueil en tuiles.
+    $ui.ResultsScroll.Add_PreviewMouseUp({ param($x, $e)
+        $c = $script:Ctx
+        if ($e.ChangedButton -eq [System.Windows.Input.MouseButton]::XButton1 -and -not $c.Search.ShownQuery -and -not $c.Browse) { $e.Handled = [bool](Pop-BtHomeNav $c) }
+    })
     $ui.StatusArea.Add_MouseLeftButtonUp({ if (-not $script:Ctx.Ready) { Start-BtInteractiveLogin $script:Ctx } })
     $ui.MenuBtn.Add_Click({ try { $script:Ctx.TrayMenu.Show([System.Windows.Forms.Cursor]::Position) } catch { } })
     $ui.DashBtn.Add_Click({ Show-BtDashboard $script:Ctx })
@@ -545,6 +551,7 @@ function Render-BtFilters {
         $chip.Add_MouseLeftButtonUp({ param($s, $e)
             $c = $script:Ctx
             $c.Browse = [bool]$s.Tag
+            if (-not $c.Browse) { $c.Home.Nav.Clear() }
             # On vide la recherche en cours pour afficher l'onglet choisi.
             if ($c.Ui.SearchBox.Text) { $c.Ui.SearchBox.Text = '' }
             Render-BtFilters $c
@@ -614,49 +621,8 @@ function Render-BtResults {
     # --- Onglet « Catégories » : arborescence ---
     if ($Ctx.Browse) { Render-BtCategTree $Ctx $list; return }
 
-    # --- Accueil : épinglés, recherches récentes, aperçu (plus commentées, nouvelles
-    #     fiches), dernières mises à jour ---
-    $pins = @($Ctx.State.Pins)
-    if ($pins.Count) {
-        [void]$list.Children.Add((New-BtSectionHeader 'Épinglés' ([string][char]0xE840)))
-        foreach ($p in $pins) {
-            $it = [pscustomobject]@{ id = $p.id; type = $p.type; title = $p.title; excerpt = ''; url = $p.url; space = $p.space; parent = ''; modified = ''; friendly = ''; author = ''; labels = @() }
-            [void]$list.Children.Add((New-BtResultCard $Ctx $it))
-        }
-    }
-    $hist = @($Ctx.State.History)
-    if ($hist.Count) {
-        $h = New-BtSectionHeader 'Recherches récentes' ([string][char]0xE81C)
-        $clr = New-Object System.Windows.Controls.Button
-        $clr.Style = $Ctx.Window.Resources['LinkBtn']
-        $clr.Content = 'Effacer'
-        $clr.Margin = New-BtThickness 8 -3 0 0
-        $clr.Add_Click({ Invoke-BtAction $script:Ctx 'clearHistory' })
-        [void]$h.Children.Add($clr)
-        [void]$list.Children.Add($h)
-        $wp = New-Object System.Windows.Controls.WrapPanel
-        foreach ($hq in ($hist | Select-Object -First 10)) {
-            $chip = New-BtChip $hq $false $hq ([string][char]0xE81C)
-            $chip.Add_MouseLeftButtonUp({ param($x, $e)
-                $script:Ctx.Ui.SearchBox.Text = [string]$x.Tag
-                $script:Ctx.Ui.SearchBox.CaretIndex = $script:Ctx.Ui.SearchBox.Text.Length
-                $script:Ctx.Search.DebounceAt = $null
-                Request-BtSearch $script:Ctx ([string]$x.Tag) 0 'search' -Force
-            })
-            [void]$wp.Children.Add($chip)
-        }
-        [void]$list.Children.Add($wp)
-    }
-    Render-BtHomeOverview $Ctx $list
-    $label =if (-not $Ctx.Config.SpaceKey) { 'Mis à jour récemment · Biblio-Tech' } elseif ($Ctx.SpaceName) { "Mis à jour récemment · $($Ctx.SpaceName)" } else { "Mis à jour récemment · $($Ctx.Config.SpaceKey)" }
-    [void]$list.Children.Add((New-BtSectionHeader $label ([string][char]0xE823)))
-    if ($s.RecentError) {
-        [void]$list.Children.Add((New-BtMessageCard $Ctx ([string][char]0xE783) 'Chargement impossible' $s.RecentError 'Réessayer' 'retry' 'Error'))
-    } elseif (@($s.Recent).Count) {
-        foreach ($it in @($s.Recent)) { [void]$list.Children.Add((New-BtResultCard $Ctx $it)) }
-    } elseif ($Ctx.Ready -or $busy) {
-        for ($i = 0; $i -lt 3; $i++) { [void]$list.Children.Add((New-BtSkeletonCard)) }
-    }
+    # --- Accueil en tuiles (lib\BtHome.ps1) : accès rapides, rubriques, épinglés ---
+    Render-BtHome $Ctx $list
 }
 
 # --- Icône de notification + menu (partagé avec le bouton « … ») --------------

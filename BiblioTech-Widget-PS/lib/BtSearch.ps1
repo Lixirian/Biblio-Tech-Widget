@@ -35,7 +35,7 @@ function Get-BtCql {
     if ($Ctx.Config.SpaceKey -and ($Recent -or $st.Scope -ne 'all')) {
         $parts.Add(('space = "{0}"' -f (ConvertTo-BtCqlString $Ctx.Config.SpaceKey)))
     }
-    if ($Recent) { $types = @('page', 'blogpost') }
+    if ($Recent) { $types = @('page') }
     else {
         $types = switch ($st.Type) {
             'page'       { @('page') }
@@ -197,7 +197,7 @@ function Get-BtSearchKickJS {
         base      = $Ctx.Config.BaseUrl.TrimEnd('/')
         cql       = $Cql
         titleCql  = $TitleCql
-        titleLimit = 50
+        titleLimit = 100
         q         = $Query
         start     = $Start
         limit     = [int]$Ctx.Config.PageSize
@@ -271,7 +271,7 @@ function Get-BtDemoResult {
     $q = if ($Query) { $Query } else { 'procédure' }
     $titles = @("Procédure $h$q$e - poste de travail", "FAQ : $h$q$e et VPN", "Guide de dépannage $h$q$e",
         "Note technique - $h$q$e Office 365", "Modèle de compte rendu d'incident", "Inventaire des applications métiers")
-    $types = @('page', 'page', 'blogpost', 'attachment', 'page', 'page')
+    $types = @('page', 'page', 'page', 'page', 'page', 'page')
     $items = for ($i = 0; $i -lt 6; $i++) {
         [pscustomobject]@{
             id = [string](1000 + $Start + $i); type = $types[$i]; title = $titles[$i]

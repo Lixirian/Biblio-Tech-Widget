@@ -146,8 +146,12 @@ function Resolve-BtQuery {
         $v = New-Object System.Collections.Generic.List[string]
         $v.Add($w)
         if ($script:BtSynonyms.Contains($w)) { foreach ($s in $script:BtSynonyms[$w]) { $v.Add($s) } }
+        # Mot long : variante « racine* ». Sigle / mot court (« CIP », « CATI ») : variante
+        # « cip* » pour retrouver aussi les formes accolées ou déclinées (CIP2, CATIs,
+        # CIP_CATI…), qu'un ET strict sur le mot exact laissait de côté.
         $stem = Get-BtStem $w
         if ($stem) { $v.Add($stem) }
+        elseif ($w.Length -ge 3 -and $w.Length -le 6 -and $w -match '^[\p{L}\p{Nd}]+$') { $v.Add($w + '*') }
         # Notion déjà couverte (« imprimer » puis « imprimante ») : fusion des variantes.
         $dup = $null
         foreach ($g in $groups) { if (@($g | Where-Object { $v.Contains($_) }).Count) { $dup = $g; break } }

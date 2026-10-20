@@ -1,5 +1,26 @@
 # Historique des versions
 
+## 1.1.11 — 2026-10-20
+
+- **Page d'accueil de référence** : `HomePath` = `/spaces/KM/pages/500662444/Bienvenue+dans+votre+Biblio-TECH`,
+  nouveau `HomePageId` (`500662444`) dans `config.ps1` (SSO, lien navigateur, tuile « Page d'accueil »).
+- **Accueil en tuiles** (nouveau `lib/BtHome.ps1`, l'aperçu quitte `BtBrowse.ps1`) : accès rapides
+  (dernières news = billets de l'espace de la page d'accueil, nouvelles consignes, plus commentées,
+  mises à jour récentes, page d'accueil) + une tuile par sous-page de la page d'accueil (lue via
+  `/rest/api/content/<id>/child/page`, aucune liste en dur). Survol : zoom, ombre colorée, icône
+  qui pivote, flèche ; clic : enfoncement puis rebond, la « page suivante » s'ouvre à la fin de
+  l'animation (glissement + fondu). Rubrique : sous-rubriques en tuiles, consignes en cartes ;
+  sans sous-page -> lecteur. Retour : ←, Échap, bouton précédent de la souris, onglet Accueil.
+  Les longues listes (mises à jour récentes, aperçus) passent derrière leurs tuiles.
+- **Recherche = consignes** : `ContentTypes = @('page')` ; « récents » sans blogs ; une pièce
+  jointe remontée par le repli DOM est écartée ; les plus commentées ne comptent que les pages.
+- **« CIP CATI »** : chaque sigle/mot court (3 à 6 car.) reçoit la variante `mot*`
+  (`(text ~ "cip" OR text ~ "cip*") AND (text ~ "cati" OR text ~ "cati*")`) ; bloc « titre »
+  porté à 100 fiches. Hypothèses principales (non vérifiables hors réseau) : formes accolées
+  (CIP2, CIP_CATI…) et pièces jointes qui occupaient la 1re page. À confirmer avec le journal
+  `[SEARCH]` sur le terrain.
+- Mode démo : rubriques/news fictives ; `BT_TEST_TILE=<n>` ouvre la n-ième rubrique.
+
 ## 1.1.10 — 2026-10-16
 
 - **Épinglage dans la barre des tâches** : Windows épinglait le processus (powershell.exe,

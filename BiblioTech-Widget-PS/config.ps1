@@ -7,7 +7,7 @@
 $Config = @{
     # Version de l'application. À INCRÉMENTER à chaque publication (build-release.ps1
     # lit cette valeur pour nommer le zip, la release GitHub et latest.json).
-    Version            = '1.1.10'
+    Version            = '1.1.11'
 
     # ----- Confluence -----
     # URL de l'instance (sans slash final).
@@ -15,15 +15,20 @@ $Config = @{
     # Vide = recherche dans tout Biblio-Tech. Une clé d'espace (ex. 'KM') ajoute un
     # filtre « Espace <clé> » et limite l'accueil « Mis à jour récemment » à cet espace.
     SpaceKey           = ''
-    # Page d'accueil Biblio-Tech : atterrissage du SSO au démarrage et lien
-    # « Ouvrir Biblio-Tech dans le navigateur ».
-    HomePath           = '/'
+    # Page d'accueil Biblio-Tech (« Bienvenue dans votre Biblio-TECH ») : atterrissage du
+    # SSO au démarrage, lien « Ouvrir Biblio-Tech dans le navigateur » et tuile « Page d'accueil ».
+    HomePath           = '/spaces/KM/pages/500662444/Bienvenue+dans+votre+Biblio-TECH'
+    # Identifiant de cette page : ses sous-pages deviennent les tuiles « Rubriques » de
+    # l'accueil, et les « Dernières news » sont les billets de blog de son espace.
+    HomePageId         = '500662444'
     # Domaines autorisés pour le SSO Windows intégré (Kerberos/Negotiate).
     AuthAllowlist      = '*.sncf.fr'
 
     # ----- Recherche -----
-    # Types de contenu remontés par défaut (filtre « Tout »).
-    ContentTypes       = @('page', 'blogpost', 'attachment')
+    # Types de contenu remontés par la recherche : les CONSIGNES (pages) uniquement.
+    # Pièces jointes, billets de blog, commentaires… sont exclus (outil de recherche de
+    # consignes, pas de fichiers). Les news restent accessibles par la tuile de l'accueil.
+    ContentTypes       = @('page')
     PageSize           = 20      # résultats par page (« Afficher plus » charge la suite)
     CategScanMax       = 8000    # index local des catégories : nb max de fiches (parcours complet hebdomadaire)
     DashMaxComments    = 5000    # tableau de bord : nb max de commentaires chargés par plage de dates

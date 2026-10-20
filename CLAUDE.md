@@ -6,7 +6,8 @@ Guidance pour Claude Code dans ce dépôt. Réponds toujours en **français**.
 
 Application fenêtrée (PowerShell 5.1 + WPF + WebView2) qui recherche, en mots-clés ou en
 langage courant, dans la base de connaissances Confluence **Biblio-Tech**
-(`https://confluence.apps.eul.sncf.fr`, accueil = racine, tout le site). Même socle que le
+(`https://confluence.apps.eul.sncf.fr`, accueil = page « Bienvenue dans votre Biblio-TECH »
+de l'espace KM, recherche sur tout le site, **consignes (pages) uniquement**). Même socle que le
 *SNOW Widget* (`..\Service now vue bureau`) — machines d'état non bloquantes, aucune donnée
 d'identification stockée — mais **volontairement en fenêtre** (pas d'AppBar) pour cohabiter
 avec lui. Distribution et mises à jour via **GitHub** (dépôt public `Lixirian/Biblio-Tech-Widget`).
@@ -49,7 +50,9 @@ BiblioTech-Widget-PS/
   lib/BtReader.ps1      lecteur intégré (WebView2) + mode lecture (CSS injecté)
   lib/BtUpdate.ps1      MAJ GitHub : latest.json, pastille, SHA-256, updater détaché
   lib/BtCategories.ps1  index LOCAL des catégories, incrémental (categories-index.json + journal)
-  lib/BtBrowse.ps1      onglet « Catégories » (arborescence) + aperçu de l'accueil
+  lib/BtBrowse.ps1      onglet « Catégories » (arborescence)
+  lib/BtHome.ps1        accueil en TUILES (page HomePageId) : accès rapides + rubriques
+                        (sous-pages lues dans Confluence), tuiles animées, pile de navigation
   lib/BtDashboard.ps1   tableau de bord (page injectée dans une origine Confluence) + export Excel (COM)
 launcher/               bootstrap.ps1 + Biblio-Tech.vbs ; livrés dans chaque zip et copiés dans
                         %LOCALAPPDATA%\…\launcher : les raccourcis y pointent -> MAJ / réparation

@@ -25,6 +25,7 @@ try { $cw = [BtNative]::GetConsoleWindow(); if ($cw -ne [IntPtr]::Zero) { [void]
 . (Join-Path $root 'lib\BtCategories.ps1')
 . (Join-Path $root 'lib\BtDashboard.ps1')
 . (Join-Path $root 'lib\BtBrowse.ps1')
+. (Join-Path $root 'lib\BtHome.ps1')
 . (Join-Path $root 'config.ps1')
 
 try { [void][BtNative]::SetCurrentProcessExplicitAppUserModelID($script:BtAppId) } catch { }
@@ -86,7 +87,11 @@ $script:Ctx = @{
                     Source = 'release'; LastCheckAt = (Get-Date); ReleaseFailLogged = $false }
     Reader     = @{ Window = $null; WebView = $null; Ui = $null; Item = $null; Url = '' }
     Categ      = @{ Probe = (New-BtProbe 'categ'); Id = ''; Manual = $false; Mode = ''; AutoAt = $null; StartedAt = $null; Index = $null; Tree = $null }
-    Home       = @{ Probe = (New-BtProbe 'home'); Id = ''; At = $null; Top = @(); Fresh = @(); Error = $null }
+    # Accueil en tuiles (lib\BtHome.ps1) : Nav = pile des « pages suivantes » ouvertes depuis
+    # les tuiles ; Kids = sous-pages des rubriques (id -> @{ Items; Error; At }).
+    Home       = @{ Probe = (New-BtProbe 'home'); Id = ''; At = $null; Top = @(); Fresh = @(); News = @(); Rubrics = @(); HomeTitle = ''; Error = $null
+                    Nav = (New-Object System.Collections.ArrayList); NavPending = $null
+                    KidProbe = (New-BtProbe 'kids'); KidId = ''; KidWant = $null; Kids = @{} }
     Browse     = $false          # onglet « Catégories » (arborescence) affiché à la place de l'accueil
     BrowseOpen = @{}             # nœuds dépliés (chemin -> $true)
     Dash       = @{ Window = $null; WebView = $null }
@@ -414,7 +419,8 @@ function Complete-BtSearch {
     if ($s.Pending -and $Job.Kind -eq 'search' -and $s.Pending.Kind -eq 'search') { return }
     switch ([string]$R.state) {
         'OK' {
-            $items = @($R.items | Where-Object { $_ })
+            # Consignes uniquement : une pièce jointe remontée par le repli DOM est écartée.
+            $items = @($R.items | Where-Object { $_ -and [string]$_.type -ne 'attachment' })
             # Langage courant : aucune fiche ne réunit toutes les notions -> relance élargie.
             $an = $s.Analysis
             if ($Job.Kind -eq 'search' -and $Job.Start -eq 0 -and -not $Job.Relaxed -and -not $items.Count -and $an -and (@($an.Groups).Count + @($an.Phrases).Count) -ge 2) {
