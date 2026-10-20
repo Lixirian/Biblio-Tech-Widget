@@ -184,8 +184,15 @@ try {
     $healthy = Test-InstallHealthy
     # Installation existante saine : délai court (lancement rapide) ; sinon on attend GitHub.
     $m = $null
-    try { $m = Get-Manifest $(if ($healthy) { 5000 } else { 20000 }) }
-    catch { L "GitHub injoignable ($($_.Exception.Message))." }
+    # AutoUpdate = $false dans la config installée : aucun contact avec GitHub (sauf réparation
+    # d'une installation abîmée ou demandée).
+    $autoOff = $false
+    try { $autoOff = [bool]((Get-Content -LiteralPath (Join-Path $appDir 'config.ps1') -Raw -Encoding UTF8) -match '(?m)^\s*AutoUpdate\s*=\s*\$false') } catch { }
+    if ($autoOff -and $healthy -and -not $Repair) { L 'Mises à jour automatiques désactivées (AutoUpdate = $false) : aucun contact avec GitHub.' }
+    else {
+        try { $m = Get-Manifest $(if ($healthy) { 5000 } else { 20000 }) }
+        catch { L "GitHub injoignable ($($_.Exception.Message))." }
+    }
     # Manifeste NON signé : une version au format inattendu est ignorée (comme hors ligne).
     if ($m -and [string]$m.version -notmatch '^\d{1,4}(\.\d{1,4}){1,3}$') { L "Manifeste ignoré (version « $($m.version) » invalide)."; $m = $null }
 

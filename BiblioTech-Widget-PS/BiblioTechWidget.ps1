@@ -570,6 +570,28 @@ $script:BtPump.Interval = [TimeSpan]::FromMilliseconds(200)
 $script:BtPump.Add_Tick({ Step-BtPump })
 $script:BtPump.Start()
 
+# Capture de test (démo uniquement) : BT_TEST_SHOT=<fichier.png> -> l'appli dessine SA PROPRE
+# fenêtre dans une image après 6 s (jamais une copie de l'écran : rien d'autre n'est capturé).
+# BT_TEST_SCROLL=<px> : défilement de la liste avant la capture.
+if ($script:Ctx.Demo -and $env:BT_TEST_SHOT) {
+    $script:BtShotTimer = New-Object System.Windows.Threading.DispatcherTimer
+    $script:BtShotTimer.Interval = [TimeSpan]::FromSeconds(6)
+    $script:BtShotTimer.Add_Tick({
+        $script:BtShotTimer.Stop()
+        try {
+            $win = $script:Ctx.Window
+            if ($env:BT_TEST_SCROLL) { $script:Ctx.Ui.ResultsScroll.ScrollToVerticalOffset([double]$env:BT_TEST_SCROLL); $win.UpdateLayout() }
+            $el = $win.Content
+            $rtb = New-Object System.Windows.Media.Imaging.RenderTargetBitmap([int]$el.ActualWidth, [int]$el.ActualHeight, 96, 96, [System.Windows.Media.PixelFormats]::Pbgra32)
+            $rtb.Render($el)
+            $enc = New-Object System.Windows.Media.Imaging.PngBitmapEncoder
+            $enc.Frames.Add([System.Windows.Media.Imaging.BitmapFrame]::Create($rtb))
+            $fs = [IO.File]::Create($env:BT_TEST_SHOT); $enc.Save($fs); $fs.Close()
+        } catch { Write-BtLog "[TEST] Capture KO : $($_.Exception.Message)" }
+    })
+    $script:BtShotTimer.Start()
+}
+
 # Arrêt automatique (tests) : BT_AUTOQUIT_SEC=n.
 if ($env:BT_AUTOQUIT_SEC) {
     $script:BtQuitTimer = New-Object System.Windows.Threading.DispatcherTimer

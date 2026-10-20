@@ -41,8 +41,14 @@ fiche ne réunit toutes les notions, il élargit tout seul.
 Elles sont automatiques, comme pour le SNOW Widget. L'application lit régulièrement
 `latest.json` sur ce dépôt. Quand une version plus récente existe, une pastille jaune
 **« Mise à jour »** apparaît dans la barre. Au clic, les nouveautés s'affichent ; après
-confirmation, le zip de la release est téléchargé et son SHA-256 vérifié. Un updater
-détaché remplace alors la copie locale puis relance l'application.
+confirmation, le zip de la release est téléchargé, son SHA-256 et sa signature vérifiés. Un
+updater détaché remplace alors la copie locale puis relance l'application.
+
+**Déploiement par le service informatique (sans mise à jour automatique)** : le zip complet
+d'une version peut être décompressé dans n'importe quel dossier (y compris en lecture seule)
+et lancé par `Start-BiblioTech.vbs`. Une copie placée hors de
+`%LOCALAPPDATA%\BiblioTech-Widget\app` (ou avec `AutoUpdate = $false` dans `config.ps1`) ne
+contacte jamais GitHub : chaque nouvelle version est redéployée par le service informatique.
 
 ## Fonctionnement technique
 

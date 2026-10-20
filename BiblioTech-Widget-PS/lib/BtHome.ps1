@@ -345,6 +345,7 @@ function Invoke-BtHomeNav {
     param($Ctx, $Target)
     $h = $Ctx.Home
     if ($Target.Kind -eq 'ext') { if ($Target.Item) { Open-BtExternal ([string]$Target.Item.url) }; return }
+    if ($Target.Kind -eq 'dashboard') { Show-BtDashboard $Ctx; return }
     if ($Target.Kind -eq 'rubric' -and $Target.Item -and [int]$Target.Item.kids -lt 0) {
         $c = $h.Kids[[string]$Target.Id]
         if ($c -and -not $c.Error -and -not @($c.Items).Count) { Open-BtReader $Ctx $Target.Item; return }
@@ -657,7 +658,8 @@ function Render-BtHome {
     [void]$List.Children.Add((New-BtSectionHeader 'Accès rapides' ([string][char]0xE945)))
     $wp = New-Object System.Windows.Controls.WrapPanel
     $quick = @(
-        @{ Kind = 'news';   Title = 'Dernières news';        Glyph = [string][char]0xE789; Color = '#F472B6'; Sub = $(if (@($h.News).Count) { Format-BtCount @($h.News).Count 'billet' 'billets' } else { 'Actualités Biblio-TECH' }) },
+        @{ Kind = 'dashboard'; Title = 'Tableau de bord';   Glyph = [string][char]0xE9D2; Color = '#F97316'; Sub = 'Activité · export Excel' },
+        @{ Kind = 'news';  Title = 'Dernières news';        Glyph = [string][char]0xE789; Color = '#F472B6'; Sub = $(if (@($h.News).Count) { Format-BtCount @($h.News).Count 'billet' 'billets' } else { 'Actualités Biblio-TECH' }) },
         @{ Kind = 'fresh';  Title = 'Nouvelles consignes';   Glyph = [string][char]0xE710; Color = '#34D399'; Sub = $(if (@($h.Fresh).Count) { Format-BtCount @($h.Fresh).Count 'nouvelle · 30 j' 'nouvelles · 30 j' } else { '30 derniers jours' }) },
         @{ Kind = 'top';    Title = 'Les plus commentées';   Glyph = [string][char]0xE90A; Color = '#F59E0B'; Sub = '30 derniers jours' },
         @{ Kind = 'recent'; Title = 'Mises à jour récentes'; Glyph = [string][char]0xE823; Color = '#22D3EE'; Sub = 'Consignes modifiées' }

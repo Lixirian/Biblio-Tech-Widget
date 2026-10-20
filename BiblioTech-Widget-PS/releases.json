@@ -1,4 +1,8 @@
 {
+    "1.1.19":  [
+                   "Tableau de bord plus facile à trouver : un bouton « Tableau de bord » bien visible en haut de la fenêtre, et une tuile dans les accès rapides de l'accueil.",
+                   "Déploiement par le service informatique : l'application complète (zip) peut être installée dans n'importe quel dossier, sans mise à jour automatique ni connexion à GitHub."
+               ],
     "1.1.18":  [
                    "Sécurité renforcée : le lecteur n'affiche plus que Biblio-Tech ; tout autre site s'ouvre dans votre navigateur habituel (protection contre les fausses pages de connexion).",
                    "Sécurité : l'export Excel du tableau de bord neutralise les formules qui pourraient être cachées dans des titres de pages.",

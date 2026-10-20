@@ -7,7 +7,7 @@
 $Config = @{
     # Version de l'application. À INCRÉMENTER à chaque publication (build-release.ps1
     # lit cette valeur pour nommer le zip, la release GitHub et latest.json).
-    Version            = '1.1.18'
+    Version            = '1.1.19'
 
     # ----- Confluence -----
     # URL de l'instance (sans slash final).
@@ -58,6 +58,11 @@ $Config = @{
     # Dépôt PUBLIC 'propriétaire/nom' : lecture anonyme, AUCUN jeton stocké.
     # latest.json (branche UpdateBranch) annonce la version + l'URL du zip (asset de
     # la release) + son empreinte SHA-256 (vérifiée avant installation).
+    # $false = aucune mise à jour automatique, aucun contact avec GitHub. De toute façon, une
+    # copie placée HORS de %LOCALAPPDATA%\BiblioTech-Widget\app (zip complet déployé à l'unité
+    # par la DSI, dans le dossier de son choix, même en lecture seule) ne se met jamais à jour
+    # seule et ne contacte jamais GitHub : les nouvelles versions sont redéployées par la DSI.
+    AutoUpdate             = $true
     GitHubRepo             = 'Lixirian/Biblio-Tech-Widget'
     # Clé PUBLIQUE de signature des versions (inscrite par build-release.ps1 -NewSigningKey).
     # Une mise à jour dont la signature (latest.json, champ sig) n'est pas valide pour cette

@@ -83,7 +83,8 @@ latest.json             manifeste lu par les postes (écrit UNIQUEMENT par le bu
 - **Fenêtre** : X / Alt+F4 = `Hide-BtMainWindow` (zone de notification) ; une 2e instance
   signale `Global\BiblioTechWidgetShow` à la 1re puis s'arrête.
 - **MAJ** : uniquement si `AppRoot` = `%LOCALAPPDATA%\BiblioTech-Widget\app`
-  (`Test-BtInstalledCopy`) — jamais sur le dossier de dev. Les requêtes GitHub passent
+  (`Test-BtInstalledCopy`) et `AutoUpdate` ≠ `$false` (`Test-BtAutoUpdate`) — sinon AUCUN contact
+  GitHub (déploiement autonome du zip par la DSI, dossier de dev). Les requêtes GitHub passent
   par un runspace (proxy système + identifiants Windows pour le proxy seulement).
   ⚠️ Comme pour SNOW : la logique de MAJ qui s'exécute est celle de la version
   **installée**, pas de la cible.

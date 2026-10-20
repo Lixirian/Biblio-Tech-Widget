@@ -79,12 +79,25 @@ function Test-BtInstalledCopy {
     return ($root -ieq $inst)
 }
 
+# Mises à jour automatiques actives ? Uniquement pour la copie installée par le lanceur ET si
+# Config.AutoUpdate n'est pas $false. Toute autre copie (zip déployé par la DSI dans un dossier
+# de son choix, dossier de développement) ne contacte JAMAIS GitHub : aucun flux, aucune pastille.
+function Test-BtAutoUpdate {
+    param($Ctx)
+    return ($Ctx.Config.AutoUpdate -ne $false) -and (Test-BtInstalledCopy $Ctx)
+}
+
 # Lance un contrôle (non bloquant). -Manual : retour visible à l'utilisateur.
 function Invoke-BtUpdateCheck {
     param($Ctx, [switch]$Manual, [string]$Source = 'release')
     $u = $Ctx.Update
     if ($u.Phase) { return }
     if (-not $Ctx.Config.GitHubRepo) { return }
+    if (-not (Test-BtAutoUpdate $Ctx)) {
+        if (-not $u.OffLogged) { $u.OffLogged = $true; Write-BtLog "[MAJ] Mises à jour automatiques désactivées (déploiement géré : $($Ctx.AppRoot)) : aucun contact avec GitHub." }
+        if ($Manual) { Show-BtFlash $Ctx 'Mises à jour gérées par votre service informatique (déploiement interne).' }
+        return
+    }
     $u.Manual = [bool]$Manual
     $u.Source = $Source
     $u.LastCheckAt = Get-Date

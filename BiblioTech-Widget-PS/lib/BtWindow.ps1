@@ -92,6 +92,27 @@ $script:BtXamlResources = @'
       </Setter.Value>
     </Setter>
   </Style>
+  <!-- Accès au tableau de bord : bouton libellé bien visible (et non une simple icône). -->
+  <Style x:Key="DashPill" TargetType="Button">
+    <Setter Property="Foreground" Value="#FFFFFF"/>
+    <Setter Property="FontSize" Value="12"/>
+    <Setter Property="FontWeight" Value="SemiBold"/>
+    <Setter Property="Cursor" Value="Hand"/>
+    <Setter Property="Focusable" Value="False"/>
+    <Setter Property="Template">
+      <Setter.Value>
+        <ControlTemplate TargetType="Button">
+          <Border x:Name="bd" Background="#0088CE" BorderBrush="#33B5F0" BorderThickness="1" CornerRadius="14" Padding="12,5,14,5">
+            <ContentPresenter VerticalAlignment="Center"/>
+          </Border>
+          <ControlTemplate.Triggers>
+            <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="bd" Property="Background" Value="#1A9FE3"/></Trigger>
+            <Trigger Property="IsPressed" Value="True"><Setter TargetName="bd" Property="Background" Value="#006FA8"/></Trigger>
+          </ControlTemplate.Triggers>
+        </ControlTemplate>
+      </Setter.Value>
+    </Setter>
+  </Style>
   <Style x:Key="CaptionBtn" TargetType="Button">
     <Setter Property="Foreground" Value="#C9D4E5"/>
     <Setter Property="Width" Value="46"/>
@@ -229,7 +250,12 @@ $script:BtXamlBody = @'
 $script:BtXamlButtons = @'
 <StackPanel Orientation="Horizontal" VerticalAlignment="Top" WindowChrome.IsHitTestVisibleInChrome="True">
   <Button x:Name="UpdateBtn" Style="{StaticResource UpdateBtn}" Margin="0,11,8,0" VerticalAlignment="Top" Visibility="Collapsed" ToolTip="Une nouvelle version est disponible : cliquer pour voir les nouveautés"/>
-  <Button x:Name="DashBtn" Style="{StaticResource IconBtn}" Margin="0,6,4,0" VerticalAlignment="Top" Content="&#xE9D2;" ToolTip="Tableau de bord (activité, commentaires, consignes phares, export Excel)"/>
+  <Button x:Name="DashBtn" Style="{StaticResource DashPill}" Margin="0,9,8,0" VerticalAlignment="Top" ToolTip="Tableau de bord : activité, commentaires, consignes phares, export Excel">
+    <StackPanel Orientation="Horizontal">
+      <TextBlock Text="&#xE9D2;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="13" VerticalAlignment="Center" Margin="0,0,7,0"/>
+      <TextBlock Text="Tableau de bord" VerticalAlignment="Center"/>
+    </StackPanel>
+  </Button>
   <Button x:Name="MenuBtn" Style="{StaticResource IconBtn}" Margin="0,6,10,0" VerticalAlignment="Top" Content="&#xE712;" ToolTip="Menu"/>
   <Button x:Name="MinBtn" Style="{StaticResource CaptionBtn}" Content="&#xE921;" ToolTip="Réduire"/>
   <Button x:Name="MaxBtn" Style="{StaticResource CaptionBtn}" Content="&#xE922;" ToolTip="Agrandir"/>

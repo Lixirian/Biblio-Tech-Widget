@@ -1,5 +1,23 @@
 # Historique des versions
 
+## 1.1.19 — 2026-10-20
+
+- **Accès au tableau de bord** : l'icône de la barre devient un bouton libellé « Tableau de bord »
+  (style `DashPill`, bleu) ; tuile « Tableau de bord » en tête des accès rapides (Kind `dashboard`).
+- Test : `BT_TEST_SHOT=<png>` (+ `BT_TEST_SCROLL`) en démo -> l'appli dessine SA fenêtre
+  (RenderTargetBitmap) ; ne plus utiliser de copie d'écran (elle capturait l'écran de l'utilisateur
+  quand la fenêtre n'était pas au premier plan).
+
+- **Déploiement autonome** (option E des notes DSI / cyber) : le zip complet peut être déployé
+  à l'unité par la DSI, dans le dossier de son choix (même en lecture seule). `Test-BtAutoUpdate` :
+  une copie hors de `%LOCALAPPDATA%\BiblioTech-Widget\app`, ou avec `AutoUpdate = $false`
+  (nouveau réglage de config.ps1), ne contacte JAMAIS GitHub (plus de contrôle toutes les 2 min,
+  plus de pastille ; « Rechercher une mise à jour » -> « gérées par votre service informatique »).
+  `Get-BtLauncherVbs` : une telle copie démarre toujours par SON lanceur (jamais celui de GitHub,
+  qui réinstallerait sa version). Lanceur : `AutoUpdate = $false` -> aucun contact GitHub sauf
+  réparation. Testé : copie déployée hors installation -> journal « aucun contact avec GitHub »,
+  raccourci de démarrage vers son propre Start-BiblioTech.vbs.
+
 ## 1.1.18 — 2026-10-20 — revue de sécurité
 
 Revue en deux volets (web / système), chaque constat vérifié puis corrigé et testé :

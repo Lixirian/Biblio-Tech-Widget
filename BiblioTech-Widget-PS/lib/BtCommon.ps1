@@ -252,9 +252,15 @@ function Open-BtExternal {
 # réparation automatique au lancement), sinon le .vbs de la copie locale. Pas de console,
 # aucun droit admin.
 function Get-BtLauncherVbs {
+    $own = Join-Path (Split-Path $PSScriptRoot -Parent) 'Start-BiblioTech.vbs'
+    # Copie déployée par la DSI (hors du dossier d'installation) ou mises à jour désactivées :
+    # toujours SON propre lanceur, jamais celui de GitHub (qui réinstallerait sa version).
+    $app = [IO.Path]::GetFullPath((Split-Path $PSScriptRoot -Parent)).TrimEnd('\')
+    $inst = [IO.Path]::GetFullPath((Join-Path (Get-BtDataDir) 'app')).TrimEnd('\')
+    if ($app -ine $inst -or ($Config -and $Config.AutoUpdate -eq $false)) { return $own }
     $lch = Join-Path (Get-BtDataDir) 'launcher\Biblio-Tech.vbs'
     if (Test-Path -LiteralPath $lch) { return $lch }
-    return (Join-Path (Split-Path $PSScriptRoot -Parent) 'Start-BiblioTech.vbs')
+    return $own
 }
 
 # Copie installée : resynchronise le lanceur (livré dans app\launcher) et repointe les
