@@ -1,11 +1,13 @@
 {
-    "version":  "1.1.17",
-    "zip":  "BiblioTech-Widget_version1.1.17.zip",
-    "url":  "https://github.com/Lixirian/Biblio-Tech-Widget/releases/download/v1.1.17/BiblioTech-Widget_version1.1.17.zip",
-    "sha256":  "66A08930C8A62A03116E032C0EE73F6A7A04A7F8F5A66326B5016A6482843679",
-    "sig":  "uVz9YEDSR97UISTxt5+m8OtdSxYQTnNR5FJ8iUiQ9otWKnncp8JLu4F/cSh5Go5JyPnyVLDDarOPtFNSw1Ubu/6nq6j23HtW+x5tgneVZKOC29LMe+PWfSRlYrLE3AZ4woepIZgFUaPKdmZHFPUhstCxyXyrbPWFuyR+7juJNK8bofk6TIwNe1MUwhQRSEmkBWdrROs5Yix0mj+pGaI+FrXqve59S59KjTtcoUzl70wnuHT1NMeMl/bB+9hUtnDFHBldgGBz8TkY4eHP+STbAZBMVxaOtrU5ZCRECqTr0U3Sob/03foCef5TgTS7f8bPgFYxAN53bZcpvWsZivg8UMDO/rSOdeCZuD8nttfzWLrnmaEh7UcqWhl8P21TZWsRWiBm3VTDyH9SsYkNDvPORCq+rV3lPTWIeld3xGfnvI+VIgAcbtvGgCPKG2/nFfvYZDi3J+krubVLwY7eINpZpT7D0y8oK8cKp7B5ARJQvqtd/r4S1Z6RBHvmnKj6fQtE",
+    "version":  "1.1.18",
+    "zip":  "BiblioTech-Widget_version1.1.18.zip",
+    "url":  "https://github.com/Lixirian/Biblio-Tech-Widget/releases/download/v1.1.18/BiblioTech-Widget_version1.1.18.zip",
+    "sha256":  "9E5522D539AEA2E338450A9BBB3483388C5A4DA0B93D49C86477332F284128BD",
+    "sig":  "KjAQSVHfhxueu3FoSCYxFcHBKvc29k0xtvfDGKe4NpVr9UUWh3ZQDXVJN6UtEXgBbmF41G+kPw1HKv+7fmsVRV+hYLLVLRTc4uoDgrNt2jKr8iIAY5Ks5BgMXy78t+duoIzvi7Bj79L6oEAZ5CtQr+GbvFc9ryq42u5WQTrRLEsgPlDgCAY4LbcZ2s/D9Rf6AbayJ0PLBdnv/tE+G7lffXztQEWS18QA59lxg7HrixNl2vi8C1ZxsgxqQAaANe590ckFvX5xOgeBW36X8chg1vifeSZ+o1Vt3EGLJ57eRP/v4KrfT+QRlLaixDoaI+rXm4mmWlum4k/C4zKNMI6QDsx5ZuyROWgGYJgZOylqZq2MkrHFosRDa8ZoVvBUXYaVDS8cTjV5so82yJboLmMf4N1o5UQVmIz/2KdPzsECXBZnMjZt6BlJZEUs4+p6Q6MGILwurgcIQZspkaBq6odwd8Ezupx+4DLOWQMQb8NLBtO4Gb7UuOwWI/Zh1bGy7wWS",
     "date":  "2026-10-20",
     "notes":  [
-                  "L\u0027intégration Microsoft 365 Copilot est retirée (bouton « Demander à Copilot » et option de licence) : la recherche en langage courant reste assurée par l\u0027assistant intégré."
+                  "Sécurité renforcée : le lecteur n\u0027affiche plus que Biblio-Tech ; tout autre site s\u0027ouvre dans votre navigateur habituel (protection contre les fausses pages de connexion).",
+                  "Sécurité : l\u0027export Excel du tableau de bord neutralise les formules qui pourraient être cachées dans des titres de pages.",
+                  "Fiabilité : une mise à jour impossible n\u0027empêche plus jamais Biblio-Tech de démarrer."
               ]
 }
