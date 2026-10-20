@@ -1,11 +1,11 @@
 {
-    "version":  "1.1.15",
-    "zip":  "BiblioTech-Widget_version1.1.15.zip",
-    "url":  "https://github.com/Lixirian/Biblio-Tech-Widget/releases/download/v1.1.15/BiblioTech-Widget_version1.1.15.zip",
-    "sha256":  "EDBC1296A8A270C3B058FD36BB292268758D44C91E6B47F917BC133E2DD15E6E",
+    "version":  "1.1.16",
+    "zip":  "BiblioTech-Widget_version1.1.16.zip",
+    "url":  "https://github.com/Lixirian/Biblio-Tech-Widget/releases/download/v1.1.16/BiblioTech-Widget_version1.1.16.zip",
+    "sha256":  "058123721F7560106F34BAAE8DBD58A1D0B921871D3A36D4547AF13A4A6999C6",
+    "sig":  "qKd19p7wcdMaqh/COj9mciR2f3dR/YSGUMliIE7aecmpI03wciY4FPT55P3Pj+fWek//l4Judg8dM3Bc8ipx9xSkj8YE5CHI99JKaDQFaUxT3EsOFDsQ0dL7Ybgy/K6xVQSMH5koggrLMqkhGd+v2gv89Xyq88VQ6P92k1njfbg6lNfLenEstYmGGOBnQkMon2/PFRGhLDSOKueDzaGcFOJ2qgQGDE1wl+AzhDR4vm+aYrl1tah1YiHvzLD1aTyN8RqlIlLXeFXmAG0pMlfvbKy3nt23wZSxXgg095FM8/LXJFHn4RPHalQ2gHN+czMHWHFVt2gykSLjPkwL+KDfowuT8STKfleiNy3YtxOOoR7nz7+aCOeL6WY9yCD2obQ2J9YR7m6/Yf4C0deTVvQyQk8/xkxe52mOdPFfDgBFx3q9LCVMntGRtozo2qHdBZQj5MLNt/sbXBRHaxq/KQWhr6xylEWOMNqkFud7VKxblC0YVvzPJQyH8Lj0At8JqmJL",
     "date":  "2026-10-20",
     "notes":  [
-                  "Accueil : « Biblio-TECH met en avant » s\u0027affiche juste sous les rubriques de votre profil, avant « Débuter avec Biblio-TECH ».",
-                  "Accueil : plus de tuiles sans texte (l\u0027émoji placé devant un lien est rattaché à ce lien) ni de consignes en double dans « Commentaires de l\u0027espace Biblio-TECH » (une consigne commentée plusieurs fois n\u0027apparaît qu\u0027une fois)."
+                  "Sécurité : chaque mise à jour est désormais signée par l\u0027éditeur de Biblio-Tech. Une mise à jour non signée, ou modifiée en route, est automatiquement refusée."
               ]
 }
