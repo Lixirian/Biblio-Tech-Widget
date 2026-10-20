@@ -1,11 +1,11 @@
 {
-    "version":  "1.1.14",
-    "zip":  "BiblioTech-Widget_version1.1.14.zip",
-    "url":  "https://github.com/Lixirian/Biblio-Tech-Widget/releases/download/v1.1.14/BiblioTech-Widget_version1.1.14.zip",
-    "sha256":  "BD5A3D07563D8612A714FE20F1FA56845A38CF35D82389594680FF7445A55CFE",
+    "version":  "1.1.15",
+    "zip":  "BiblioTech-Widget_version1.1.15.zip",
+    "url":  "https://github.com/Lixirian/Biblio-Tech-Widget/releases/download/v1.1.15/BiblioTech-Widget_version1.1.15.zip",
+    "sha256":  "EDBC1296A8A270C3B058FD36BB292268758D44C91E6B47F917BC133E2DD15E6E",
     "date":  "2026-10-20",
     "notes":  [
-                  "Accueil personnalisé : vous retrouvez en tête les rubriques de VOTRE profil, comme sur la page d\u0027accueil du site (ex. « TAM / Gestionnaire en Production »), puis « Débuter avec Biblio-TECH » et les encadrés « Biblio-TECH met en avant ». Toutes les rubriques restent accessibles par la tuile « Toutes les rubriques ».",
-                  "Thème : les pages du lecteur et le tableau de bord suivent le thème de Windows (sombre ou clair), y compris si vous le changez pendant l\u0027utilisation."
+                  "Accueil : « Biblio-TECH met en avant » s\u0027affiche juste sous les rubriques de votre profil, avant « Débuter avec Biblio-TECH ».",
+                  "Accueil : plus de tuiles sans texte (l\u0027émoji placé devant un lien est rattaché à ce lien) ni de consignes en double dans « Commentaires de l\u0027espace Biblio-TECH » (une consigne commentée plusieurs fois n\u0027apparaît qu\u0027une fois)."
               ]
 }
