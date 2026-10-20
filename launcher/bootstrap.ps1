@@ -105,18 +105,27 @@ function Test-ReleaseSignature([string]$Version, [string]$Sha, [string]$Sig) {
 }
 
 function Install-App($m) {
-    $url = [string]$m.url
-    if (-not $url) { $url = 'https://github.com/{0}/releases/download/v{1}/{2}' -f $Repo, $m.version, $m.zip }
-    L "Version $($m.version) : téléchargement..."
+    $ver = [string]$m.version
+    if ($ver -notmatch '^\d{1,4}(\.\d{1,4}){1,3}$') { throw "version annoncée invalide « $ver »" }
+    # Adresse RECONSTRUITE (celle du manifeste, non signé, est ignorée : pas de file:// ni
+    # d'hôte arbitraire avant même la vérification de signature).
+    $url = 'https://github.com/{0}/releases/download/v{1}/BiblioTech-Widget_version{1}.zip' -f $Repo, $ver
+    L "Version $ver : téléchargement..."
     $tmpZip = Join-Path $env:TEMP ('biblio_' + [guid]::NewGuid().ToString('N') + '.zip')
     (New-WebClient).DownloadFile($url, $tmpZip)
-    $sha = (Get-FileHash -LiteralPath $tmpZip -Algorithm SHA256).Hash.ToUpperInvariant()
-    # Empreinte ET signature OBLIGATOIRES (un manifeste sans l'une ou l'autre est refusé).
-    if (-not $m.sha256 -or $sha -ne ([string]$m.sha256).ToUpperInvariant()) { Remove-Item -LiteralPath $tmpZip -Force -ErrorAction SilentlyContinue; throw "empreinte SHA-256 absente ou invalide (fichier corrompu ou altéré)" }
-    if (-not (Test-ReleaseSignature ([string]$m.version) $sha ([string]$m.sig))) { Remove-Item -LiteralPath $tmpZip -Force -ErrorAction SilentlyContinue; throw "signature de la version $($m.version) absente ou invalide : installation refusée" }
-    L "Signature de la version $($m.version) vérifiée."
-    $tmp = Join-Path $env:TEMP ('biblio_' + [guid]::NewGuid().ToString('N'))
-    Expand-Archive -LiteralPath $tmpZip -DestinationPath $tmp -Force
+    # Zip VERROUILLÉ en écriture de la vérification jusqu'à la fin de l'extraction : le
+    # fichier vérifié est exactement celui qui est installé.
+    $lock = [System.IO.File]::Open($tmpZip, 'Open', 'Read', 'Read')
+    try {
+        $sha = ([BitConverter]::ToString([System.Security.Cryptography.SHA256]::Create().ComputeHash($lock)) -replace '-', '')
+        # Empreinte ET signature OBLIGATOIRES (un manifeste sans l'une ou l'autre est refusé).
+        if (-not $m.sha256 -or $sha -ne ([string]$m.sha256).ToUpperInvariant()) { throw "empreinte SHA-256 absente ou invalide (fichier corrompu ou altéré)" }
+        if (-not (Test-ReleaseSignature $ver $sha ([string]$m.sig))) { throw "signature de la version $ver absente ou invalide : installation refusée" }
+        L "Signature de la version $ver vérifiée."
+        $tmp = Join-Path $env:TEMP ('biblio_' + [guid]::NewGuid().ToString('N'))
+        Expand-Archive -LiteralPath $tmpZip -DestinationPath $tmp -Force
+    } catch { $lock.Dispose(); $lock = $null; Remove-Item -LiteralPath $tmpZip -Force -ErrorAction SilentlyContinue; throw }
+    finally { if ($lock) { $lock.Dispose() } }
     $inner = Get-ChildItem -LiteralPath $tmp -Directory | Where-Object { Test-Path (Join-Path $_.FullName 'BiblioTechWidget.ps1') } | Select-Object -First 1
     $src = if ($inner) { $inner.FullName } else { $tmp }
     if (-not (Test-Path (Join-Path $src 'BiblioTechWidget.ps1'))) { throw 'archive invalide' }
@@ -177,6 +186,8 @@ try {
     $m = $null
     try { $m = Get-Manifest $(if ($healthy) { 5000 } else { 20000 }) }
     catch { L "GitHub injoignable ($($_.Exception.Message))." }
+    # Manifeste NON signé : une version au format inattendu est ignorée (comme hors ligne).
+    if ($m -and [string]$m.version -notmatch '^\d{1,4}(\.\d{1,4}){1,3}$') { L "Manifeste ignoré (version « $($m.version) » invalide)."; $m = $null }
 
     $reason = if ($Repair) { 'réparation demandée' }
               elseif (-not $installed) { 'première installation' }
@@ -192,7 +203,10 @@ try {
             L "Version publiée $($m.version) plus ancienne que l'installée ($installed) : ignorée."
         } else {
             L "Installation automatique : $reason."
-            Install-App $m
+            # Une mise à jour refusée ou en échec ne doit JAMAIS empêcher de lancer une
+            # installation saine (sinon un manifeste forgé bloquerait l'appli sur tous les postes).
+            try { Install-App $m }
+            catch { L "Mise à jour non appliquée : $($_.Exception.Message)"; if (-not $healthy) { throw } }
         }
     }
     try { Install-Launcher } catch { L "Lanceur non mis à jour : $($_.Exception.Message)" }

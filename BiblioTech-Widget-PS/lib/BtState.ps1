@@ -15,6 +15,7 @@ function New-BtState {
         Type       = 'all'        # 'all' | 'page' | 'blogpost' | 'attachment'
         Sort       = 'relevance'  # 'relevance' | 'recent'
         ReaderMode = $true        # mode lecture (chrome Confluence masqué) dans le lecteur
+        IdpHost    = ''           # hôte du fournisseur d'identité SSO, appris à la connexion (navigation / cookies autorisés)
         CategScanVersion = ''     # version pour laquelle l'analyse des catégories a déjà été faite
         History    = @()
         Pins       = @()
@@ -22,7 +23,7 @@ function New-BtState {
     if (Test-Path -LiteralPath $Path) {
         try {
             $j = Get-Content -LiteralPath $Path -Raw -Encoding UTF8 | ConvertFrom-Json
-            foreach ($k in @('Version', 'Bounds', 'Scope', 'Type', 'Sort', 'CategScanVersion')) {
+            foreach ($k in @('Version', 'Bounds', 'Scope', 'Type', 'Sort', 'CategScanVersion', 'IdpHost')) {
                 if ($j.PSObject.Properties.Name -contains $k -and $j.$k) { $st[$k] = [string]$j.$k }
             }
             if ($j.PSObject.Properties.Name -contains 'ReaderMode') { $st.ReaderMode = [bool]$j.ReaderMode }
@@ -44,7 +45,7 @@ function Save-BtState {
     param($State)
     try {
         $o = [ordered]@{}
-        foreach ($k in @('Version', 'Bounds', 'Maximized', 'Scope', 'Type', 'Sort', 'ReaderMode', 'CategScanVersion', 'History', 'Pins')) { $o[$k] = $State[$k] }
+        foreach ($k in @('Version', 'Bounds', 'Maximized', 'Scope', 'Type', 'Sort', 'ReaderMode', 'CategScanVersion', 'IdpHost', 'History', 'Pins')) { $o[$k] = $State[$k] }
         $json = $o | ConvertTo-Json -Depth 5
         $tmp = $State.Path + '.tmp'
         [System.IO.File]::WriteAllText($tmp, $json, (New-Object System.Text.UTF8Encoding $false))

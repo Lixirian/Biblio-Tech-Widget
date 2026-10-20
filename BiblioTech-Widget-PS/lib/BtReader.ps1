@@ -59,6 +59,20 @@ $script:BtReaderXaml = @'
 </Window>
 '@
 
+# Politique de navigation du lecteur : 'stay' (reste dans le lecteur) | 'external' (navigateur
+# par défaut) | 'block'. Confluence et l'IdP appris : 'stay' ; une REDIRECTION vers un serveur
+# du domaine SSO (AuthAllowlist, ex. *.sncf.fr) aussi (chaîne d'authentification).
+function Get-BtReaderNavPolicy {
+    param($Ctx, [string]$Url, [bool]$Redirect)
+    $u = $null; try { $u = [uri]$Url } catch { }
+    if (-not $u -or -not $u.IsAbsoluteUri) { return 'block' }
+    if ($u.Scheme -eq 'about' -and $u.AbsoluteUri -eq 'about:blank') { return 'stay' }
+    if ($u.Scheme -notin @('https', 'http')) { return 'block' }
+    if (Test-BtTrustedHost $Ctx $u.Host) { return 'stay' }
+    if ($Redirect -and $u.Scheme -eq 'https' -and @(([string]$Ctx.Config.AuthAllowlist -split '[,;\s]+') | Where-Object { $_ -and $u.Host -like $_ }).Count) { return 'stay' }
+    return 'external'
+}
+
 function New-BtReaderWindow {
     param($Ctx)
     $win = [System.Windows.Markup.XamlReader]::Parse($script:BtReaderXaml)
@@ -77,8 +91,26 @@ function New-BtReaderWindow {
     $wv.add_CoreWebView2InitializationCompleted({ param($s, $e)
         if (-not $e.IsSuccess) { Write-BtLog "[LECTEUR] Init WebView2 KO : $($e.InitializationException.Message)"; return }
         $cw = $s.CoreWebView2
-        # Les liens « nouvel onglet » restent dans le lecteur.
-        $cw.add_NewWindowRequested({ param($a, $b) $b.Handled = $true; try { $script:Ctx.Reader.WebView.CoreWebView2.Navigate($b.Uri) } catch { } })
+        # Pas de F12 ni d'autorisation ; téléchargements (pièces jointes) depuis Confluence seulement.
+        Set-BtWebHardening $script:Ctx $cw -Downloads
+        # Liens « nouvel onglet » : même règle que la navigation (Confluence -> lecteur, reste -> navigateur).
+        $cw.add_NewWindowRequested({ param($a, $b)
+            $b.Handled = $true
+            $u = [string]$b.Uri
+            switch (Get-BtReaderNavPolicy $script:Ctx $u $false) {
+                'stay'     { try { $script:Ctx.Reader.WebView.CoreWebView2.Navigate($u) } catch { } }
+                'external' { Open-BtExternal $u }
+                default    { Write-BtLog "[SECU] Ouverture bloquée dans le lecteur : $u" }
+            } })
+        # Le lecteur n'affiche QUE Confluence (et l'IdP pendant une redirection SSO) : tout autre
+        # site part dans le navigateur, qui montre sa barre d'adresse (pas de fausse page de
+        # connexion dans une fenêtre « Biblio-Tech »). Schémas non web : bloqués.
+        $cw.add_NavigationStarting({ param($a, $b)
+            $u = [string]$b.Uri
+            $p = Get-BtReaderNavPolicy $script:Ctx $u ([bool]$b.IsRedirected)
+            if ($p -eq 'stay') { return }
+            $b.Cancel = $true
+            if ($p -eq 'external') { Open-BtExternal $u } else { Write-BtLog "[SECU] Navigation bloquée dans le lecteur : $u" } })
         $cw.add_DocumentTitleChanged({ param($a, $b)
             try { $t = [string]$a.DocumentTitle; if ($t) { $script:Ctx.Reader.Ui.TitleText.Text = ($t -replace '\s+-\s+Confluence.*$', '') } } catch { } })
         $cw.add_DOMContentLoaded({ param($a, $b) Update-BtReaderMode $script:Ctx })
@@ -117,7 +149,7 @@ function Open-BtReader {
     param($Ctx, $Item)
     $url = [string]$Item.url
     if (-not (Test-BtHttpUrl $url)) { return }
-    if (-not $script:BtWebView2Ok) { Open-BtExternal $url; return }
+    if (-not $script:BtWebView2Ok -or (Get-BtReaderNavPolicy $Ctx $url $false) -ne 'stay') { Open-BtExternal $url; return }
     $r = $Ctx.Reader
     if (-not $r.Window) { New-BtReaderWindow $Ctx | Out-Null }
     $r.Item = $Item

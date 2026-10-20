@@ -1,4 +1,9 @@
 {
+    "1.1.18":  [
+                   "Sécurité renforcée : le lecteur n'affiche plus que Biblio-Tech ; tout autre site s'ouvre dans votre navigateur habituel (protection contre les fausses pages de connexion).",
+                   "Sécurité : l'export Excel du tableau de bord neutralise les formules qui pourraient être cachées dans des titres de pages.",
+                   "Fiabilité : une mise à jour impossible n'empêche plus jamais Biblio-Tech de démarrer."
+               ],
     "1.1.17":  [
                    "L'intégration Microsoft 365 Copilot est retirée (bouton « Demander à Copilot » et option de licence) : la recherche en langage courant reste assurée par l'assistant intégré."
                ],

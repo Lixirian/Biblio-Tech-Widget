@@ -291,7 +291,10 @@ function Write-BtCategJournal {
     foreach ($l in $lines) { [void]$out.AppendLine($l) }
     foreach ($l in $detail) { [void]$out.AppendLine($l) }
     if (($pAdd + $pDel + $pMov) -gt $detail.Count) { [void]$out.AppendLine("  … ($($pAdd + $pDel + $pMov - $detail.Count) autre(s) changement(s) de fiche non détaillé(s))") }
-    try { [IO.File]::AppendAllText((Join-Path $Ctx.DataDir 'categories-journal.log'), $out.ToString(), (New-Object System.Text.UTF8Encoding $true)) } catch { }
+    $jf = Join-Path $Ctx.DataDir 'categories-journal.log'
+    # Taille bornée : au-delà de 2 Mo, l'ancien journal devient .old (un seul conservé).
+    try { if ((Test-Path -LiteralPath $jf) -and (Get-Item -LiteralPath $jf).Length -gt 2MB) { Move-Item -LiteralPath $jf -Destination ($jf + '.old') -Force } } catch { }
+    try { [IO.File]::AppendAllText($jf, $out.ToString(), (New-Object System.Text.UTF8Encoding $true)) } catch { }
     return $summary
 }
 

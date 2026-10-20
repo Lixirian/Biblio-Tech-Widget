@@ -5,8 +5,8 @@
 
 if (-not ([System.Management.Automation.PSTypeName]'BtNative').Type) {
     Add-Type -Namespace '' -Name 'BtNative' -MemberDefinition @'
-[System.Runtime.InteropServices.DllImport("kernel32.dll", CharSet=System.Runtime.InteropServices.CharSet.Unicode)]
-public static extern bool SetDllDirectory(string lpPathName);
+[System.Runtime.InteropServices.DllImport("kernel32.dll", CharSet=System.Runtime.InteropServices.CharSet.Unicode, SetLastError=true)]
+public static extern System.IntPtr LoadLibraryW(string lpLibFileName);
 [System.Runtime.InteropServices.DllImport("shell32.dll", CharSet=System.Runtime.InteropServices.CharSet.Unicode)]
 public static extern int SetCurrentProcessExplicitAppUserModelID(string appID);
 [System.Runtime.InteropServices.DllImport("kernel32.dll")]
@@ -230,9 +230,14 @@ function Receive-BtBgJob {
 }
 
 # --- URL / navigateur -------------------------------------------------------
+# URL web acceptable pour une ouverture : absolue, analysable, http(s), sans espace ni
+# caractère de contrôle (ShellExecute ne reçoit jamais autre chose qu'une vraie URL web).
 function Test-BtHttpUrl {
     param([string]$Url)
-    return ([string]$Url -match '^https?://')
+    if (-not $Url -or $Url.Length -gt 4096 -or $Url -match '[\s\x00-\x1F"<>]') { return $false }
+    $u = $null
+    if (-not [uri]::TryCreate($Url, [UriKind]::Absolute, [ref]$u)) { return $false }
+    return ($u.Scheme -eq 'https' -or $u.Scheme -eq 'http') -and [bool]$u.Host
 }
 
 # Ouvre une URL dans le navigateur par défaut (uniquement http/https).

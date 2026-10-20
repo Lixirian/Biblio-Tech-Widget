@@ -463,12 +463,20 @@ function New-BtDashboardWorkbook {
         $newList = { New-Object 'System.Collections.Generic.List[object[]]' }   # (≠ $l : PowerShell ignore la casse)
         # Écriture par blocs (object[,] -> Range.Value2) : l'affectation cellule par cellule
         # de nombres via COM échoue sous PowerShell (« cast Double -> String »).
+        # Données Confluence = texte NON FIABLE : un titre « =WEBSERVICE(…) » ou « =HYPERLINK(…) »
+        # deviendrait une formule exécutée par Excel (injection de formules). Toute chaîne
+        # commençant par = + - @ (ou tabulation / retour) est donc préfixée d'une apostrophe
+        # (texte). Seules les formules de l'appli elle-même passent, via [BtFormula].
         $put = {
             param($ws, [int]$r, [int]$c, [System.Collections.Generic.List[object[]]]$rows)
             if (-not $rows.Count) { return }
             $n = $rows.Count; $m = $rows[0].Length
             $a = New-Object 'object[,]' $n, $m
-            for ($i = 0; $i -lt $n; $i++) { for ($j = 0; $j -lt $m; $j++) { $a[$i, $j] = $rows[$i][$j] } }
+            for ($i = 0; $i -lt $n; $i++) { for ($j = 0; $j -lt $m; $j++) {
+                $v = $rows[$i][$j]
+                if ($v -is [hashtable] -and $v.ContainsKey('BtFormula')) { $v = [string]$v.BtFormula }
+                elseif ($v -is [string] -and $v -match '^[=+\-@\t\r\n]') { $v = "'" + $v }
+                $a[$i, $j] = $v } }
             $ws.Range($ws.Cells.Item($r, $c), $ws.Cells.Item($r + $n - 1, $c + $m - 1)).Value2 = $a
         }
         $one = { param($ws, [int]$r, [int]$c, $v) $l = & $newList; $l.Add([object[]]@($v)); & $put $ws $r $c $l }
@@ -495,7 +503,7 @@ function New-BtDashboardWorkbook {
         $ws = $S['Par jour']
         & $head $ws @('Date', 'Commentaires', 'Réponses', 'Total commentaires', 'Fiches créées', 'Fiches mises à jour') @(14, 15, 12, 19, 15, 20)
         $l = & $newList; $r = 2
-        foreach ($d in @($Data.days)) { $l.Add([object[]]@((& $oa ([string]$d.d)), [double]$d.c, [double]$d.r, "=B$r+C$r", (& $num $d.cr), (& $num $d.up))); $r++ }
+        foreach ($d in @($Data.days)) { $l.Add([object[]]@((& $oa ([string]$d.d)), [double]$d.c, [double]$d.r, @{ BtFormula = "=B$r+C$r" }, (& $num $d.cr), (& $num $d.up))); $r++ }
         & $put $ws 2 1 $l; $lastDay = $r - 1
         if ($lastDay -ge 2) { & $dateFmt $ws.Range("A2:A$lastDay") }
 
@@ -631,6 +639,8 @@ function Export-BtDashboardExcel {
     $say = { param($t) try { [void]$script:Ctx.Dash.WebView.CoreWebView2.ExecuteScriptAsync("document.getElementById('st').textContent = " + (ConvertTo-Json ([string]$t))) } catch { } }
     try {
         $data = $Json | ConvertFrom-Json
+        # Dates au format strict (elles entrent dans le NOM du fichier : pas de « ..\ »).
+        if ([string]$data.from -notmatch '^\d{4}-\d{2}-\d{2}$' -or [string]$data.to -notmatch '^\d{4}-\d{2}-\d{2}$') { throw 'période invalide' }
         $dir = $null
         try { $dir = (New-Object -ComObject Shell.Application).NameSpace('shell:Downloads').Self.Path } catch { }
         if (-not $dir -or -not (Test-Path $dir)) { $dir = [Environment]::GetFolderPath('MyDocuments') }
@@ -663,13 +673,27 @@ function Show-BtDashboard {
             if (-not $e.IsSuccess) { Write-BtLog "[DASH] Init WebView2 KO : $($e.InitializationException.Message)"; return }
             $cw = $s.CoreWebView2
             Set-BtWebTheme $script:Ctx $s           # la page suit le thème Windows (prefers-color-scheme)
+            Set-BtWebHardening $script:Ctx $cw -WebMessages   # messages web : seul ce WebView en reçoit
             # Liens des listes -> navigateur par défaut.
             $cw.add_NewWindowRequested({ param($a, $b) $b.Handled = $true; Open-BtExternal ([string]$b.Uri) })
+            # Navigation du tableau de bord : Confluence uniquement (aucun autre site ne peut s'y
+            # charger, donc aucun autre site ne peut lui poster de message).
+            $cw.add_NavigationStarting({ param($a, $b)
+                $u = $null; try { $u = [uri]$b.Uri } catch { }
+                if ($u -and ($u.Scheme -eq 'about' -or $u.Scheme -eq 'data')) { return }
+                if (-not $u -or $u.Host -ne $script:Ctx.ConfHost) { $b.Cancel = $true; Write-BtLog "[SECU] Tableau de bord : navigation bloquée ($([string]$b.Uri))." } })
             # Diagnostics remontés par la page -> journal de l'appli ; demande d'export Excel.
+            # Seuls les messages de la page Confluence sont pris en compte.
             $cw.add_WebMessageReceived({ param($a, $b)
+                $src = ''; try { $src = ([uri]$b.Source).Host } catch { }
+                if ($src -ne $script:Ctx.ConfHost) { Write-BtLog "[SECU] Message web ignoré (origine $src)."; return }
                 $m = ''; try { $m = [string]$b.TryGetWebMessageAsString() } catch { }
                 if ($m.StartsWith('EXPORT:')) { Export-BtDashboardExcel $script:Ctx $m.Substring(7) }
-                elseif ($m) { Write-BtLog $m } })
+                elseif ($m) {
+                    # Une ligne de journal, bornée : pas d'injection de fausses lignes.
+                    $m = ($m -replace '[\r\n\x00-\x1F]', ' ')
+                    Write-BtLog $m.Substring(0, [Math]::Min(500, $m.Length))
+                } })
         })
         $wv.add_NavigationCompleted({ param($s, $e)
             $c = $script:Ctx

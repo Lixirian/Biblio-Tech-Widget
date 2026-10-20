@@ -103,6 +103,16 @@ Nouveau PC : `build-release.ps1 -ImportSigningKey -KeyBackup <fichier>` (sauvega
 installés refuseraient les MAJ jusqu'à réinstallation via `Biblio-Tech.cmd`. Ajouter une entrée en tête
 de `CHANGELOG.md` à chaque version.
 
+## Règles de sécurité (revue 1.1.18 — à respecter dans toute évolution)
+
+- Toute nouvelle WebView2 : `Set-BtWebHardening` à l'initialisation ; navigation limitée
+  (lecteur : `Get-BtReaderNavPolicy`) ; jamais d'URL ouverte sans `Test-BtHttpUrl` / `Open-BtExternal`.
+- Données Confluence = NON FIABLES : `esc()` dans le HTML injecté, `ConvertTo-Json` pour tout
+  paramètre JS, texte WPF via `.Text`/`Run` (jamais de XAML construit), cellules Excel via `$put`.
+- Manifeste de MAJ non signé : ne s'en servir que pour la version (regex) et l'empreinte ; l'URL
+  est reconstruite ; signature obligatoire ; une MAJ ratée ne doit jamais empêcher le lancement.
+- Jamais de valeur de cookie / jeton / contenu de page dans le journal.
+
 ## Points à valider sur le terrain (réseau SNCF)
 
 - La stratégie réellement utilisée (`source :` dans le pied du panneau / `[SEARCH] OK via`).

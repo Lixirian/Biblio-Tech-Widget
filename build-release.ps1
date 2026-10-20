@@ -14,7 +14,9 @@
 #  l'utilisateur Windows courant ; JAMAIS dans le dépôt, GitHub ou SynologyDrive). Le texte
 #  signé est « BiblioTech-Widget|<version>|<SHA-256 du zip> » ; la signature va dans
 #  latest.json (champ sig). L'appli et le lanceur embarquent la clé PUBLIQUE et refusent
-#  tout zip non signé par elle : un compte GitHub compromis ne suffit plus à diffuser du code.
+#  tout zip non signé par elle : un compte GitHub compromis ne suffit plus à diffuser une MISE À
+#  JOUR. Limite : Biblio-Tech.cmd (1re installation) n'est pas signé lui-même -> le diffuser par
+#  un canal interne (voir la note DSI) ; seuls les fichiers suivis par Git sont empaquetés.
 #  Usage :  powershell -ExecutionPolicy Bypass -File build-release.ps1 [-NoPublish]
 #           ... -NewSigningKey  : crée la clé (une seule fois) et inscrit la clé publique dans
 #                                 config.ps1 et launcher\bootstrap.ps1. Clé perdue = les postes
@@ -57,7 +59,9 @@ if ($NewSigningKey) {
 # Sauvegarde : 'BTKEY1' | sel (16) | IV (16) | AES-256-CBC(clé XML) | HMAC-SHA256 (32) du tout.
 function Read-BtSecret([string]$Prompt) {
     $s = Read-Host $Prompt -AsSecureString
-    return [Runtime.InteropServices.Marshal]::PtrToStringBSTR([Runtime.InteropServices.Marshal]::SecureStringToBSTR($s))
+    $p = [Runtime.InteropServices.Marshal]::SecureStringToBSTR($s)
+    try { return [Runtime.InteropServices.Marshal]::PtrToStringBSTR($p) }
+    finally { [Runtime.InteropServices.Marshal]::ZeroFreeBSTR($p) }   # copie non managée effacée
 }
 function Get-BtBackupKeys([byte[]]$Salt, [switch]$Confirm) {
     $plain = Read-BtSecret 'Mot de passe de la sauvegarde'
@@ -144,10 +148,23 @@ if ($bad.Count) { throw ("Erreurs de syntaxe :`n" + ($bad -join "`n")) }
 if (-not (Test-Path $dist)) { New-Item -ItemType Directory -Path $dist -Force | Out-Null }
 $staging = Join-Path ([System.IO.Path]::GetTempPath()) $name
 if (Test-Path $staging) { Remove-Item -LiteralPath $staging -Recurse -Force }
-Copy-Item -LiteralPath $src -Destination $staging -Recurse
-# Le lanceur voyage avec chaque version : bootstrap.ps1 le recopie hors du dossier app
-# (et l'appli le resynchronise au démarrage après une MAJ faite depuis la pastille).
-Copy-Item -LiteralPath (Join-Path $repo 'launcher') -Destination (Join-Path $staging 'launcher') -Recurse
+# Contenu SIGNÉ = uniquement les fichiers suivis par Git (+ nouveaux fichiers non ignorés) de
+# l'appli et du lanceur : jamais un fichier ignoré déposé dans le dossier (synchronisé) du projet.
+# Le lanceur voyage avec chaque version : bootstrap.ps1 le recopie hors du dossier app.
+Push-Location $repo
+try {
+    $files = @(& git -c core.quotepath=off ls-files --cached --others --exclude-standard -- 'BiblioTech-Widget-PS' 'launcher' | Where-Object { $_ })
+    $fresh = @(& git -c core.quotepath=off ls-files --others --exclude-standard -- 'BiblioTech-Widget-PS' 'launcher' | Where-Object { $_ })
+} finally { Pop-Location }
+if (-not $files.Count) { throw 'Aucun fichier à empaqueter (git ls-files vide).' }
+if ($fresh.Count) { Write-Host ("Fichiers NOUVEAUX inclus dans la version signée (à vérifier) :`n  " + ($fresh -join "`n  ")) -ForegroundColor Yellow }
+foreach ($f in $files) {
+    $rel = if ($f.StartsWith('BiblioTech-Widget-PS/')) { $f.Substring('BiblioTech-Widget-PS/'.Length) } else { $f }
+    $dst = Join-Path $staging ($rel -replace '/', '\')
+    $dd = Split-Path $dst -Parent
+    if (-not (Test-Path -LiteralPath $dd)) { New-Item -ItemType Directory -Path $dd -Force | Out-Null }
+    Copy-Item -LiteralPath (Join-Path $repo ($f -replace '/', '\')) -Destination $dst -Force
+}
 $zip = Join-Path $dist "$name.zip"
 if (Test-Path $zip) { Remove-Item -LiteralPath $zip -Force }
 Compress-Archive -Path $staging -DestinationPath $zip -CompressionLevel Optimal

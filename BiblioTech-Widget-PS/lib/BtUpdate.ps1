@@ -142,7 +142,12 @@ function Complete-BtUpdateCheck {
             Sha256 = ([string]$j.sha256).ToUpperInvariant(); Sig = [string]$j.sig; Date = [string]$j.date
             Notes = @($j.notes | ForEach-Object { [string]$_ } | Where-Object { $_ })
         }
-        if (-not $m.Url -and $m.Zip) { $m.Url = 'https://github.com/{0}/releases/download/v{1}/{2}' -f $Ctx.Config.GitHubRepo, $m.Version, $m.Zip }
+        # Le manifeste n'est PAS signé : on n'en accepte qu'une version au format strict, et
+        # l'adresse du paquet est RECONSTRUITE (jamais celle du manifeste : un manifeste forgé
+        # pourrait viser un partage file:// -> fuite d'empreinte NTLM, ou un serveur interne).
+        if ($m.Version -notmatch '^\d{1,4}(\.\d{1,4}){1,3}$') { throw "version invalide « $($m.Version) »" }
+        $m.Zip = "BiblioTech-Widget_version$($m.Version).zip"
+        $m.Url = 'https://github.com/{0}/releases/download/v{1}/{2}' -f $Ctx.Config.GitHubRepo, $m.Version, $m.Zip
     } catch { Write-BtLog "[MAJ] latest.json invalide : $($_.Exception.Message)"; return }
 
     if ($m.Version -and $m.Url -and (Compare-BtVersion $m.Version $Ctx.Config.Version) -gt 0) {
@@ -285,21 +290,30 @@ function Complete-BtUpdateDownload {
         return
     }
     Write-BtLog "[MAJ] Signature de la version $($t.Manifest.Version) vérifiée."
-    Start-BtUpdater $Ctx $t.Zip $t.Manifest.Version
+    Start-BtUpdater $Ctx $t.Zip $t.Manifest.Version $sha
 }
 
 # Écrit et lance l'updater détaché, puis ferme l'application.
 function Start-BtUpdater {
-    param($Ctx, [string]$Zip, [string]$Version)
+    param($Ctx, [string]$Zip, [string]$Version, [string]$Sha)
+    if ($Version -notmatch '^\d{1,4}(\.\d{1,4}){1,3}$' -or $Sha -notmatch '^[0-9A-F]{64}$') { Write-BtLog '[MAJ] Paramètres de mise à jour invalides : abandon.'; return }
     $updater = @'
-param([int]$WaitPid, [string]$Zip, [string]$AppDir, [string]$Version)
+param([int]$WaitPid, [string]$Zip, [string]$AppDir, [string]$Version, [string]$Sha)
 $log = Join-Path (Split-Path $AppDir -Parent) 'app_debug.log'
 function L([string]$m) { try { Add-Content -LiteralPath $log -Value ("{0} [UPDATER] {1}" -f (Get-Date -Format 'HH:mm:ss'), $m) -Encoding UTF8 } catch { } }
+$lock = $null
 try {
     if ($WaitPid -gt 0) { try { Wait-Process -Id $WaitPid -Timeout 90 -ErrorAction SilentlyContinue } catch { } }
     Start-Sleep -Milliseconds 800
+    # Le zip a été vérifié (empreinte + signature) par l'application : il est VERROUILLÉ en
+    # écriture puis ré-haché juste avant l'extraction (aucun échange possible entre-temps).
+    $lock = [System.IO.File]::Open($Zip, 'Open', 'Read', 'Read')
+    $h = [System.Security.Cryptography.SHA256]::Create()
+    $now = ([BitConverter]::ToString($h.ComputeHash($lock)) -replace '-', '')
+    if ($now -ne $Sha) { throw "le paquet a changé depuis sa vérification (empreinte $now) : installation annulée" }
     $tmp = Join-Path $env:TEMP ('btupd_' + [guid]::NewGuid().ToString('N'))
     Expand-Archive -LiteralPath $Zip -DestinationPath $tmp -Force
+    $lock.Dispose(); $lock = $null
     $inner = Get-ChildItem -LiteralPath $tmp -Directory | Where-Object { Test-Path (Join-Path $_.FullName 'BiblioTechWidget.ps1') } | Select-Object -First 1
     $src = if ($inner) { $inner.FullName } else { $tmp }
     if (-not (Test-Path (Join-Path $src 'BiblioTechWidget.ps1'))) { throw 'archive invalide (BiblioTechWidget.ps1 absent)' }
@@ -313,13 +327,14 @@ try {
     else { L 'ECHEC : copie impossible, ancienne version conservée.' }
 } catch { L ("ECHEC : " + $_.Exception.Message) }
 finally {
+    if ($lock) { $lock.Dispose() }
     $vbs = Join-Path $AppDir 'Start-BiblioTech.vbs'
     if (Test-Path $vbs) { Start-Process -FilePath 'wscript.exe' -ArgumentList ('"' + $vbs + '"') -WorkingDirectory $AppDir }
 }
 '@
     $path = Join-Path (Join-Path $Ctx.DataDir 'update') 'updater.ps1'
     [System.IO.File]::WriteAllText($path, $updater, (New-Object System.Text.UTF8Encoding $true))
-    $args_ = '-NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File "{0}" -WaitPid {1} -Zip "{2}" -AppDir "{3}" -Version "{4}"' -f $path, $PID, $Zip, $Ctx.AppRoot, $Version
+    $args_ = '-NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File "{0}" -WaitPid {1} -Zip "{2}" -AppDir "{3}" -Version "{4}" -Sha {5}' -f $path, $PID, $Zip, $Ctx.AppRoot, $Version, $Sha
     Start-Process -FilePath 'powershell.exe' -ArgumentList $args_ -WindowStyle Hidden
     Write-BtLog "[MAJ] Updater lancé (version $Version) : fermeture de l'application."
     Stop-BtApp $Ctx

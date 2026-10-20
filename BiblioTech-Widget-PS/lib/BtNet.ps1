@@ -13,7 +13,11 @@
 function Initialize-BtWebView2 {
     param([string]$LibDir)
     try {
-        [BtNative]::SetDllDirectory($LibDir) | Out-Null
+        # Chargeur natif chargé par son CHEMIN COMPLET (et non SetDllDirectory, qui plaçait ce
+        # dossier inscriptible AVANT System32 pour toutes les DLL du processus) : les appels
+        # suivants « WebView2Loader.dll » réutilisent ce module déjà chargé.
+        $loader = Join-Path $LibDir 'WebView2Loader.dll'
+        if ([BtNative]::LoadLibraryW($loader) -eq [IntPtr]::Zero) { throw "WebView2Loader.dll non chargé ($loader)" }
         Add-Type -Path (Join-Path $LibDir 'Microsoft.Web.WebView2.Core.dll')
         Add-Type -Path (Join-Path $LibDir 'Microsoft.Web.WebView2.Wpf.dll')
         $v = [Microsoft.Web.WebView2.Core.CoreWebView2Environment]::GetAvailableBrowserVersionString()
@@ -33,11 +37,45 @@ function New-BtWebView {
     $cp = New-Object Microsoft.Web.WebView2.Wpf.CoreWebView2CreationProperties
     $cp.UserDataFolder = (Join-Path $Ctx.DataDir 'webview2')
     $allow = $Ctx.Config.AuthAllowlist
-    $cp.AdditionalBrowserArguments = "--auth-server-allowlist=$allow --auth-negotiate-delegate-allowlist=$allow"
+    # SSO Windows intégré (Kerberos/Negotiate) vers les seuls serveurs de l'allowlist. PAS de
+    # --auth-negotiate-delegate-allowlist : Confluence n'a pas besoin de la DÉLÉGATION des
+    # identifiants (TGT transmissible), qui exposerait l'utilisateur à tout serveur *.sncf.fr.
+    $cp.AdditionalBrowserArguments = "--auth-server-allowlist=$allow"
     $wv.CreationProperties = $cp
     # Fond affiché avant le chargement de la page : celui du thème Windows (pas de flash).
     $wv.DefaultBackgroundColor = if ($Ctx.Dark -ne $false) { [System.Drawing.Color]::FromArgb(255, 15, 23, 42) } else { [System.Drawing.Color]::White }
     return $wv
+}
+
+# Durcissement commun à chaque WebView2 (appelé à l'initialisation de son CoreWebView2) :
+# - outils de développement (F12) désactivés (BT_DEVTOOLS=1 pour le développement) ;
+# - aucune autorisation accordée aux pages (caméra, micro, position, notifications…) ;
+# - aucun objet hôte exposé ; messages web réservés au tableau de bord (-WebMessages) ;
+# - téléchargements : seulement depuis Confluence et seulement dans le lecteur (-Downloads).
+function Set-BtWebHardening {
+    param($Ctx, $Cw, [switch]$WebMessages, [switch]$Downloads)
+    try {
+        $st = $Cw.Settings
+        $st.AreDevToolsEnabled = ($env:BT_DEVTOOLS -eq '1')
+        $st.AreHostObjectsAllowed = $false
+        $st.IsWebMessageEnabled = [bool]$WebMessages
+        $Cw.add_PermissionRequested({ param($a, $b) $b.State = [Microsoft.Web.WebView2.Core.CoreWebView2PermissionState]::Deny })
+        if ($Downloads) {
+            $Cw.add_DownloadStarting({ param($a, $b)
+                $h = ''; try { $h = ([uri]$b.DownloadOperation.Uri).Host } catch { }
+                if ($h -ne $script:Ctx.ConfHost) { $b.Cancel = $true; Write-BtLog "[SECU] Téléchargement bloqué (hors Confluence) : $h" } })
+        } else {
+            $Cw.add_DownloadStarting({ param($a, $b) $b.Cancel = $true })
+        }
+    } catch { Write-BtLog "[SECU] Durcissement WebView2 incomplet : $($_.Exception.Message)" }
+}
+
+# Hôtes de confiance pour la NAVIGATION : Confluence et le fournisseur d'identité (IdP)
+# appris lors de la connexion (State.IdpHost).
+function Test-BtTrustedHost {
+    param($Ctx, [string]$HostName)
+    if (-not $HostName) { return $false }
+    return ($HostName -eq $Ctx.ConfHost) -or ($Ctx.State.IdpHost -and $HostName -eq [string]$Ctx.State.IdpHost)
 }
 
 # Erreurs de navigation qui signifient « réseau / VPN indisponible ».
@@ -58,6 +96,15 @@ function Start-BtProbe {
     $Probe.PollJs = $PollJs
     $Probe.ExpectId = $ExpectId
     $Probe.Deadline = (Get-Date).AddSeconds($TimeoutSec)
+    # Les sondes (recherche, identité…) ne s'exécutent QUE dans une page Confluence : si le
+    # WebView est ailleurs (IdP, redirection), on ne lui confie ni requête ni résultat ->
+    # réponse « AUTH » (reconnexion, la page Confluence est rechargée).
+    $h = ''; try { $h = ([uri]$Ctx.WebView.CoreWebView2.Source).Host } catch { }
+    if ($h -ne $Ctx.ConfHost) {
+        $Probe.Fail = [pscustomobject]@{ state = 'AUTH'; id = $ExpectId; error = "page courante hors Confluence ($h)" }
+        $Probe.Phase = 'fail'
+        return
+    }
     $Probe.Task = $Ctx.WebView.CoreWebView2.ExecuteScriptAsync($KickJs)
     $Probe.Phase = 'kick'
 }
@@ -67,6 +114,7 @@ function Start-BtProbe {
 function Step-BtProbe {
     param($Ctx, $Probe)
     if ($Probe.Phase -eq '') { return $null }
+    if ($Probe.Phase -eq 'fail') { $Probe.Phase = ''; return $Probe.Fail }
     if (-not $Probe.Task.IsCompleted) {
         if ((Get-Date) -gt $Probe.Deadline.AddSeconds(10)) {
             $Probe.Phase = ''
@@ -109,13 +157,6 @@ function Step-BtProbe {
 # côté Confluence / IdP redemande la validation comme avant. Toutes les 5 min, pour
 # couvrir aussi les cookies renouvelés en cours de route. Tâches sondées par la pompe
 # (attendre .Result sur le thread UI bloquerait WebView2).
-function Get-BtCookieDomainRx {
-    param([string]$Allowlist)
-    $rx = @(([string]$Allowlist -split '[,;\s]+') | Where-Object { $_ } | ForEach-Object {
-        if ($_.StartsWith('*.')) { '(^|\.)' + [regex]::Escape($_.Substring(2)) + '$' } else { '^' + [regex]::Escape($_) + '$' } })
-    return ($rx -join '|')
-}
-
 function Step-BtKeepSession {
     param($Ctx)
     $k = $Ctx.Keep
@@ -131,13 +172,15 @@ function Step-BtKeepSession {
     $t = $k.Task; $k.Task = $null
     if ($t.IsFaulted) { Write-BtLog "[AUTH] Lecture des cookies impossible : $($t.Exception.InnerException.Message)"; return }
     $cm = $Ctx.WebView.CoreWebView2.CookieManager
-    $rx = Get-BtCookieDomainRx $Ctx.Config.AuthAllowlist
     $until = (Get-Date).AddHours([int]$Ctx.Config.SessionKeepHours)
+    # SEULS les cookies envoyés à Confluence ou à l'IdP appris (domaine exact ou domaine parent
+    # de l'un d'eux) sont conservés : jamais ceux d'autres applications *.sncf.fr.
+    $hosts = @($Ctx.ConfHost, [string]$Ctx.State.IdpHost) | Where-Object { $_ }
     $kept = @()
     foreach ($c in @($t.Result)) {
         if (-not $c.IsSession) { continue }
-        $d = ([string]$c.Domain).TrimStart('.')
-        if (-not $rx -or $d -notmatch $rx) { continue }
+        $d = ([string]$c.Domain).TrimStart('.').ToLowerInvariant()
+        if (-not $d -or -not @($hosts | Where-Object { $_ -eq $d -or $_.EndsWith('.' + $d) }).Count) { continue }
         try { $c.Expires = $until; $cm.AddOrUpdateCookie($c); $kept += "$($c.Name)@$d" }
         catch { Write-BtLog "[AUTH] Cookie $($c.Name)@$d non conservé : $($_.Exception.Message)" }
     }

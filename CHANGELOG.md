@@ -1,5 +1,32 @@
 # Historique des versions
 
+## 1.1.18 — 2026-10-20 — revue de sécurité
+
+Revue en deux volets (web / système), chaque constat vérifié puis corrigé et testé :
+- **Injection de formules Excel** (titre de page « =WEBSERVICE(…) » exécuté à l'export) : toute
+  chaîne commençant par = + - @ est préfixée d'une apostrophe dans `$put` ; la seule formule
+  interne passe par `@{ BtFormula = … }`. Testé : WEBSERVICE, HYPERLINK, DDE, @, - restent texte.
+- **Lecteur verrouillé** (`Get-BtReaderNavPolicy`) : Confluence + IdP appris (`State.IdpHost`) ;
+  redirection SSO vers l'allowlist acceptée ; tout autre site -> navigateur ; file://, javascript:,
+  ms-* bloqués (navigation ET nouvelle fenêtre). Fenêtre de connexion : schémas non web bloqués.
+- **WebView2 durcis** (`Set-BtWebHardening`) : F12 désactivé (BT_DEVTOOLS=1 en dev), toute
+  autorisation refusée, objets hôtes interdits, messages web réservés au tableau de bord,
+  téléchargements seulement depuis Confluence dans le lecteur.
+- **Kerberos** : `--auth-negotiate-delegate-allowlist` supprimé (aucune délégation d'identifiants).
+- **Session conservée** limitée aux cookies envoyés à Confluence / à l'IdP appris (plus ceux des
+  autres applications *.sncf.fr).
+- **Tableau de bord** : navigation limitée à Confluence, messages web acceptés seulement de
+  Confluence, dates d'export validées (pas de « ..\ » dans le nom de fichier), journal assaini.
+- **Sondes** : jamais exécutées hors d'une page Confluence (réponse AUTH -> reconnexion).
+- **Mises à jour** : version au format strict ; URL du paquet RECONSTRUITE (celle du manifeste non
+  signé est ignorée : plus de file:// / NTLM) ; zip verrouillé de la vérification à l'extraction et
+  ré-haché par l'updater (`-Sha`) ; lanceur : une MAJ refusée ou en échec ne bloque plus jamais le
+  lancement d'une installation saine ; manifeste à version invalide ignoré.
+- **Divers** : mutex / événement `Local\…_<SID>` (plus de blocage entre sessions RDS) ;
+  `WebView2Loader.dll` chargé par chemin complet (fin de `SetDllDirectory`) ; `Test-BtHttpUrl`
+  strict ; build : seuls les fichiers suivis par Git sont empaquetés (+ liste des nouveaux
+  fichiers), BSTR du mot de passe effacé ; journal des catégories borné à 2 Mo.
+
 ## 1.1.17 — 2026-10-20
 
 - **Copilot retiré** (demande de l'utilisateur) : dossier `copilot-agent/` supprimé ;

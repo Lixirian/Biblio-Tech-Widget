@@ -7,7 +7,7 @@
 $Config = @{
     # Version de l'application. À INCRÉMENTER à chaque publication (build-release.ps1
     # lit cette valeur pour nommer le zip, la release GitHub et latest.json).
-    Version            = '1.1.17'
+    Version            = '1.1.18'
 
     # ----- Confluence -----
     # URL de l'instance (sans slash final).

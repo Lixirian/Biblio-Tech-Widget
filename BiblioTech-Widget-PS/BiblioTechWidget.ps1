@@ -33,15 +33,18 @@ try { [void][BtNative]::SetCurrentProcessExplicitAppUserModelID($script:BtAppId)
 # --- Garde mono-instance ---
 # Une 2e instance (raccourci relancé alors que l'appli est masquée dans la zone de
 # notification) signale simplement à la 1re de réafficher sa fenêtre, puis s'arrête.
+# Noms LOCAUX à la session et propres à l'utilisateur (SID) : sur un poste partagé (RDS / Citrix),
+# un autre utilisateur ne peut ni bloquer le démarrage en pré-créant le nom, ni signaler la fenêtre.
+$btSid = [Security.Principal.WindowsIdentity]::GetCurrent().User.Value
 $createdNew = $false
-$script:BtMutex = New-Object System.Threading.Mutex($true, 'Global\BiblioTechWidgetSingleton', [ref]$createdNew)
+$script:BtMutex = New-Object System.Threading.Mutex($true, "Local\BiblioTechWidgetSingleton_$btSid", [ref]$createdNew)
 if (-not $createdNew) {
     $shown = $false
-    try { $ev = [System.Threading.EventWaitHandle]::OpenExisting('Global\BiblioTechWidgetShow'); $shown = $ev.Set(); $ev.Dispose() } catch { }
+    try { $ev = [System.Threading.EventWaitHandle]::OpenExisting("Local\BiblioTechWidgetShow_$btSid"); $shown = $ev.Set(); $ev.Dispose() } catch { }
     if (-not $shown) { [System.Windows.Forms.MessageBox]::Show('Biblio-Tech est déjà en cours d''exécution (raccourci : ' + $Config.Hotkey + ').', 'Biblio-Tech') | Out-Null }
     return
 }
-$script:BtShowEvent = New-Object System.Threading.EventWaitHandle($false, [System.Threading.EventResetMode]::AutoReset, 'Global\BiblioTechWidgetShow')
+$script:BtShowEvent = New-Object System.Threading.EventWaitHandle($false, [System.Threading.EventResetMode]::AutoReset, "Local\BiblioTechWidgetShow_$btSid")
 
 $dataDir = Get-BtDataDir
 Initialize-BtLog (Join-Path $dataDir 'app_debug.log')
@@ -193,6 +196,7 @@ function Start-BtAuth {
         Write-BtLog '[WV2] CoreWebView2 initialisé.'
         $cw = $s.CoreWebView2
         $cw.add_NewWindowRequested({ param($a, $b) $b.Handled = $true })
+        Set-BtWebHardening $script:Ctx $cw          # pas de F12, d'autorisation, de téléchargement
         # Processus navigateur tué (veille prolongée) : on recharge, le profil garde la session.
         $cw.add_ProcessFailed({ param($a, $b)
             Write-BtLog "[WV2] ProcessFailed ($($b.ProcessFailedKind)) -> rechargement."
@@ -206,6 +210,9 @@ function Start-BtAuth {
     $wv.add_NavigationStarting({ param($s, $e)
         $c = $script:Ctx
         $u = $null; try { $u = [uri]$e.Uri } catch { }
+        # Schémas autres que http(s) (file://, ms-…:, applications) : jamais dans la fenêtre de
+        # connexion (fuite d'empreinte NTLM vers un partage, lancement d'application).
+        if ($u -and $u.Scheme -notin @('https', 'http', 'about', 'data')) { $e.Cancel = $true; Write-BtLog "[SECU] Navigation bloquée (schéma $($u.Scheme))."; return }
         if (-not $u -or $u.Host -ne $c.ConfHost -or $u.AbsolutePath -match '(?i)/(login|dologin|authenticate)\.action') { return }
         $w = $c.AuthWindow
         if ($w -and $w.Left -gt -4000) {
@@ -237,7 +244,11 @@ function Start-BtAuth {
         if ($h -eq $c.ConfHost -and $u.AbsolutePath -match '(?i)/plugins/servlet/(saml|sso|oidc|oauth)') { return }
         $isLogin =($h -ne $c.ConfHost) -or ($u.AbsolutePath -match '(?i)/(login|dologin|authenticate)\.action')
         if ($isLogin) {
-            # Page du fournisseur d'identité ou de connexion Confluence.
+            # Page du fournisseur d'identité ou de connexion Confluence. L'hôte de l'IdP est retenu :
+            # seuls Confluence et lui sont ensuite de confiance (lecteur, cookies conservés).
+            if ($h -ne $c.ConfHost -and $u.Scheme -eq 'https' -and [string]$c.State.IdpHost -ne $h) {
+                $c.State.IdpHost = $h; Save-BtState $c.State; Write-BtLog "[AUTH] Fournisseur d'identité : $h"
+            }
             if ($c.LoginInteractive) { Set-BtAuthState $c 'login'; Show-BtAuthWindow; return }
             # Tentative SILENCIEUSE : si la session SSO est encore valide, l'IdP renvoie seul vers
             # Confluence en quelques instants. Sinon (validation demandée), la fenêtre est
