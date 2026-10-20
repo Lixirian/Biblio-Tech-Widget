@@ -1,11 +1,12 @@
 {
-    "version":  "1.1.24",
-    "zip":  "BiblioTech-Widget_version1.1.24.zip",
-    "url":  "https://github.com/Lixirian/Biblio-Tech-Widget/releases/download/v1.1.24/BiblioTech-Widget_version1.1.24.zip",
-    "sha256":  "21F63231C94B30C8A8CB121E1C1429A075E66D5587D19617DD8AA9266779871A",
-    "sig":  "0xD8IWlk30qi4JqVZmYerK1DTM5qhRW7oez4LCNIaml04TwAV5bNdRkfOzvJVKcOEj1hufZqDvFkcBYPoArF8m6sS/iHSIbzKZUITxg6Tb4U1l2JixS8PYOOxMbmBWFasccUw4XQvlWeHBgmCuREwteRwTmII0sKQ7tDgm7UwjC9sl31CcyOcmRNE7YMJNKy2ebxby9WhlkP1umgg7SZ9sBg/GEKOpoDZsW2qd3EwhTITk0Rzn5uyG07no6l7Z39D64u0Z7PENZ++7dH/33maUMAjLrCedQI2OSKmUwWc79uDXwMJoSxsDddybBF4clGpv70c/oHNmr0PW/IHb4q9Yo+/MUWriv9J4sorp3loo6sFRhKjLsLVT2iE2OrYanMwFZFJMIhIsiSkN4EwGCMUG9w1FUwrBoICPxzr+dS/FZDcrPPogewKzFjCHhErfXdj9LmGYVj6fwXCRJM9Eoauvw/HQeD8RRGklr4sFNb3hM072128ncoG3jhCBSzHjvl",
+    "version":  "1.1.25",
+    "zip":  "BiblioTech-Widget_version1.1.25.zip",
+    "url":  "https://github.com/Lixirian/Biblio-Tech-Widget/releases/download/v1.1.25/BiblioTech-Widget_version1.1.25.zip",
+    "sha256":  "F64A9E9331F3AA1385C54243D5D062A8EFAB68F4E7CB9C6A648F234522D7C2D5",
+    "sig":  "j1Q5uOMof462FzL+aJRGu69O4ih6BL6OyqCl4Y59oGcuDclH/nmgEliOHLuqdOCSBmC35LFY5r8LPflCQAaDQw/4YjaiFC2zxBcKyS/4e3Rnlv2LjUAKcU7+XE8mAKw5WYth+hBC5rGWheuj0v5zKtHfLAPibcUOK0BUBthB8W2dsx11f+MlTYi4unKMOJ1x2s3UBbjqCma665lSzMMyxYENzTdpaUoRPIz8kHdWtjQY3JTzh/Z7I0zUkJtLQWWjLbJvoJUoZH5P8i/9/lyxcMLVvOZpb+y2mqc64B5WuxQv++jA6Am6NAbeL8++GFjYkVW8jqCRfWaP6zlS3qAIFPJ6HAp2ccNV4KLkZVWacmW/OC1LhmSXs7e01DT4nToLF3ggdQXwoi0f+v6BVgkyLLsHP1D1eOpAKbYYK+H/2cXWX848/f9sPFx9lG2peCVgcgvEYNnJwzp4Pb8FrS7/cxCEzroUr5g2pzf25En5ubqzCh0qtFQBmHag0x78ksdE",
     "date":  "2026-10-20",
     "notes":  [
-                  "Lecteur : chaque consigne ouverte depuis Biblio-Tech (recherche, accueil, tableau de bord) repart d\u0027un historique vierge ; les boutons Précédent et Suivant ne concernent plus que les pages parcourues dans cette fenêtre."
+                  "Accueil : « Les dernières news de Biblio-TECH » (anciennement « Biblio-TECH met en avant ») s\u0027affichent désormais en tout premier, dans un bandeau bien visible, avant les rubriques de votre profil.",
+                  "Accueil : la rubrique « Commentaires de l\u0027espace Biblio-TECH » s\u0027intitule désormais « Derniers commentaires de l\u0027espace Biblio-TECH »."
               ]
 }
