@@ -1,11 +1,11 @@
 {
-    "version":  "1.1.23",
-    "zip":  "BiblioTech-Widget_version1.1.23.zip",
-    "url":  "https://github.com/Lixirian/Biblio-Tech-Widget/releases/download/v1.1.23/BiblioTech-Widget_version1.1.23.zip",
-    "sha256":  "25A034C99A1D502ED0FDF0D41F63FD5F5FC566A6810589AFBB9DE84D75E388E0",
-    "sig":  "m42RLXR8hjgZobTcHUVguWi4tnOP+HkO9ReHivbRgQKMZSieZnpVWJEy1qdhkr0xNvV1xmo5V2o5QG9gpgUVjkcuZ4Op4eNuVcwDWggX5U4zmzbc/wZCu+dmmLpTMoA0VzIzFM4mCzHgpxHeZawTb81Dr6Tubf8f675EZ7R3Pu6xMFsjU5mJBTnWNyUngxOaOXynhOKllwzC2+1465QWMFPs16SuUO0Oj7XOYSvvP3CPSTchvPGdSOowXHaESKVcPGhfsExbL6TMQRw3HkxJEY6j7bMzqq47BuOlQmA2OjjtQM32rAos1Y4z1hWHu0qLKIGMYTBd5Es8ATm6IlFJk7iUraT41kKF/p5TN8JWmFnmJcQMRBDVvZBTAU/J2QLiNEkArGE3kdMOCpkwdTCtYjz0h5hwEqTVZGB1lphpA0SMzvC+Y11Z6XHrVUjEMwLQw/XkC56qRuMQA+RZhPYpoeWiSVxH18fDKhsP5E2eYksH1MTmsOxYIvbpy06iCKgD",
+    "version":  "1.1.24",
+    "zip":  "BiblioTech-Widget_version1.1.24.zip",
+    "url":  "https://github.com/Lixirian/Biblio-Tech-Widget/releases/download/v1.1.24/BiblioTech-Widget_version1.1.24.zip",
+    "sha256":  "21F63231C94B30C8A8CB121E1C1429A075E66D5587D19617DD8AA9266779871A",
+    "sig":  "0xD8IWlk30qi4JqVZmYerK1DTM5qhRW7oez4LCNIaml04TwAV5bNdRkfOzvJVKcOEj1hufZqDvFkcBYPoArF8m6sS/iHSIbzKZUITxg6Tb4U1l2JixS8PYOOxMbmBWFasccUw4XQvlWeHBgmCuREwteRwTmII0sKQ7tDgm7UwjC9sl31CcyOcmRNE7YMJNKy2ebxby9WhlkP1umgg7SZ9sBg/GEKOpoDZsW2qd3EwhTITk0Rzn5uyG07no6l7Z39D64u0Z7PENZ++7dH/33maUMAjLrCedQI2OSKmUwWc79uDXwMJoSxsDddybBF4clGpv70c/oHNmr0PW/IHb4q9Yo+/MUWriv9J4sorp3loo6sFRhKjLsLVT2iE2OrYanMwFZFJMIhIsiSkN4EwGCMUG9w1FUwrBoICPxzr+dS/FZDcrPPogewKzFjCHhErfXdj9LmGYVj6fwXCRJM9Eoauvw/HQeD8RRGklr4sFNb3hM072128ncoG3jhCBSzHjvl",
     "date":  "2026-10-20",
     "notes":  [
-                  "Tableau de bord : un clic sur une consigne ou un commentaire l\u0027ouvre dans le lecteur de Biblio-Tech, et la page défile jusqu\u0027au commentaire concerné (mis en évidence). Ctrl + clic l\u0027ouvre dans votre navigateur."
+                  "Lecteur : chaque consigne ouverte depuis Biblio-Tech (recherche, accueil, tableau de bord) repart d\u0027un historique vierge ; les boutons Précédent et Suivant ne concernent plus que les pages parcourues dans cette fenêtre."
               ]
 }
