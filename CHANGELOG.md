@@ -1,5 +1,20 @@
 # Historique des versions
 
+## 1.1.12 — 2026-10-20
+
+- **Tuiles qui n'ouvraient rien** : l'ouverture était branchée sur `Completed` d'une
+  `DoubleAnimation` APRÈS `BeginAnimation` ; WPF anime une copie figée, l'événement ne se
+  déclenchait jamais (reproduit hors écran). Ouverture désormais immédiate au relâchement du
+  clic (la page suivante garde son glissement). Ombre animée (`DropShadowEffect`) retirée :
+  coûteuse en rendu logiciel / poste virtualisé. Sous-pages d'une rubrique chargées sans
+  attendre l'aperçu de l'accueil ; consignes affichées par lots de 40 (« Afficher plus »).
+- **SSO à chaque lancement** : les cookies de session Confluence / IdP (sans échéance) étaient
+  effacés par WebView2 à la fermeture. `Step-BtKeepSession` (BtNet, pompe, toutes les 5 min
+  une fois connecté) leur donne une échéance `SessionKeepHours` (12 h) dans le magasin de
+  cookies du profil WebView2 — domaines de `AuthAllowlist` seulement, aucune valeur lue ni
+  copiée ailleurs ; l'expiration serveur reste maître. Vérifié avec un serveur local : cookie
+  perdu au relancement sans le correctif, présent avec. Journal : `[AUTH] Session conservée`.
+
 ## 1.1.11 — 2026-10-20
 
 - **Page d'accueil de référence** : `HomePath` = `/spaces/KM/pages/500662444/Bienvenue+dans+votre+Biblio-TECH`,

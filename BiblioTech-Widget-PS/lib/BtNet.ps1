@@ -87,3 +87,48 @@ function Step-BtProbe {
     $Probe.Task = $Ctx.WebView.CoreWebView2.ExecuteScriptAsync($Probe.PollJs)
     return $null
 }
+
+# --- Session SSO conservée d'un lancement à l'autre ------------------------------
+# Le cookie de session Confluence et celui de l'IdP sont des cookies de SESSION (sans
+# échéance) : WebView2 les efface à la fermeture -> validation SSO à CHAQUE lancement.
+# Une fois connecté, on leur donne une échéance (Config.SessionKeepHours) dans le MÊME
+# magasin de cookies du profil WebView2 (chiffré par Windows, comme celui d'un navigateur).
+# L'appli ne lit ni ne copie aucune valeur. Le serveur reste maître : une session expirée
+# côté Confluence / IdP redemande la validation comme avant. Toutes les 5 min, pour
+# couvrir aussi les cookies renouvelés en cours de route. Tâches sondées par la pompe
+# (attendre .Result sur le thread UI bloquerait WebView2).
+function Get-BtCookieDomainRx {
+    param([string]$Allowlist)
+    $rx = @(([string]$Allowlist -split '[,;\s]+') | Where-Object { $_ } | ForEach-Object {
+        if ($_.StartsWith('*.')) { '(^|\.)' + [regex]::Escape($_.Substring(2)) + '$' } else { '^' + [regex]::Escape($_) + '$' } })
+    return ($rx -join '|')
+}
+
+function Step-BtKeepSession {
+    param($Ctx)
+    $k = $Ctx.Keep
+    if ($Ctx.Demo -or [int]$Ctx.Config.SessionKeepHours -le 0) { return }
+    if (-not $k.Task) {
+        if (-not ($Ctx.Ready -and $Ctx.WebView -and $Ctx.WebView.CoreWebView2)) { return }
+        if ($k.NextAt -and (Get-Date) -lt $k.NextAt) { return }
+        $k.NextAt = (Get-Date).AddMinutes(5)
+        $k.Task = $Ctx.WebView.CoreWebView2.CookieManager.GetCookiesAsync('')
+        return
+    }
+    if (-not $k.Task.IsCompleted) { return }
+    $t = $k.Task; $k.Task = $null
+    if ($t.IsFaulted) { Write-BtLog "[AUTH] Lecture des cookies impossible : $($t.Exception.InnerException.Message)"; return }
+    $cm = $Ctx.WebView.CoreWebView2.CookieManager
+    $rx = Get-BtCookieDomainRx $Ctx.Config.AuthAllowlist
+    $until = (Get-Date).AddHours([int]$Ctx.Config.SessionKeepHours)
+    $kept = @()
+    foreach ($c in @($t.Result)) {
+        if (-not $c.IsSession) { continue }
+        $d = ([string]$c.Domain).TrimStart('.')
+        if (-not $rx -or $d -notmatch $rx) { continue }
+        try { $c.Expires = $until; $cm.AddOrUpdateCookie($c); $kept += "$($c.Name)@$d" }
+        catch { Write-BtLog "[AUTH] Cookie $($c.Name)@$d non conservé : $($_.Exception.Message)" }
+    }
+    # Noms et domaines seulement (jamais de valeur) : utile pour le calibrage terrain.
+    if ($kept.Count) { Write-BtLog ("[AUTH] Session conservée jusqu'au {0} : {1}" -f $until.ToString('dd/MM HH:mm'), ($kept -join ', ')) }
+}

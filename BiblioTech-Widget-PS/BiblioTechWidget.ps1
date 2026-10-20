@@ -90,11 +90,12 @@ $script:Ctx = @{
     # Accueil en tuiles (lib\BtHome.ps1) : Nav = pile des « pages suivantes » ouvertes depuis
     # les tuiles ; Kids = sous-pages des rubriques (id -> @{ Items; Error; At }).
     Home       = @{ Probe = (New-BtProbe 'home'); Id = ''; At = $null; Top = @(); Fresh = @(); News = @(); Rubrics = @(); HomeTitle = ''; Error = $null
-                    Nav = (New-Object System.Collections.ArrayList); NavPending = $null
+                    Nav = (New-Object System.Collections.ArrayList)
                     KidProbe = (New-BtProbe 'kids'); KidId = ''; KidWant = $null; Kids = @{} }
     Browse     = $false          # onglet « Catégories » (arborescence) affiché à la place de l'accueil
     BrowseOpen = @{}             # nœuds dépliés (chemin -> $true)
     Dash       = @{ Window = $null; WebView = $null }
+    Keep       = @{ Task = $null; NextAt = $null }   # session SSO conservée (Step-BtKeepSession)
     Ui         = $null
     Window     = $null
     StatusKind = 'idle'
@@ -471,7 +472,7 @@ function Complete-BtSearch {
 function Step-BtPump {
     $c = $script:Ctx
     if ($c.Quitting) { return }
-    foreach ($step in @('Step-BtInfo', 'Step-BtSearch', 'Step-BtUpdate', 'Step-BtCategScan', 'Step-BtHome')) {
+    foreach ($step in @('Step-BtInfo', 'Step-BtSearch', 'Step-BtUpdate', 'Step-BtCategScan', 'Step-BtHome', 'Step-BtKeepSession')) {
         try { & $step $c } catch { Write-BtLog "[PUMP] $step : $($_.Exception.Message)" }
     }
     try {

@@ -1,4 +1,8 @@
 {
+    "1.1.12":  [
+                   "Tuiles de l'accueil : la rubrique s'ouvre immédiatement au clic (en 1.1.11 rien ne s'ouvrait et l'appli semblait figée).",
+                   "Connexion : une fois validée, la session SSO est conservée même si vous quittez et relancez Biblio-Tech, jusqu'à son expiration (12 h au plus). Plus de validation à chaque lancement."
+               ],
     "1.1.11":  [
                    "Nouvel accueil en tuiles, basé sur la page « Bienvenue dans votre Biblio-TECH » : accès rapides (dernières news, nouvelles consignes, plus commentées, mises à jour récentes) et une tuile par rubrique. Les tuiles s'animent au survol et au clic, puis ouvrent la rubrique (sous-rubriques et consignes) ; retour avec la flèche ou Échap.",
                    "Recherche : seules les consignes s'affichent (plus de pièces jointes ni de billets de blog).",

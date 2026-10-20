@@ -119,7 +119,7 @@ function Step-BtHome {
     # 1) Aperçu de l'accueil (toutes les 15 min).
     if ($h.Probe.Phase -eq '') {
         $due = $live -and (-not $h.At -or ((Get-Date) - $h.At).TotalMinutes -ge 15)
-        if ($due -and -not $Ctx.Search.Active -and $h.KidProbe.Phase -eq '') {
+        if ($due -and -not $Ctx.Search.Active) {
             $h.At = Get-Date
             $h.Id = [guid]::NewGuid().ToString('N')
             $p = @{ id = $h.Id; base = $Ctx.Config.BaseUrl.TrimEnd('/'); space = [string]$Ctx.Config.SpaceKey; homeId = [string]$Ctx.Config.HomePageId
@@ -149,7 +149,7 @@ function Step-BtHome {
     }
     # 2) Sous-pages de la rubrique ouverte.
     if ($h.KidProbe.Phase -eq '') {
-        if ($h.KidWant -and $live -and $h.Probe.Phase -eq '' -and -not $Ctx.Search.Active) {
+        if ($h.KidWant -and $live) {
             $w = $h.KidWant; $h.KidWant = $null
             $h.KidId = [guid]::NewGuid().ToString('N')
             $p = @{ id = $h.KidId; base = $Ctx.Config.BaseUrl.TrimEnd('/'); pid = [string]$w.Id; title = [string]$w.Title } | ConvertTo-Json -Compress
@@ -324,10 +324,6 @@ function New-BtTile {
     $tg.Children.Add((New-Object System.Windows.Media.ScaleTransform(1, 1)))
     $tg.Children.Add((New-Object System.Windows.Media.TranslateTransform(0, 0)))
     $tile.RenderTransform = $tg
-    $fx = New-Object System.Windows.Media.Effects.DropShadowEffect
-    $fx.BlurRadius = 18; $fx.ShadowDepth = 4; $fx.Direction = 270; $fx.Opacity = 0
-    $fx.Color = [System.Windows.Media.ColorConverter]::ConvertFromString($Color)
-    $tile.Effect = $fx
 
     $grid = New-Object System.Windows.Controls.Grid
     foreach ($h in @('Auto', 'Star', 'Auto')) {
@@ -381,21 +377,17 @@ function New-BtTile {
         $e.Handled = $true
         if (-not $s.Tag.Pressed) { return }
         $s.Tag.Pressed = $false
-        # Rebond, puis passage à la page suivante une fois l'animation terminée.
-        $script:Ctx.Home.NavPending = $s.Tag.Target
+        # Ouverture IMMÉDIATE : la page suivante arrive avec sa propre animation (glissement).
+        # (Ne pas attendre l'événement Completed d'une animation : branché après BeginAnimation,
+        # il ne se déclenche jamais -> en 1.1.11 rien ne s'ouvrait.)
         $sc = $s.RenderTransform.Children[0]
-        [void](Start-BtAnim $sc ([System.Windows.Media.ScaleTransform]::ScaleYProperty) 1.06 170 'back')
-        $a = Start-BtAnim $sc ([System.Windows.Media.ScaleTransform]::ScaleXProperty) 1.06 170 'back'
-        $a.Add_Completed({
-            $c = $script:Ctx
-            $tg_ = $c.Home.NavPending; $c.Home.NavPending = $null
-            if ($tg_) { try { Invoke-BtHomeNav $c $tg_ } catch { Write-BtLog "[ERREUR UI] Tuile : $($_.Exception.Message)" } }
-        })
+        foreach ($pr in @([System.Windows.Media.ScaleTransform]::ScaleXProperty, [System.Windows.Media.ScaleTransform]::ScaleYProperty)) { [void](Start-BtAnim $sc $pr 1.0 120 'back') }
+        try { Invoke-BtHomeNav $script:Ctx $s.Tag.Target } catch { Write-BtLog "[ERREUR UI] Tuile : $($_.Exception.Message)" }
     })
     return $tile
 }
 
-# Survol : la tuile grossit, se soulève (ombre colorée), l'icône pivote, la flèche glisse.
+# Survol : la tuile grossit, se soulève, se colore, l'icône pivote, la flèche glisse.
 function Set-BtTileHover {
     param($Tile, [bool]$On)
     $d = $Tile.Tag
@@ -404,7 +396,6 @@ function Set-BtTileHover {
     $scale = if ($On) { 1.045 } else { 1.0 }
     foreach ($pr in @([System.Windows.Media.ScaleTransform]::ScaleXProperty, [System.Windows.Media.ScaleTransform]::ScaleYProperty)) { [void](Start-BtAnim $sc $pr $scale 180) }
     [void](Start-BtAnim $tr ([System.Windows.Media.TranslateTransform]::YProperty) $(if ($On) { -3 } else { 0 }) 180)
-    [void](Start-BtAnim $Tile.Effect ([System.Windows.Media.Effects.DropShadowEffect]::OpacityProperty) $(if ($On) { 0.45 } else { 0 }) 200)
     [void](Start-BtAnim $d.Icon.RenderTransform ([System.Windows.Media.RotateTransform]::AngleProperty) $(if ($On) { -8 } else { 0 }) 220 'back')
     [void](Start-BtAnim $d.Arrow ([System.Windows.UIElement]::OpacityProperty) $(if ($On) { 1 } else { 0 }) 160)
     [void](Start-BtAnim $d.Arrow.RenderTransform ([System.Windows.Media.TranslateTransform]::XProperty) $(if ($On) { 0 } else { -6 }) 180)
@@ -602,5 +593,17 @@ function Render-BtHomeView {
         }
     }
     if (-not $items.Count) { [void]$List.Children.Add((New-BtText -Text $empty -Size 11.5 -Color 'Muted')); return }
-    foreach ($it in $items) { [void]$List.Children.Add((New-BtResultCard $Ctx $it)) }
+    # Affichage par lots de 40 cartes : créer des centaines de cartes d'un coup fige la fenêtre.
+    if (-not $View.Show) { $View.Show = 40 }
+    foreach ($it in ($items | Select-Object -First $View.Show)) { [void]$List.Children.Add((New-BtResultCard $Ctx $it)) }
+    if ($items.Count -gt $View.Show) {
+        $b = New-Object System.Windows.Controls.Button
+        $b.Style = $Ctx.Window.Resources['PrimaryBtn']
+        $b.Content = 'Afficher plus ({0} restantes)' -f ($items.Count - $View.Show)
+        $b.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Center
+        $b.Margin = New-BtThickness 0 4 0 10
+        $b.Tag = $View
+        $b.Add_Click({ param($x, $e) $x.Tag.Show += 40; Render-BtResults $script:Ctx })
+        [void]$List.Children.Add($b)
+    }
 }
