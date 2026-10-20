@@ -69,9 +69,85 @@ $script:BtHomeJs = @'
   }), []);
   var fresh = soft('nouvelles', get('/rest/api/content/search?cql=' + encodeURIComponent('type = page AND created >= now("-' + P.days + 'd")' + SP + ' ORDER BY created DESC')
       + '&limit=' + P.top + '&expand=' + encodeURIComponent('space,history,metadata.labels')).then(function(j){ return (j.results || []).map(item); }), []);
-  Promise.all([home, rubrics, news, top, fresh]).then(function(r){
+  // MISE EN PAGE de l'accueil TELLE QUE L'UTILISATEUR LA VOIT (les blocs dépendent de son
+  // profil : « TAM / Gestionnaire en Production »…) : encadrés « mis en avant » (macro panel)
+  // et sections « titre + liens ». Source 1 : la page d'accueil réellement affichée dans ce
+  // WebView (rendu final, éléments masqués exclus) ; source 2 : body.view (rendu serveur
+  // pour l'utilisateur connecté).
+  function clean(v){ return txt(v).replace(/\s+/g, ' ').trim(); }
+  function emojiOf(img){
+    if (!img) return '';
+    var f = txt(img.getAttribute('data-emoji-fallback'));
+    if (f && f.charAt(0) !== ':') return f;
+    var id = txt(img.getAttribute('data-emoji-id'));
+    if (/^[0-9a-f]+(-[0-9a-f]+)*$/i.test(id)) { try { return id.split('-').map(function(h){ return String.fromCodePoint(parseInt(h, 16)); }).join(''); } catch(e){} }
+    return '';
+  }
+  function layoutOf(root, live){
+    var bh = new URL(base).host;
+    function vis(el){ return !live || !!(el.offsetParent || el.getClientRects().length); }
+    function linkOf(a){
+      var href = txt(a.getAttribute('href'));
+      if (!href || href.charAt(0) === '#' || /^(mailto|javascript|tel):/i.test(href)) return null;
+      var u; try { u = new URL(href, base + '/'); } catch(e){ return null; }
+      var path = u.pathname + u.search;
+      if (/\/display\/~|\/users\/|viewuserprofile|\/download\/attachments\//i.test(path)) return null;   // profils, fichiers
+      var t = clean(a.textContent) || clean(a.getAttribute('title'));
+      if (!t) return null;
+      var prev = a.previousElementSibling, e = emojiOf(a.querySelector('img[data-emoji-id], img[data-emoji-fallback]'))
+        || emojiOf(prev && prev.matches('img[data-emoji-id], img[data-emoji-fallback]') ? prev : null);
+      var m = path.match(/\/pages\/(\d+)|pageId=(\d+)/);
+      return { t: (e ? e + ' ' : '') + t, u: u.href, id: m ? (m[1] || m[2]) : '', ext: u.host !== bh };
+    }
+    var hl = [], secs = [];
+    Array.prototype.forEach.call(root.querySelectorAll('div.panel'), function(p){
+      if (hl.length >= 12 || !vis(p)) return;
+      var h = p.querySelector('.panelHeader'), c = p.querySelector('.panelContent') || p;
+      var title = clean(h ? h.textContent : '');
+      if (!title) return;
+      var ls = [];
+      Array.prototype.forEach.call(c.querySelectorAll('a[href]'), function(a){ var l = linkOf(a); if (l && ls.length < 20) ls.push(l); });
+      var dm = title.match(/^(\d{1,2}\/\d{1,2}(?:\/\d{2,4})?)\s*(.*)$/);
+      hl.push({ title: dm ? dm[2] : title, date: dm ? dm[1] : '', text: clean(c.textContent).slice(0, 500), links: ls });
+    });
+    Array.prototype.forEach.call(root.querySelectorAll('h1, h2, h3, h4'), function(h){
+      if (secs.length >= 8 || h.closest('div.panel') || !vis(h)) return;
+      var title = clean(h.textContent);
+      if (!title) return;
+      var ls = [], seen = {}, n = h.nextElementSibling;
+      while (n && !/^H[1-4]$/.test(n.tagName) && !(n.querySelector && n.querySelector('h1, h2, h3, h4'))) {
+        var as = n.matches('a[href]') ? [n] : Array.prototype.slice.call(n.querySelectorAll('a[href]'));
+        as.forEach(function(a){
+          if (a.closest('div.panel') || !vis(a)) return;
+          var l = linkOf(a);
+          if (l && !seen[l.u] && ls.length < 24) { seen[l.u] = 1; ls.push(l); }
+        });
+        n = n.nextElementSibling;
+      }
+      if (ls.length) secs.push({ title: title, links: ls });
+    });
+    return { highlights: hl, sections: secs };
+  }
+  var layout = (function(){
+    try {
+      var live = document.querySelector('#main-content');
+      if (live && P.homeId && location.pathname.indexOf(P.homeId) >= 0) {
+        var L = layoutOf(live, true);
+        if (L.highlights.length || L.sections.length) { L.src = 'page affichée'; return Promise.resolve(L); }
+      }
+    } catch(e){ errs.push('mise en page (page): ' + txt(e && e.message)); }
+    if (!P.homeId) return Promise.resolve(null);
+    return soft('mise en page', get('/rest/api/content/' + P.homeId + '?expand=body.view').then(function(c){
+      var html = (c.body && c.body.view && c.body.view.value) || '';
+      var d = new DOMParser().parseFromString('<div id="bt-root">' + html + '</div>', 'text/html');
+      var L = layoutOf(d.getElementById('bt-root'), false);
+      L.src = 'body.view';
+      return L;
+    }), null);
+  })();
+  Promise.all([home, rubrics, news, top, fresh, layout]).then(function(r){
     window.__btHome = {state:'OK', id:P.id, homeTitle:txt(r[0] && r[0].title), spaceKey:txt(r[0] && r[0].space && r[0].space.key),
-                       rubrics:r[1], news:r[2], top:r[3], fresh:r[4], errors:errs, ms:Date.now()-t0};
+                       rubrics:r[1], news:r[2], top:r[3], fresh:r[4], layout:r[5], errors:errs, ms:Date.now()-t0};
   }).catch(function(e){
     window.__btHome = {state: e && e.auth ? 'AUTH' : 'ERROR', id:P.id, error:txt(e && e.message), ms:Date.now()-t0};
   });
@@ -135,6 +211,13 @@ function Step-BtHome {
                 $h.News = @($r.news | Where-Object { $_ })
                 $h.Rubrics = @($r.rubrics | Where-Object { $_ })
                 if ($r.homeTitle) { $h.HomeTitle = [string]$r.homeTitle }
+                if ($r.layout) {
+                    $h.Highlights = @($r.layout.highlights | Where-Object { $_ })
+                    $h.Sections = @($r.layout.sections | Where-Object { $_ })
+                    # Titres des blocs seulement (journal local) : utile pour le calibrage terrain.
+                    Write-BtLog ("[ACCUEIL] Mise en page ({0}) : {1} mis en avant ; sections : {2}" -f $r.layout.src, @($h.Highlights).Count,
+                        $(if (@($h.Sections).Count) { (@($h.Sections) | ForEach-Object { "$($_.title) ($(@($_.links).Count))" }) -join ' · ' } else { 'aucune' }))
+                }
                 $h.Error = $null
                 $errs = @($r.errors | Where-Object { $_ })
                 if ($errs.Count) { Write-BtLog "[ACCUEIL] Parties indisponibles : $($errs -join ' | ')" }
@@ -163,6 +246,12 @@ function Step-BtHome {
     if ($k.state -eq 'OK') {
         $h.Kids[$pid_] = @{ Items = @($k.items | Where-Object { $_ }); Error = $null; At = Get-Date }
         Write-BtLog ("[ACCUEIL] Rubrique {0} : {1} sous-page(s) en {2} ms" -f $pid_, @($k.items).Count, $k.ms)
+        # Lien de l'accueil vers une simple consigne (aucune sous-page) : on l'ouvre dans le lecteur.
+        $v = Get-BtHomeView $Ctx
+        if (-not @($k.items | Where-Object { $_ }).Count -and $v -and $v.Kind -eq 'rubric' -and [string]$v.Id -eq $pid_ -and $v.Item -and [int]$v.Item.kids -lt 0) {
+            $h.Nav.RemoveAt($h.Nav.Count - 1)
+            Open-BtReader $Ctx $v.Item
+        }
     } elseif ($k.state -eq 'AUTH') {
         Write-BtLog "[ACCUEIL] Session expirée pendant le chargement de la rubrique : reconnexion."
         $v = Get-BtHomeView $Ctx
@@ -193,6 +282,21 @@ function Step-BtHomeDemo {
                                space = 'Biblio-TECH'; spaceKey = 'KM'; parent = ''; modified = ''; friendly = ''; author = ''; labels = @(); kids = $(if ($i -eq 10) { 0 } else { 3 + $i }) }
         }
         $h.HomeTitle = 'Bienvenue dans votre Biblio-TECH'
+        # Mise en page de l'accueil (calquée sur celle d'un TAM) : sections du profil + mis en avant.
+        $u = 'https://confluence.apps.eul.sncf.fr/spaces/KM/pages/'
+        $lk = { param($t, $id, $ext = $false) [pscustomobject]@{ t = $t; u = $(if ($ext) { 'https://teams.microsoft.com/l/channel/x' } else { "$u$id/x" }); id = $(if ($ext) { '' } else { [string]$id }); ext = $ext } }
+        $h.Sections = @(
+            [pscustomobject]@{ title = 'TAM / Gestionnaire en Production'; links = @((& $lk "$([char]::ConvertFromUtf32(0x1F4BB)) Guides techniques et Bonnes pratiques TAMs" 6001), (& $lk "$([char]::ConvertFromUtf32(0x1F4BE)) Sources, manuels et méthodes installation logiciels" 6002),
+                (& $lk "$([char]::ConvertFromUtf32(0x1F4E2)) u-DOM" 6003), (& $lk "$([char]::ConvertFromUtf32(0x1F4BC)) Documents de cadrage et Généralités Transverses" 6004), (& $lk 'Teams Assistance au Support' 0 $true), (& $lk 'Engage TAMs' 6006)) },
+            [pscustomobject]@{ title = 'Débuter avec Biblio-TECH'; links = @((& $lk 'Je suis offreur' 6101), (& $lk 'astuces de Recherche' 6102), (& $lk "$([char]::ConvertFromUtf32(0x1F4DA)) LEXIQUE métier Assistance Utilisateurs" 6103),
+                (& $lk "$([char]::ConvertFromUtf32(0x1F310)) Liens utiles" 6104), (& $lk "$([char]::ConvertFromUtf32(0x1F3ED)) Accès Biblio-Tech / gestion des habilitations" 6105), (& $lk "$([char]0x27A1) Demande de page Biblio-TECH" 6106)) }
+        )
+        $h.Highlights = @(
+            [pscustomobject]@{ title = 'Poste Métier OPW'; date = '20/08'; text = 'Mur d''image uniquement, pas en utilisation pour le déploiement de poste métier'; links = @((& $lk 'OPW métier - Macro CNO' 6201), (& $lk 'OPW métier - CNO Salle de crise' 6202)) },
+            [pscustomobject]@{ title = 'Bornes eVote'; date = '06/10'; text = 'Publication des consignes sur le déploiement des Bornes eVotes pour les élections'; links = @((& $lk 'Bornes eVote' 6203)) },
+            [pscustomobject]@{ title = 'Messagerie / Offre AAD'; date = '17/09'; text = 'Compte ADM avec Messagerie - Dérogation à l''offreur Messagerie. MAJ de consigne Création de compte ADM et Modification de compte ADM'; links = @((& $lk 'Création de compte ADM' 6204), (& $lk 'Modification de compte ADM' 6205)) },
+            [pscustomobject]@{ title = 'DameWare'; date = '24/09'; text = 'Nouvelle consigne DameWare pour les postes virtuels. Évolution consigne DRE postes Windows.'; links = @((& $lk 'Utilisation DAMEWARE (DRE) pour PMAD (postes virtuels)' 6206), (& $lk 'Utilisation DAMEWARE (DRE) pour PMAD (Console lourde)' 6207)) }
+        )
         Render-BtResults $Ctx
         # BT_TEST_TILE=<n> : ouvre la n-ième rubrique (test visuel de la « page suivante »).
         if ($env:BT_TEST_TILE) { $r = @($h.Rubrics)[[int]$env:BT_TEST_TILE - 1]; if ($r) { Invoke-BtHomeNav $Ctx @{ Kind = 'rubric'; Id = $r.id; Title = $r.title; Glyph = (Get-BtTileGlyph $r.title); Color = '#4FB3FF'; Item = $r } } }
@@ -217,10 +321,17 @@ function Get-BtHomeView {
     return $null
 }
 
-# Cible d'une tuile : Kind = news | fresh | top | recent | rubric | page.
+# Cible d'une tuile : Kind = news | fresh | top | recent | rubrics | highlight | rubric | page | ext.
+# Rubrique dont le nombre de sous-pages est inconnu (kids = -1, lien de l'accueil) : ouverte,
+# puis remplacée par la page elle-même dans le lecteur si elle n'a aucune sous-page.
 function Invoke-BtHomeNav {
     param($Ctx, $Target)
     $h = $Ctx.Home
+    if ($Target.Kind -eq 'ext') { if ($Target.Item) { Open-BtExternal ([string]$Target.Item.url) }; return }
+    if ($Target.Kind -eq 'rubric' -and $Target.Item -and [int]$Target.Item.kids -lt 0) {
+        $c = $h.Kids[[string]$Target.Id]
+        if ($c -and -not $c.Error -and -not @($c.Items).Count) { Open-BtReader $Ctx $Target.Item; return }
+    }
     if ($Target.Kind -eq 'page' -or ($Target.Kind -eq 'rubric' -and $Target.Item -and [int]$Target.Item.kids -eq 0)) {
         if ($Target.Item) { Open-BtReader $Ctx $Target.Item }
         return
@@ -330,7 +441,7 @@ function Get-BtTileGlyph {
 function New-BtTile {
     param($Ctx, [string]$Title, [string]$Sub, [string]$Glyph, [string]$Color, $Target)
     $tile = New-Object System.Windows.Controls.Border
-    $tile.Width = 168; $tile.Height = 112
+    $tile.Width = 168; $tile.Height = 120
     $tile.CornerRadius = New-Object System.Windows.CornerRadius 14
     $tile.Background = Get-BtBrush 'Card'
     $tile.BorderBrush = Get-BtBrush 'Border'
@@ -375,7 +486,7 @@ function New-BtTile {
 
     $t = New-BtText -Text $Title -Size 12.5 -Color 'Text' -SemiBold -Wrap
     $t.VerticalAlignment = [System.Windows.VerticalAlignment]::Bottom
-    $t.MaxHeight = 36
+    $t.MaxHeight = 38
     $t.TextTrimming = [System.Windows.TextTrimming]::CharacterEllipsis
     $t.Margin = New-BtThickness 0 6 0 1
     [System.Windows.Controls.Grid]::SetRow($t, 1)
@@ -427,7 +538,7 @@ function Set-BtTileHover {
 
 function New-BtSkeletonTile {
     $b = New-Object System.Windows.Controls.Border
-    $b.Width = 168; $b.Height = 112
+    $b.Width = 168; $b.Height = 120
     $b.CornerRadius = New-Object System.Windows.CornerRadius 14
     $b.Background = Get-BtBrush 'Card'
     $b.Margin = New-BtThickness 0 0 10 10
@@ -443,6 +554,32 @@ function Format-BtCount {
     if ($N -le 0) { return '' }
     if ($N -eq 1) { return "1 $One" }
     return "$N $Many"
+}
+
+# Grille de toutes les rubriques (sous-pages de la page d'accueil).
+function New-BtRubricTiles {
+    param($Ctx)
+    $wr = New-Object System.Windows.Controls.WrapPanel
+    $i = 0
+    foreach ($r in @($Ctx.Home.Rubrics)) {
+        $color = $script:BtTilePalette[$i % $script:BtTilePalette.Count]; $i++
+        $glyph = Get-BtTileGlyph $r.title
+        $subTxt = if ([int]$r.kids -gt 0) { Format-BtCount ([int]$r.kids) 'élément' 'éléments' } else { 'Ouvrir la fiche' }
+        [void]$wr.Children.Add((New-BtTile $Ctx ([string]$r.title) $subTxt $glyph $color @{ Kind = 'rubric'; Id = [string]$r.id; Title = [string]$r.title; Glyph = $glyph; Color = $color; Item = $r }))
+    }
+    return $wr
+}
+
+# Tuile d'un lien de la page d'accueil { t; u; id; ext } : page Confluence -> rubrique (ses
+# sous-pages, ou la page elle-même si elle n'en a pas) ; lien externe -> navigateur.
+function New-BtLinkTile {
+    param($Ctx, $Link, [string]$Section, [string]$Color)
+    $item = [pscustomobject]@{ id = [string]$Link.id; type = 'page'; title = [string]$Link.t; excerpt = ''; url = [string]$Link.u; space = 'Biblio-TECH'; spaceKey = ''
+                               parent = $Section; modified = ''; friendly = ''; author = ''; labels = @(); kids = -1 }
+    $kind = if ($Link.ext) { 'ext' } elseif ($Link.id) { 'rubric' } else { 'page' }
+    $glyph = if ($Link.ext) { [string][char]0xE8A7 } else { Get-BtTileGlyph ([string]$Link.t) }
+    $sub = if ($Link.ext) { 'Lien externe' } else { '' }      # la section est déjà dans l'en-tête
+    return (New-BtTile $Ctx ([string]$Link.t) $sub $glyph $Color @{ Kind = $kind; Id = [string]$Link.id; Title = [string]$Link.t; Glyph = $glyph; Color = $Color; Item = $item })
 }
 
 # --- Rendu -------------------------------------------------------------------------
@@ -464,7 +601,35 @@ function Render-BtHome {
     [void]$hero.Children.Add($sub)
     [void]$List.Children.Add($hero)
 
-    # Accès rapides.
+    # 1) Sections de l'accueil PROPRES AU PROFIL, telles que le site les montre à l'utilisateur
+    #    connecté (« TAM / Gestionnaire en Production », « Débuter avec Biblio-TECH »…).
+    $si = 0
+    foreach ($sec in @($h.Sections)) {
+        $st = Split-BtTitleEmoji ([string]$sec.title)
+        [void]$List.Children.Add((New-BtSectionHeader $st.Text ([string][char]0xE8B7)))
+        $color = $script:BtTilePalette[$si % $script:BtTilePalette.Count]; $si++
+        $wr = New-Object System.Windows.Controls.WrapPanel
+        foreach ($l in @($sec.links)) { [void]$wr.Children.Add((New-BtLinkTile $Ctx $l $st.Text $color)) }
+        [void]$List.Children.Add($wr)
+    }
+    # 2) « Biblio-TECH met en avant » : un encadré daté = une tuile.
+    $hls = @($h.Highlights)
+    if ($hls.Count) {
+        [void]$List.Children.Add((New-BtSectionHeader 'Biblio-TECH met en avant' ([string][char]0xE789)))
+        $wr = New-Object System.Windows.Controls.WrapPanel
+        $i = 0
+        foreach ($x in $hls) {
+            $color = $script:BtTilePalette[($i + 4) % $script:BtTilePalette.Count]
+            $glyph = Get-BtTileGlyph ([string]$x.title)
+            if ($glyph -eq [string][char]0xE8B7) { $glyph = [string][char]0xE789 }
+            $sub = if ($x.date) { "Mis en avant le $($x.date)" } else { 'À la une' }
+            [void]$wr.Children.Add((New-BtTile $Ctx ([string]$x.title) $sub $glyph $color @{ Kind = 'highlight'; Id = "hl$i"; Title = [string]$x.title; Glyph = $glyph; Color = $color; Item = $x }))
+            $i++
+        }
+        [void]$List.Children.Add($wr)
+    }
+
+    # 3) Accès rapides.
     [void]$List.Children.Add((New-BtSectionHeader 'Accès rapides' ([string][char]0xE945)))
     $wp = New-Object System.Windows.Controls.WrapPanel
     $quick = @(
@@ -475,29 +640,27 @@ function Render-BtHome {
     )
     foreach ($q in $quick) { [void]$wp.Children.Add((New-BtTile $Ctx $q.Title $q.Sub $q.Glyph $q.Color @{ Kind = $q.Kind; Id = $q.Kind; Title = $q.Title; Glyph = $q.Glyph; Color = $q.Color })) }
     $homeItem = [pscustomobject]@{ id = [string]$Ctx.Config.HomePageId; type = 'page'; title = $title; excerpt = ''; url = $Ctx.HomeUrl; space = 'Biblio-TECH'; spaceKey = ''; parent = ''; modified = ''; friendly = ''; author = ''; labels = @() }
+    if (@($h.Rubrics).Count -and @($h.Sections).Count) {
+        [void]$wp.Children.Add((New-BtTile $Ctx 'Toutes les rubriques' (Format-BtCount @($h.Rubrics).Count 'rubrique' 'rubriques') ([string][char]0xE8B7) '#A78BFA' @{ Kind = 'rubrics'; Id = 'rubrics'; Title = 'Toutes les rubriques'; Glyph = [string][char]0xE8B7; Color = '#A78BFA' }))
+    }
     [void]$wp.Children.Add((New-BtTile $Ctx "Page d'accueil" 'Ouvrir dans le lecteur' ([string][char]0xE80F) '#0088CE' @{ Kind = 'page'; Title = "Page d'accueil"; Item = $homeItem }))
     [void]$List.Children.Add($wp)
 
-    # Rubriques (sous-pages de la page d'accueil).
-    [void]$List.Children.Add((New-BtSectionHeader 'Rubriques' ([string][char]0xE8B7)))
-    $rub = @($h.Rubrics)
-    if ($rub.Count) {
-        $wr = New-Object System.Windows.Controls.WrapPanel
-        $i = 0
-        foreach ($r in $rub) {
-            $color = $script:BtTilePalette[$i % $script:BtTilePalette.Count]; $i++
-            $glyph = Get-BtTileGlyph $r.title
-            $subTxt = if ([int]$r.kids -gt 0) { Format-BtCount ([int]$r.kids) 'élément' 'éléments' } else { 'Ouvrir la fiche' }
-            [void]$wr.Children.Add((New-BtTile $Ctx ([string]$r.title) $subTxt $glyph $color @{ Kind = 'rubric'; Id = [string]$r.id; Title = [string]$r.title; Glyph = $glyph; Color = $color; Item = $r }))
-        }
-        [void]$List.Children.Add($wr)
+    # Repli (mise en page de l'accueil illisible) : toutes les rubriques, sous-pages de l'accueil.
+    if (@($h.Sections).Count) { }
+    elseif (@($h.Rubrics).Count) {
+        [void]$List.Children.Add((New-BtSectionHeader 'Rubriques' ([string][char]0xE8B7)))
+        [void]$List.Children.Add((New-BtRubricTiles $Ctx))
     } elseif ($h.Error) {
+        [void]$List.Children.Add((New-BtSectionHeader 'Rubriques' ([string][char]0xE8B7)))
         [void]$List.Children.Add((New-BtText -Text "Rubriques indisponibles : $($h.Error)" -Size 11.5 -Color 'Muted'))
     } elseif ($h.Probe.Phase -or -not $h.At) {
+        [void]$List.Children.Add((New-BtSectionHeader 'Rubriques' ([string][char]0xE8B7)))
         $wr = New-Object System.Windows.Controls.WrapPanel
         for ($k = 0; $k -lt 5; $k++) { [void]$wr.Children.Add((New-BtSkeletonTile)) }
         [void]$List.Children.Add($wr)
     } else {
+        [void]$List.Children.Add((New-BtSectionHeader 'Rubriques' ([string][char]0xE8B7)))
         [void]$List.Children.Add((New-BtText -Text 'Aucune rubrique sous la page d''accueil.' -Size 11.5 -Color 'Muted'))
     }
 
@@ -578,6 +741,28 @@ function Render-BtHomeView {
     [void]$List.Children.Add($bar)
 
     $empty = 'Rien à afficher pour le moment.'
+    if ($View.Kind -eq 'rubrics') { [void]$List.Children.Add((New-BtRubricTiles $Ctx)); return }
+    if ($View.Kind -eq 'highlight') {
+        $x = $View.Item
+        $box = New-Object System.Windows.Controls.Border
+        $box.CornerRadius = New-Object System.Windows.CornerRadius 10
+        $box.Background = Get-BtBrush 'Card'; $box.BorderBrush = Get-BtBrush 'Border'; $box.BorderThickness = New-BtThickness 1
+        $box.Padding = New-BtThickness 14 10 14 10; $box.Margin = New-BtThickness 0 4 0 10
+        $sp2 = New-Object System.Windows.Controls.StackPanel
+        if ($x.date) { [void]$sp2.Children.Add((New-BtText -Text "Mis en avant le $($x.date)" -Size 11 -Color 'Muted')) }
+        $tx = New-BtText -Text ([string]$x.text) -Size 12.5 -Color 'Body' -Wrap
+        $tx.Margin = New-BtThickness 0 4 0 0
+        [void]$sp2.Children.Add($tx)
+        $box.Child = $sp2
+        [void]$List.Children.Add($box)
+        if (@($x.links).Count) {
+            [void]$List.Children.Add((New-BtSectionHeader 'Consignes citées' ([string][char]0xE8A5)))
+            $wr = New-Object System.Windows.Controls.WrapPanel
+            foreach ($l in @($x.links)) { [void]$wr.Children.Add((New-BtLinkTile $Ctx $l ([string]$View.Title) ([string]$View.Color))) }
+            [void]$List.Children.Add($wr)
+        }
+        return
+    }
     switch ($View.Kind) {
         'news'   { $items = @($h.News); $empty = 'Aucune news publiée récemment.' }
         'fresh'  { $items = @($h.Fresh); $empty = 'Aucune nouvelle consigne sur les 30 derniers jours.' }

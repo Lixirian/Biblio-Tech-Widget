@@ -90,13 +90,16 @@ $script:Ctx = @{
     Categ      = @{ Probe = (New-BtProbe 'categ' -Raw); Job = $null; Loaded = $false; Id = ''; Manual = $false; Mode = ''; AutoAt = $null; StartedAt = $null; Index = $null; Tree = $null }
     # Accueil en tuiles (lib\BtHome.ps1) : Nav = pile des « pages suivantes » ouvertes depuis
     # les tuiles ; Kids = sous-pages des rubriques (id -> @{ Items; Error; At }).
-    Home       = @{ Probe = (New-BtProbe 'home'); Id = ''; At = $null; Top = @(); Fresh = @(); News = @(); Rubrics = @(); HomeTitle = ''; Error = $null
+    Home       = @{ Probe = (New-BtProbe 'home'); Id = ''; At = $null; Top = @(); Fresh = @(); News = @(); Rubrics = @(); Highlights = @(); Sections = @(); HomeTitle = ''; Error = $null
                     Nav = (New-Object System.Collections.ArrayList)
                     KidProbe = (New-BtProbe 'kids'); KidId = ''; KidWant = $null; Kids = @{} }
     Browse     = $false          # onglet « Catégories » (arborescence) affiché à la place de l'accueil
     BrowseOpen = @{}             # nœuds dépliés (chemin -> $true)
     Dash       = @{ Window = $null; WebView = $null }
-    Keep       = @{ Task = $null; NextAt = $null }   # session SSO conservée (Step-BtKeepSession)
+    Keep       = @{ Task = $null; NextAt = $null }
+    Dark       = (Test-BtSystemDark)  # thème Windows (pages du lecteur / tableau de bord), relu par Step-BtTheme
+    ThemeAt    = $null
+    ThemeApplied = $false   # session SSO conservée (Step-BtKeepSession)
     Ui         = $null
     Window     = $null
     StatusKind = 'idle'
@@ -398,13 +401,15 @@ function Request-BtSearch {
     $an = $null; $relax = $false; $tcql = ''
     if ($Kind -eq 'recent') { $cql = Get-BtCql $Ctx $null -Recent }
     else {
-        # Pagination (« Afficher plus ») : on garde l'analyse et le niveau (strict / élargi) en cours.
+        # TOUTES les notions sont exigées (préféré par l'utilisateur à la recherche « au moins un
+        # mot » du site, essayée puis écartée le 2026-10-20). Pagination (« Afficher plus ») : on
+        # garde l'analyse et le niveau (strict / élargi) en cours.
         $relax = ($Start -gt 0 -and $s.Relaxed)
         if ($Start -eq 0) { $s.Analysis = Resolve-BtQuery $q; $s.Relaxed = $false }
         $an = $s.Analysis
         $cql = Get-BtCql $Ctx $an -Relaxed:$relax
         # 1re page : les fiches dont le titre réunit toutes les notions passent en tête.
-        if ($Start -eq 0) { $tcql = Get-BtCql $Ctx $an -TitleOnly; $s.TitleIds = @() }
+        if ($Start -eq 0) { $tcql = @((Get-BtCql $Ctx $an -TitleOnly)); $s.TitleIds = @() }
     }
     $kw = if ($an -and $an.Keywords) { $an.Keywords } else { $q }
     $s.Pending = @{ Id = [guid]::NewGuid().ToString('N'); Query = $q; Keywords = $kw; Start = $Start; Kind = $Kind; Cql = $cql; TitleCql = $tcql; Relaxed = $relax }
@@ -421,7 +426,7 @@ function Step-BtSearch {
         $job = $s.Pending; $s.Pending = $null; $s.Active = $job
         Write-BtLog "[SEARCH] $($job.Kind) start=$($job.Start) CQL : $($job.Cql)"
         if ($Ctx.Demo) { Complete-BtSearch $Ctx $job (Get-BtDemoResult $job.Keywords $job.Start -Recent:($job.Kind -eq 'recent')); return }
-        Start-BtProbe $Ctx $s.Probe (Get-BtSearchKickJS $Ctx $job.Id $job.Cql $job.Keywords $job.Start ([string]$job.TitleCql)) 'window.__btSearch' ([int]$Ctx.Config.FetchTimeoutSec * 3 + 5) $job.Id
+        Start-BtProbe $Ctx $s.Probe (Get-BtSearchKickJS $Ctx $job.Id $job.Cql $job.Keywords $job.Start @($job.TitleCql)) 'window.__btSearch' ([int]$Ctx.Config.FetchTimeoutSec * 3 + 5) $job.Id
         return
     }
     $r = Step-BtProbe $Ctx $s.Probe
@@ -453,7 +458,8 @@ function Complete-BtSearch {
                 # Bloc « titre » : mémorisé en 1re page, puis retiré des pages suivantes (pas de doublon).
                 if ($Job.Start -eq 0) {
                     $s.TitleIds = @($R.titleIds | Where-Object { $_ } | ForEach-Object { [string]$_ })
-                    if ($Job.TitleCql) { Write-BtLog "[SEARCH] Titre : $([int]$R.titleCount) fiche(s) réunissant toutes les notions placée(s) en tête." }
+                    $pc = @($R.prioCounts | Where-Object { $null -ne $_ })
+                    if ($pc.Count) { Write-BtLog ("[SEARCH] En tête : {0} fiche(s) avec toutes les notions dans le titre{1}." -f [int]$pc[0], $(if ($pc.Count -gt 1) { ", $([int]$pc[1]) dans le texte" } else { '' })) }
                 } elseif (@($s.TitleIds).Count) {
                     $items = @($items | Where-Object { @($s.TitleIds) -notcontains [string]$_.id })
                 }
@@ -489,7 +495,7 @@ function Complete-BtSearch {
 function Step-BtPump {
     $c = $script:Ctx
     if ($c.Quitting) { return }
-    foreach ($step in @('Step-BtInfo', 'Step-BtSearch', 'Step-BtUpdate', 'Step-BtCategScan', 'Step-BtHome', 'Step-BtKeepSession')) {
+    foreach ($step in @('Step-BtInfo', 'Step-BtSearch', 'Step-BtUpdate', 'Step-BtCategScan', 'Step-BtHome', 'Step-BtKeepSession', 'Step-BtTheme')) {
         $sw = [Diagnostics.Stopwatch]::StartNew()
         try { & $step $c } catch { Write-BtLog "[PUMP] $step : $($_.Exception.Message)" }
         # Diagnostic : toute étape qui bloque la fenêtre plus de 250 ms est signalée.

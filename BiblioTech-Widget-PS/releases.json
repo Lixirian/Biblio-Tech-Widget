@@ -1,4 +1,8 @@
 {
+    "1.1.14":  [
+                   "Accueil personnalisé : vous retrouvez en tête les rubriques de VOTRE profil, comme sur la page d'accueil du site (ex. « TAM / Gestionnaire en Production »), puis « Débuter avec Biblio-TECH » et les encadrés « Biblio-TECH met en avant ». Toutes les rubriques restent accessibles par la tuile « Toutes les rubriques ».",
+                   "Thème : les pages du lecteur et le tableau de bord suivent le thème de Windows (sombre ou clair), y compris si vous le changez pendant l'utilisation."
+               ],
     "1.1.13":  [
                    "Connexion : après la validation SSO, la fenêtre de connexion disparaît aussitôt ; la page Confluence n'apparaît plus brièvement à l'écran.",
                    "Tuiles : quand le titre d'une rubrique commence par un émoji (ex. le haut-parleur de « u-DOM »), il devient l'icône de la tuile au lieu de chevaucher le texte.",

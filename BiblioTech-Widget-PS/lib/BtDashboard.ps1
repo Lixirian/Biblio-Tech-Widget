@@ -64,13 +64,14 @@ $script:BtDashJs = @'
 
   document.title = 'Biblio-Tech · Tableau de bord';
   document.head.innerHTML = '<meta charset="utf-8"><title>Biblio-Tech · Tableau de bord</title><style>' + `
-    :root{--bg:#0F172A;--card:#111C33;--line:#22314F;--txt:#E2E8F0;--mut:#94A3B8;--acc:#0088CE;--acc2:#F59E0B;--ok:#22C55E;--ko:#EF4444}
+    :root{--bg:#0F172A;--card:#111C33;--line:#22314F;--txt:#E2E8F0;--mut:#94A3B8;--acc:#0088CE;--acc2:#F59E0B;--ok:#22C55E;--ko:#EF4444;--hdr:#0B1220;--btn:#16223D;--row:#1A2742;--tag:#3B2A0B;color-scheme:dark}
+    @media (prefers-color-scheme: light){:root{--bg:#F4F6FA;--card:#FFFFFF;--line:#D5DCE7;--txt:#1E293B;--mut:#5B6B82;--acc2:#B45309;--ok:#15803D;--ko:#DC2626;--hdr:#FFFFFF;--btn:#EEF2F7;--row:#E6EBF2;--tag:#FDF0D9;color-scheme:light}}
     *{box-sizing:border-box} body{margin:0;background:var(--bg);color:var(--txt);font:13px "Segoe UI",sans-serif}
-    header{position:sticky;top:0;z-index:2;background:#0B1220;border-bottom:2px solid var(--acc);padding:12px 22px;display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+    header{position:sticky;top:0;z-index:2;background:var(--hdr);border-bottom:2px solid var(--acc);padding:12px 22px;display:flex;gap:12px;align-items:center;flex-wrap:wrap}
     h1{font-size:17px;margin:0 14px 0 0;font-weight:600} label{color:var(--mut)}
-    input[type=date]{background:#0F172A;color:var(--txt);border:1px solid var(--line);border-radius:6px;padding:5px 8px;color-scheme:dark}
-    button{background:#16223D;color:var(--txt);border:1px solid var(--line);border-radius:14px;padding:5px 12px;cursor:pointer}
-    button:hover{border-color:var(--acc)} button.pri{background:var(--acc);border-color:var(--acc)}
+    input[type=date]{background:var(--bg);color:var(--txt);border:1px solid var(--line);border-radius:6px;padding:5px 8px}
+    button{background:var(--btn);color:var(--txt);border:1px solid var(--line);border-radius:14px;padding:5px 12px;cursor:pointer}
+    button:hover{border-color:var(--acc)} button.pri{background:var(--acc);border-color:var(--acc);color:#fff}
     #st{color:var(--mut);margin-left:auto}
     main{padding:16px 22px;display:grid;gap:14px}
     .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(165px,1fr));gap:12px}
@@ -85,8 +86,8 @@ $script:BtDashJs = @'
     .row a,.row span.k{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
     .bar{height:8px;border-radius:4px;background:var(--acc)} .num{text-align:right;color:var(--mut)}
     table{width:100%;border-collapse:collapse} th{color:var(--mut);font-weight:400;text-align:left;padding:4px 6px;border-bottom:1px solid var(--line)}
-    td{padding:5px 6px;border-bottom:1px solid #1A2742;max-width:420px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-    .tag{display:inline-block;padding:0 6px;border-radius:8px;font-size:11px;background:#3B2A0B;color:var(--acc2)}
+    td{padding:5px 6px;border-bottom:1px solid var(--row);max-width:420px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .tag{display:inline-block;padding:0 6px;border-radius:8px;font-size:11px;background:var(--tag);color:var(--acc2)}
     .leg{display:flex;gap:16px;color:var(--mut);margin-bottom:6px;flex-wrap:wrap} .leg i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:6px;vertical-align:-1px}
     svg text{fill:var(--mut);font-size:11px}
     .scroll{max-height:330px;overflow:auto}
@@ -156,7 +157,7 @@ $script:BtDashJs = @'
     var max = Math.max.apply(null, days.map(function(d){ return stacked ? series.reduce(function(s, x){ return s + d[x.key]; }, 0) : Math.max.apply(null, series.map(function(x){ return d[x.key]; })); }));
     var top = niceTop(max), bw = (W - L - 6) / n, s = '<svg viewBox="0 0 ' + W + ' ' + H + '" width="100%" preserveAspectRatio="none" style="height:' + H + 'px">';
     for (var g = 0; g <= 4; g++) { var v = Math.round(top * g / 4), y = H - B - (H - B - T) * g / 4;
-      s += '<line x1="' + L + '" x2="' + W + '" y1="' + y + '" y2="' + y + '" stroke="#22314F"/><text x="' + (L-6) + '" y="' + (y+4) + '" text-anchor="end">' + v + '</text>'; }
+      s += '<line x1="' + L + '" x2="' + W + '" y1="' + y + '" y2="' + y + '" style="stroke:var(--line)"/><text x="' + (L-6) + '" y="' + (y+4) + '" text-anchor="end">' + v + '</text>'; }
     var every = Math.max(1, Math.ceil(n / 15));
     days.forEach(function(d, i){
       var x = L + 3 + i * bw, w = Math.max(1, bw - 2), acc = 0;
@@ -184,7 +185,7 @@ $script:BtDashJs = @'
         + ' L' + (cx + r*Math.cos(a1)) + ' ' + (cy + r*Math.sin(a1)) + ' A' + r + ' ' + r + ' 0 ' + big + ' 0 ' + (cx + r*Math.cos(a0)) + ' ' + (cy + r*Math.sin(a0)) + ' Z" fill="' + c + '"><title>' + esc(x.k) + ' : ' + x.n + '</title></path>';
       a0 = a1;
     });
-    s += '<text x="110" y="106" text-anchor="middle" style="font-size:22px;fill:#E2E8F0">' + tot + '</text><text x="110" y="126" text-anchor="middle">commentaires</text></svg><div>';
+    s += '<text x="110" y="106" text-anchor="middle" style="font-size:22px;fill:var(--txt)">' + tot + '</text><text x="110" y="126" text-anchor="middle">commentaires</text></svg><div>';
     list.forEach(function(x, i){ s += '<div style="padding:2px 0"><i style="display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:6px;background:' + PAL[i % PAL.length] + '"></i>' + esc(x.k) + ' <span class="num">' + x.n + ' (' + Math.round(100 * x.n / tot) + ' %)</span></div>'; });
     return s + '</div></div>';
   }
@@ -661,6 +662,7 @@ function Show-BtDashboard {
         $wv.add_CoreWebView2InitializationCompleted({ param($s, $e)
             if (-not $e.IsSuccess) { Write-BtLog "[DASH] Init WebView2 KO : $($e.InitializationException.Message)"; return }
             $cw = $s.CoreWebView2
+            Set-BtWebTheme $script:Ctx $s           # la page suit le thème Windows (prefers-color-scheme)
             # Liens des listes -> navigateur par défaut.
             $cw.add_NewWindowRequested({ param($a, $b) $b.Handled = $true; Open-BtExternal ([string]$b.Uri) })
             # Diagnostics remontés par la page -> journal de l'appli ; demande d'export Excel.

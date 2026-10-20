@@ -20,8 +20,9 @@ function ConvertTo-BtCqlString {
 # Requête CQL complète selon les filtres mémorisés (State.Scope/Type/Sort) et
 # l'analyse de la saisie (Resolve-BtQuery, lib\BtAssist.ps1).
 # -Recent : pages/blogs (de l'espace s'il est configuré) triés par date de modification (accueil).
-# -Relaxed : au moins une des notions au lieu de toutes (relance automatique si 0 résultat).
-# -TitleOnly : toutes les notions dans le TITRE (résultats affichés en tête, tri pertinence) ;
+# Sans option : TOUTES les notions dans le texte (liste principale).
+# -Relaxed : au moins une des notions (relance automatique si 0 résultat en strict).
+# -TitleOnly : toutes les notions dans le TITRE (bloc prioritaire en tête, tri pertinence) ;
 #   renvoie '' quand ce bloc n'a pas de sens (tri par date, relance élargie, pas de notion).
 function Get-BtCql {
     param($Ctx, $Analysis, [switch]$Recent, [switch]$Relaxed, [switch]$TitleOnly)
@@ -166,19 +167,24 @@ $script:BtSearchJs = @'
     viaSearch(P.cql, P.start, P.limit)
       .catch(function(e){ if (e && e.auth) throw e; errs.push('rest-search: ' + msg(e)); return viaContent(P.cql, P.start, P.limit); })
       .catch(function(e){ if (e && e.auth) throw e; errs.push('rest-content: ' + msg(e)); return viaDom(); });
-  // Bloc « titre » (1re page, tri pertinence) : fiches dont le TITRE réunit toutes les notions.
-  // Facultatif : en cas d'échec on garde simplement l'ordre de Confluence.
-  var titles = (P.titleCql && P.start === 0 && P.strategy !== 'dom') ?
-    viaSearch(P.titleCql, 0, P.titleLimit)
-      .catch(function(){ return viaContent(P.titleCql, 0, P.titleLimit); })
-      .catch(function(e){ errs.push('titre: ' + msg(e)); return null; }) : Promise.resolve(null);
-  var chain = Promise.all([titles, main]).then(function(a){
-    var t = a[0], m = a[1], seen = {}, items = [];
-    if (t) t.items.forEach(function(it){ if (it.id && !seen[it.id]) { seen[it.id] = 1; it.titleHit = true; items.push(it); } });
+  // Blocs PRIORITAIRES (1re page) placés en tête, dans l'ordre donné (aujourd'hui : toutes les
+  // notions dans le TITRE). Facultatifs : un bloc en échec est simplement ignoré.
+  var prio = (P.start === 0 && P.strategy !== 'dom') ? (P.prio || []) : [];
+  var blocks = prio.map(function(c){
+    return viaSearch(c, 0, P.prioLimit)
+      .catch(function(){ return viaContent(c, 0, P.prioLimit); })
+      .catch(function(e){ errs.push('priorité: ' + msg(e)); return null; });
+  });
+  var chain = Promise.all([Promise.all(blocks), main]).then(function(a){
+    var bl = a[0], m = a[1], seen = {}, items = [], ids = [], counts = [];
+    bl.forEach(function(t, k){
+      counts.push(t ? t.items.length : 0);
+      if (t) t.items.forEach(function(it){ if (it.id && !seen[it.id]) { seen[it.id] = 1; if (k === 0) it.titleHit = true; items.push(it); ids.push(it.id); } });
+    });
     m.items.forEach(function(it){ if (!it.id || !seen[it.id]) { if (it.id) seen[it.id] = 1; items.push(it); } });
     m.items = items;
-    m.titleIds = t ? t.items.map(function(i){ return i.id; }).filter(function(k){ return !!k; }) : [];
-    m.titleCount = t ? t.items.length : 0;
+    m.titleIds = ids;
+    m.prioCounts = counts;
     done(m);
   });
   chain.catch(function(e){
@@ -191,13 +197,13 @@ $script:BtSearchJs = @'
 '@
 
 function Get-BtSearchKickJS {
-    param($Ctx, [string]$Id, [string]$Cql, [string]$Query, [int]$Start, [string]$TitleCql = '')
+    param($Ctx, [string]$Id, [string]$Cql, [string]$Query, [int]$Start, [string[]]$Prio = @())
     $p = @{
         id        = $Id
         base      = $Ctx.Config.BaseUrl.TrimEnd('/')
         cql       = $Cql
-        titleCql  = $TitleCql
-        titleLimit = 100
+        prio      = @($Prio | Where-Object { $_ })
+        prioLimit = 100
         q         = $Query
         start     = $Start
         limit     = [int]$Ctx.Config.PageSize

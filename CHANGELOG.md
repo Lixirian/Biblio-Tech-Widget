@@ -1,5 +1,31 @@
 # Historique des versions
 
+## 1.1.14 — 2026-10-20
+
+- **Accueil selon le profil** (ex. TAM) : la page d'accueil du site affiche des blocs propres au
+  profil de l'utilisateur. `BtHomeJs` lit sa MISE EN PAGE telle que l'utilisateur la voit
+  (`layoutOf`) : de préférence la page réellement affichée dans le WebView principal
+  (`#main-content`, éléments masqués exclus), sinon `body.view` (rendu serveur pour l'utilisateur
+  connecté). Encadrés `div.panel` -> « Biblio-TECH met en avant » (date « jj/mm » séparée du titre) ;
+  titres h1-h4 suivis de liens -> sections de tuiles (« TAM / Gestionnaire en Production »…).
+  Émojis Confluence (`img[data-emoji-id|data-emoji-fallback]`) repris comme icônes ; pièces
+  jointes et profils exclus ; lien externe -> navigateur ; lien de page -> rubrique (sous-pages)
+  ou, sans sous-page, lecteur. « Toutes les rubriques » devient une tuile des accès rapides ;
+  repli sur l'ancienne grille si la mise en page est illisible. Vérifié dans WebView2 sur une
+  fausse page au balisage Confluence (section d'un autre profil masquée : exclue). Journal :
+  `[ACCUEIL] Mise en page (source) : N mis en avant ; sections : …`.
+- Recherche « au moins un mot, comme le site » essayée puis écartée à la demande de
+  l'utilisateur : on garde TOUS les mots exigés, titre complet en tête. Le JS accepte
+  désormais une liste de blocs prioritaires (`P.prio`), aujourd'hui le seul bloc « titre ».
+- **Thème des pages = thème Windows** (`AppsUseLightTheme`, relu toutes les 3 s par
+  `Step-BtTheme`) : `CoreWebView2Profile.PreferredColorScheme` (pages qui gèrent
+  `prefers-color-scheme` : tableau de bord, désormais en variables CSS clair/sombre) + pour le
+  LECTEUR, feuille « sombre » injectée dès la création du document (`BtDarkPageJs` : inversion +
+  rotation de teinte, images rétablies ; retirée si la page est déjà sombre ; bascule en direct
+  sur changement de thème). Pièges corrigés en test : `location.host` contient le port
+  (-> `hostname`) ; `documentElement` absent à la création du document (-> MutationObserver).
+  Captures : sombre et retour au clair sans rechargement.
+
 ## 1.1.13 — 2026-10-20
 
 - **Page Confluence visible après la validation SSO** : la fenêtre de connexion n'était masquée

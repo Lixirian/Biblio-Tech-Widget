@@ -82,7 +82,11 @@ function New-BtReaderWindow {
         $cw.add_DocumentTitleChanged({ param($a, $b)
             try { $t = [string]$a.DocumentTitle; if ($t) { $script:Ctx.Reader.Ui.TitleText.Text = ($t -replace '\s+-\s+Confluence.*$', '') } } catch { } })
         $cw.add_DOMContentLoaded({ param($a, $b) Update-BtReaderMode $script:Ctx })
+        # Thème des pages : celui de Windows (clair / sombre).
+        Set-BtWebTheme $script:Ctx $s
+        Register-BtDarkPages $script:Ctx $cw
     })
+    $r.Ui.Host.Background = if ($Ctx.Dark) { Get-BtBrush 'Panel' } else { [System.Windows.Media.Brushes]::White }
     $wv.add_NavigationCompleted({ param($s, $e)
         Update-BtReaderMode $script:Ctx
         try {
