@@ -8,7 +8,7 @@
 $script:BtXamlResources = @'
 <Window.Resources>
   <Style x:Key="IconBtn" TargetType="Button">
-    <Setter Property="Foreground" Value="#C9D4E5"/>
+    <Setter Property="Foreground" Value="{DynamicResource BtIconFg}"/>
     <Setter Property="Background" Value="Transparent"/>
     <Setter Property="Width" Value="32"/>
     <Setter Property="Height" Value="32"/>
@@ -24,11 +24,11 @@ $script:BtXamlResources = @'
           </Border>
           <ControlTemplate.Triggers>
             <Trigger Property="IsMouseOver" Value="True">
-              <Setter TargetName="bd" Property="Background" Value="#2AFFFFFF"/>
-              <Setter Property="Foreground" Value="#FFFFFF"/>
+              <Setter TargetName="bd" Property="Background" Value="{DynamicResource BtHoverBg}"/>
+              <Setter Property="Foreground" Value="{DynamicResource BtIconFgHover}"/>
             </Trigger>
             <Trigger Property="IsPressed" Value="True">
-              <Setter TargetName="bd" Property="Background" Value="#40FFFFFF"/>
+              <Setter TargetName="bd" Property="Background" Value="{DynamicResource BtPressBg}"/>
             </Trigger>
           </ControlTemplate.Triggers>
         </ControlTemplate>
@@ -56,7 +56,7 @@ $script:BtXamlResources = @'
     </Setter>
   </Style>
   <Style x:Key="LinkBtn" TargetType="Button">
-    <Setter Property="Foreground" Value="#4FB3FF"/>
+    <Setter Property="Foreground" Value="{DynamicResource BtLink}"/>
     <Setter Property="FontSize" Value="11.5"/>
     <Setter Property="Cursor" Value="Hand"/>
     <Setter Property="Focusable" Value="False"/>
@@ -67,7 +67,7 @@ $script:BtXamlResources = @'
             <ContentPresenter VerticalAlignment="Center"/>
           </Border>
           <ControlTemplate.Triggers>
-            <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="bd" Property="Background" Value="#1A4FB3FF"/></Trigger>
+            <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="bd" Property="Background" Value="{DynamicResource BtLinkHoverBg}"/></Trigger>
           </ControlTemplate.Triggers>
         </ControlTemplate>
       </Setter.Value>
@@ -114,7 +114,7 @@ $script:BtXamlResources = @'
     </Setter>
   </Style>
   <Style x:Key="CaptionBtn" TargetType="Button">
-    <Setter Property="Foreground" Value="#C9D4E5"/>
+    <Setter Property="Foreground" Value="{DynamicResource BtIconFg}"/>
     <Setter Property="Width" Value="46"/>
     <Setter Property="Height" Value="44"/>
     <Setter Property="FontFamily" Value="Segoe Fluent Icons, Segoe MDL2 Assets"/>
@@ -127,8 +127,8 @@ $script:BtXamlResources = @'
             <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
           </Border>
           <ControlTemplate.Triggers>
-            <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="bd" Property="Background" Value="#1FFFFFFF"/><Setter Property="Foreground" Value="#FFFFFF"/></Trigger>
-            <Trigger Property="IsPressed" Value="True"><Setter TargetName="bd" Property="Background" Value="#33FFFFFF"/></Trigger>
+            <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="bd" Property="Background" Value="{DynamicResource BtHoverBg}"/><Setter Property="Foreground" Value="{DynamicResource BtIconFgHover}"/></Trigger>
+            <Trigger Property="IsPressed" Value="True"><Setter TargetName="bd" Property="Background" Value="{DynamicResource BtPressBg}"/></Trigger>
           </ControlTemplate.Triggers>
         </ControlTemplate>
       </Setter.Value>
@@ -161,7 +161,7 @@ $script:BtXamlResources = @'
                 <Thumb>
                   <Thumb.Template>
                     <ControlTemplate TargetType="Thumb">
-                      <Border CornerRadius="4" Background="#3A4D70" Margin="1,2"/>
+                      <Border CornerRadius="4" Background="{DynamicResource BtThumb}" Margin="1,2"/>
                     </ControlTemplate>
                   </Thumb.Template>
                 </Thumb>
@@ -173,9 +173,9 @@ $script:BtXamlResources = @'
     </Setter>
   </Style>
   <Style TargetType="ToolTip">
-    <Setter Property="Background" Value="#1B2947"/>
-    <Setter Property="Foreground" Value="#E6EDF7"/>
-    <Setter Property="BorderBrush" Value="#2F5C8A"/>
+    <Setter Property="Background" Value="{DynamicResource BtTipBg}"/>
+    <Setter Property="Foreground" Value="{DynamicResource BtTipFg}"/>
+    <Setter Property="BorderBrush" Value="{DynamicResource BtTipBorder}"/>
     <Setter Property="FontSize" Value="11.5"/>
   </Style>
 </Window.Resources>
@@ -197,15 +197,15 @@ $script:BtXamlLogo = @'
     <Image x:Name="LogoImg" Visibility="Collapsed" RenderOptions.BitmapScalingMode="HighQuality"/>
   </Grid>
   <StackPanel Margin="9,0,0,0" VerticalAlignment="Center">
-    <TextBlock Text="Biblio-Tech" FontSize="14" FontWeight="Bold" Foreground="#E6EDF7"/>
-    <TextBlock x:Name="SubTitle" Text="Base de connaissances" FontSize="10" Foreground="#8193B2"/>
+    <TextBlock Text="Biblio-Tech" FontSize="14" FontWeight="Bold" Foreground="{DynamicResource BtText}"/>
+    <TextBlock x:Name="SubTitle" Text="Base de connaissances" FontSize="10" Foreground="{DynamicResource BtMuted}"/>
   </StackPanel>
 </StackPanel>
 '@
 
 # Champ de recherche (réutilisé).
 $script:BtXamlSearch = @'
-<Border x:Name="SearchShell" Height="40" CornerRadius="10" Background="#16213A" BorderBrush="#2B3A5C" BorderThickness="1">
+<Border x:Name="SearchShell" Height="40" CornerRadius="10" Background="{DynamicResource BtSearchBg}" BorderBrush="{DynamicResource BtSearchBorder}" BorderThickness="1">
   <Grid>
     <Grid.ColumnDefinitions>
       <ColumnDefinition Width="34"/>
@@ -213,12 +213,12 @@ $script:BtXamlSearch = @'
       <ColumnDefinition Width="Auto"/>
       <ColumnDefinition Width="Auto"/>
     </Grid.ColumnDefinitions>
-    <TextBlock Text="&#xE721;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="13" Foreground="#8193B2" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-    <TextBlock x:Name="SearchHint" Grid.Column="1" Text="Décrivez votre besoin ou tapez des mots-clés…" Foreground="#5D6F8F" FontSize="13" VerticalAlignment="Center" IsHitTestVisible="False"/>
-    <TextBox x:Name="SearchBox" Grid.Column="1" Background="Transparent" BorderThickness="0" Foreground="#E6EDF7" CaretBrush="#FFFFFF" SelectionBrush="#0088CE" FontSize="13.5" VerticalAlignment="Center" Padding="0"/>
+    <TextBlock Text="&#xE721;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="13" Foreground="{DynamicResource BtMuted}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+    <TextBlock x:Name="SearchHint" Grid.Column="1" Text="Décrivez votre besoin ou tapez des mots-clés…" Foreground="{DynamicResource BtFaint}" FontSize="13" VerticalAlignment="Center" IsHitTestVisible="False"/>
+    <TextBox x:Name="SearchBox" Grid.Column="1" Background="Transparent" BorderThickness="0" Foreground="{DynamicResource BtText}" CaretBrush="{DynamicResource BtCaret}" SelectionBrush="#0088CE" FontSize="13.5" VerticalAlignment="Center" Padding="0"/>
     <Button x:Name="ClearBtn" Grid.Column="2" Style="{StaticResource IconBtn}" Width="24" Height="24" FontSize="9" Content="&#xE711;" ToolTip="Effacer (Échap)" Visibility="Collapsed"/>
-    <Border Grid.Column="3" CornerRadius="4" Background="#1F2C47" Margin="4,0,7,0" Padding="6,1" VerticalAlignment="Center">
-      <TextBlock x:Name="HotkeyText" FontSize="10" Foreground="#8193B2"/>
+    <Border Grid.Column="3" CornerRadius="4" Background="{DynamicResource BtKeyBg}" Margin="4,0,7,0" Padding="6,1" VerticalAlignment="Center">
+      <TextBlock x:Name="HotkeyText" FontSize="10" Foreground="{DynamicResource BtMuted}"/>
     </Border>
     <ProgressBar x:Name="BusyBar" Grid.ColumnSpan="4" Height="2" VerticalAlignment="Bottom" Margin="8,0,8,0" IsIndeterminate="True" Foreground="#0088CE" Background="Transparent" BorderThickness="0" Visibility="Collapsed"/>
   </Grid>
@@ -227,18 +227,18 @@ $script:BtXamlSearch = @'
 
 $script:BtXamlStatus = @'
 <StackPanel Orientation="Horizontal" VerticalAlignment="Center" x:Name="StatusArea" Background="Transparent">
-  <Ellipse x:Name="StatusDot" Width="8" Height="8" Fill="#8193B2" VerticalAlignment="Center"/>
-  <TextBlock x:Name="StatusText" Margin="7,0,0,0" FontSize="11.5" Foreground="#B8C4D8" VerticalAlignment="Center" Text="Démarrage…"/>
+  <Ellipse x:Name="StatusDot" Width="8" Height="8" Fill="{DynamicResource BtMuted}" VerticalAlignment="Center"/>
+  <TextBlock x:Name="StatusText" Margin="7,0,0,0" FontSize="11.5" Foreground="{DynamicResource BtBody}" VerticalAlignment="Center" Text="Démarrage…"/>
 </StackPanel>
 '@
 
 $script:BtXamlBody = @'
 <DockPanel>
   <WrapPanel x:Name="FilterHost" DockPanel.Dock="Top" Margin="14,12,10,4"/>
-  <Border DockPanel.Dock="Bottom" BorderBrush="#1E2A44" BorderThickness="0,1,0,0" Padding="14,7,10,8">
+  <Border DockPanel.Dock="Bottom" BorderBrush="{DynamicResource BtDivider}" BorderThickness="0,1,0,0" Padding="14,7,10,8">
     <DockPanel>
       <Button x:Name="OpenHomeBtn" DockPanel.Dock="Right" Style="{StaticResource LinkBtn}" Content="Ouvrir Biblio-Tech dans le navigateur ↗"/>
-      <TextBlock x:Name="FooterText" FontSize="11" Foreground="#5D6F8F" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+      <TextBlock x:Name="FooterText" FontSize="11" Foreground="{DynamicResource BtFaint}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
     </DockPanel>
   </Border>
   <ScrollViewer x:Name="ResultsScroll" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Padding="12,2,8,6">
@@ -269,14 +269,14 @@ function Get-BtWindowXaml {
     return @"
 <Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="Biblio-Tech" Width="$w" Height="$h" MinWidth="620" MinHeight="440" WindowStartupLocation="CenterScreen"
-        Background="#0F172A" ShowInTaskbar="True" UseLayoutRounding="True" FontFamily="Segoe UI" FontSize="13" TextOptions.TextFormattingMode="Display">
+        Background="{DynamicResource BtPanel}" ShowInTaskbar="True" UseLayoutRounding="True" FontFamily="Segoe UI" FontSize="13" TextOptions.TextFormattingMode="Display">
   <WindowChrome.WindowChrome>
     <WindowChrome CaptionHeight="44" ResizeBorderThickness="6" GlassFrameThickness="0" CornerRadius="0" UseAeroCaptionButtons="False"/>
   </WindowChrome.WindowChrome>
   $script:BtXamlResources
-  <Border x:Name="Root" BorderBrush="#22314F" BorderThickness="1">
+  <Border x:Name="Root" BorderBrush="{DynamicResource BtRootBorder}" BorderThickness="1">
     <DockPanel>
-      <Border x:Name="Bar" DockPanel.Dock="Top" Background="#0B1220" Height="56" Padding="14,0,0,0">
+      <Border x:Name="Bar" DockPanel.Dock="Top" Background="{DynamicResource BtBar}" Height="56" Padding="14,0,0,0">
         <Grid>
           <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
           $script:BtXamlLogo
@@ -284,7 +284,7 @@ function Get-BtWindowXaml {
           <Grid Grid.Column="3">$script:BtXamlButtons</Grid>
         </Grid>
       </Border>
-      <Border DockPanel.Dock="Top" Background="#0B1220" BorderBrush="#0088CE" BorderThickness="0,0,0,2" Padding="18,4,18,14">
+      <Border DockPanel.Dock="Top" Background="{DynamicResource BtBar}" BorderBrush="#0088CE" BorderThickness="0,0,0,2" Padding="18,4,18,14">
         <Grid MaxWidth="900" HorizontalAlignment="Stretch">$script:BtXamlSearch</Grid>
       </Border>
       $script:BtXamlBody
@@ -298,6 +298,7 @@ function Get-BtWindowXaml {
 function New-BtWindow {
     param($Ctx)
     $win = [System.Windows.Markup.XamlReader]::Parse((Get-BtWindowXaml $Ctx))
+    Set-BtThemeResources $win
     $ui = @{ Suppress = $false; LastState = [System.Windows.WindowState]::Normal; TrayTipShown = $false }
     foreach ($n in @('Root', 'Bar', 'LogoArea', 'SubTitle', 'SearchShell', 'SearchHint', 'SearchBox', 'ClearBtn', 'HotkeyText', 'BusyBar',
             'StatusArea', 'StatusDot', 'StatusText', 'FilterHost', 'ResultsScroll', 'ResultsPanel', 'FooterText', 'OpenHomeBtn',
@@ -347,7 +348,7 @@ function New-BtWindow {
         }
     })
     $ui.SearchBox.Add_GotKeyboardFocus({ param($s, $e) $script:Ctx.Ui.SearchShell.BorderBrush = Get-BtBrush 'Accent' })
-    $ui.SearchBox.Add_LostKeyboardFocus({ param($s, $e) $script:Ctx.Ui.SearchShell.BorderBrush = Get-BtBrush '#2B3A5C' })
+    $ui.SearchBox.Add_LostKeyboardFocus({ param($s, $e) $script:Ctx.Ui.SearchShell.BorderBrush = Get-BtBrush 'SearchBorder' })
     $ui.ClearBtn.Add_Click({ $script:Ctx.Ui.SearchBox.Text = ''; $script:Ctx.Ui.SearchBox.Focus() | Out-Null })
     # Bouton « précédent » de la souris : page précédente de l'accueil en tuiles.
     $ui.ResultsScroll.Add_PreviewMouseUp({ param($x, $e)

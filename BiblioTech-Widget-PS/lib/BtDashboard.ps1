@@ -17,7 +17,7 @@
 $script:BtDashXaml = @'
 <Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         Title="Biblio-Tech · Tableau de bord" Width="1240" Height="860" MinWidth="760" MinHeight="520"
-        WindowStartupLocation="CenterScreen" Background="#0F172A">
+        WindowStartupLocation="CenterScreen" Background="{DynamicResource BtPanel}">
   <Grid x:Name="Host" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"/>
 </Window>
 '@
@@ -663,6 +663,7 @@ function Show-BtDashboard {
     $d = $Ctx.Dash
     if (-not $d.Window) {
         $win = [System.Windows.Markup.XamlReader]::Parse($script:BtDashXaml)
+        Set-BtThemeResources $win
         $ico = New-BtImageSource (Get-BtAppIconPath 'png') 64
         if ($ico) { $win.Icon = $ico }
         Register-BtWindowIcon $win

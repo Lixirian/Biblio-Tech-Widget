@@ -100,7 +100,7 @@ $script:Ctx = @{
     BrowseOpen = @{}             # nœuds dépliés (chemin -> $true)
     Dash       = @{ Window = $null; WebView = $null }
     Keep       = @{ Task = $null; NextAt = $null }
-    Dark       = (Test-BtSystemDark)  # thème Windows (pages du lecteur / tableau de bord), relu par Step-BtTheme
+    Dark       = (Test-BtSystemDark)  # thème Windows (« mode des applications ») : toute l'interface, relu par Step-BtTheme
     ThemeAt    = $null
     ThemeApplied = $false   # session SSO conservée (Step-BtKeepSession)
     Ui         = $null
@@ -111,6 +111,8 @@ $script:Ctx = @{
     FlashUntil = $null
     Quitting   = $false
 }
+# Palette de l'interface = thème Windows, AVANT la création de toute fenêtre.
+Set-BtPalette ([bool]$script:Ctx.Dark)
 # Filtres de type et de tri retirés de l'interface : on neutralise un choix mémorisé
 # auparavant (sinon il filtrerait les recherches sans être visible).
 $script:Ctx.State.Type = 'all'

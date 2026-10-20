@@ -225,7 +225,15 @@ $script:BtDarkPageJs = @'
 '@
 
 # Thème des applications Windows (Paramètres > Personnalisation > Couleurs) : $true = sombre.
+$script:BtStartedAt = Get-Date
 function Test-BtSystemDark {
+    # Tests : BT_THEME=light|dark force le thème ; BT_THEME_FLIP_SEC=n l'inverse après n s
+    # (simule un changement de thème Windows pendant l'exécution).
+    if ($env:BT_THEME) {
+        $d = ($env:BT_THEME -ne 'light')
+        if ($env:BT_THEME_FLIP_SEC -and ((Get-Date) - $script:BtStartedAt).TotalSeconds -ge [int]$env:BT_THEME_FLIP_SEC) { $d = -not $d }
+        return $d
+    }
     try {
         $v = [Microsoft.Win32.Registry]::GetValue('HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize', 'AppsUseLightTheme', $null)
         if ($null -eq $v) { return $true }
@@ -262,6 +270,17 @@ function Step-BtTheme {
     $Ctx.Dark = $d
     $Ctx.ThemeApplied = $true
     Write-BtLog ("[THEME] Thème Windows : {0}." -f $(if ($d) { 'sombre' } else { 'clair' }))
+    # Interface WPF : nouvelle palette, ressources des fenêtres ouvertes, éléments redessinés.
+    Set-BtPalette $d
+    foreach ($w in @($Ctx.Window, $Ctx.Reader.Window, $Ctx.Dash.Window, $Ctx.AuthWindow)) { if ($w) { try { Set-BtThemeResources $w } catch { } } }
+    try {
+        Set-BtStatus $Ctx $Ctx.StatusKind $Ctx.StatusText
+        Update-BtFooter $Ctx
+        Render-BtFilters $Ctx
+        Render-BtResults $Ctx
+        if ($Ctx.Reader.Ui) { Update-BtReaderPin $Ctx; Update-BtReaderMode $Ctx }
+    } catch { Write-BtLog "[THEME] Rafraîchissement de l'interface incomplet : $($_.Exception.Message)" }
+    # Pages web (lecteur, tableau de bord) : même thème.
     foreach ($wv in @($Ctx.WebView, $Ctx.Reader.WebView, $Ctx.Dash.WebView)) { Set-BtWebTheme $Ctx $wv }
     try { if ($Ctx.Reader.Ui) { $Ctx.Reader.Ui.Host.Background = if ($d) { Get-BtBrush 'Panel' } else { [System.Windows.Media.Brushes]::White } } } catch { }
 }

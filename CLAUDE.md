@@ -104,6 +104,15 @@ Nouveau PC : `build-release.ps1 -ImportSigningKey -KeyBackup <fichier>` (sauvega
 installés refuseraient les MAJ jusqu'à réinstallation via `Biblio-Tech.cmd`. Ajouter une entrée en tête
 de `CHANGELOG.md` à chaque version.
 
+## Thème (1.1.20)
+
+Toute l'interface suit le « mode des applications » de Windows, en direct. **Jamais de couleur
+en dur** dans une nouvelle interface : XAML -> `{DynamicResource Bt<Rôle>}` (rôles de
+`$script:BtPalettes` dans BtUi, à compléter dans les DEUX palettes), code -> `Get-BtBrush '<Rôle>'`,
+couleur vive (tuile, type) -> `Get-BtTone`. Toute nouvelle fenêtre : `Set-BtThemeResources $win`
+après `XamlReader.Parse`, et l'ajouter à la liste de `Step-BtTheme`. Tests : `BT_THEME=light|dark`,
+`BT_THEME_FLIP_SEC`, captures `BT_TEST_SHOT` (jamais de copie d'écran).
+
 ## Règles de sécurité (revue 1.1.18 — à respecter dans toute évolution)
 
 - Toute nouvelle WebView2 : `Set-BtWebHardening` à l'initialisation ; navigation limitée

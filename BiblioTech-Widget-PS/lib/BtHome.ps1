@@ -440,6 +440,7 @@ function Split-BtTitleEmoji {
 # Icône d'une tuile / d'un en-tête : l'émoji du titre s'il y en a un, sinon le pictogramme.
 function New-BtTitleIcon {
     param([string]$Glyph, [string]$Emoji, [double]$Size, [string]$Color)
+    $Color = Get-BtTone $Color
     if ($Emoji) {
         $t = New-BtText -Text $Emoji -Size ($Size - 1) -Color $Color
         $t.FontFamily = New-Object System.Windows.Media.FontFamily 'Segoe UI Emoji'
@@ -458,6 +459,7 @@ function Get-BtTileGlyph {
 # Tuile cliquable animée. Tag = cible de navigation (voir Invoke-BtHomeNav).
 function New-BtTile {
     param($Ctx, [string]$Title, [string]$Sub, [string]$Glyph, [string]$Color, $Target)
+    $Color = Get-BtTone $Color          # couleur vive assombrie en thème clair (lisibilité)
     $tile = New-Object System.Windows.Controls.Border
     $tile.Width = 168; $tile.Height = 120
     $tile.CornerRadius = New-Object System.Windows.CornerRadius 14

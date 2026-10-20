@@ -198,7 +198,7 @@ function Show-BtUpdateDialog {
 <Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         WindowStyle="None" AllowsTransparency="True" Background="Transparent" Topmost="True" ShowInTaskbar="False"
         WindowStartupLocation="CenterScreen" SizeToContent="Height" Width="480" FontFamily="Segoe UI">
-  <Border Background="#0F172A" BorderBrush="#0088CE" BorderThickness="1" CornerRadius="14" Padding="22" Margin="12">
+  <Border Background="{DynamicResource BtPanel}" BorderBrush="#0088CE" BorderThickness="1" CornerRadius="14" Padding="22" Margin="12">
     <Border.Effect><DropShadowEffect BlurRadius="24" ShadowDepth="3" Opacity="0.5"/></Border.Effect>
     <StackPanel>
       <StackPanel Orientation="Horizontal">
@@ -206,17 +206,17 @@ function Show-BtUpdateDialog {
           <TextBlock Text="&#xE896;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="16" Foreground="#0B1220" HorizontalAlignment="Center" VerticalAlignment="Center"/>
         </Border>
         <StackPanel Margin="12,0,0,0" VerticalAlignment="Center">
-          <TextBlock Text="Mise à jour disponible" FontSize="17" FontWeight="Bold" Foreground="#E6EDF7"/>
-          <TextBlock x:Name="VerText" FontSize="12" Foreground="#4FB3FF" FontWeight="SemiBold"/>
+          <TextBlock Text="Mise à jour disponible" FontSize="17" FontWeight="Bold" Foreground="{DynamicResource BtText}"/>
+          <TextBlock x:Name="VerText" FontSize="12" Foreground="{DynamicResource BtLink}" FontWeight="SemiBold"/>
         </StackPanel>
       </StackPanel>
-      <TextBlock Text="NOUVEAUTÉS" FontSize="10.5" FontWeight="Bold" Foreground="#8193B2" Margin="0,18,0,8"/>
-      <Border Background="#152038" CornerRadius="10" Padding="14,10">
+      <TextBlock Text="NOUVEAUTÉS" FontSize="10.5" FontWeight="Bold" Foreground="{DynamicResource BtMuted}" Margin="0,18,0,8"/>
+      <Border Background="{DynamicResource BtCard}" CornerRadius="10" Padding="14,10">
         <ScrollViewer MaxHeight="260" VerticalScrollBarVisibility="Auto"><StackPanel x:Name="Notes"/></ScrollViewer>
       </Border>
-      <TextBlock Text="L'application va se fermer, se mettre à jour puis redémarrer automatiquement." FontSize="11.5" Foreground="#8193B2" TextWrapping="Wrap" Margin="0,12,0,0"/>
+      <TextBlock Text="L'application va se fermer, se mettre à jour puis redémarrer automatiquement." FontSize="11.5" Foreground="{DynamicResource BtMuted}" TextWrapping="Wrap" Margin="0,12,0,0"/>
       <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,16,0,0">
-        <Button x:Name="LaterBtn" Content="Plus tard" Padding="16,7" Margin="0,0,8,0" Foreground="#B8C4D8" Background="#1B2947" BorderThickness="0" Cursor="Hand"/>
+        <Button x:Name="LaterBtn" Content="Plus tard" Padding="16,7" Margin="0,0,8,0" Foreground="{DynamicResource BtBody}" Background="{DynamicResource BtCardHover}" BorderThickness="0" Cursor="Hand"/>
         <Button x:Name="OkBtn" Content="Mettre à jour et redémarrer" Padding="16,7" Foreground="White" Background="#0088CE" BorderThickness="0" FontWeight="SemiBold" Cursor="Hand"/>
       </StackPanel>
     </StackPanel>
@@ -224,6 +224,7 @@ function Show-BtUpdateDialog {
 </Window>
 '@
     $w = [System.Windows.Markup.XamlReader]::Parse($xaml)
+    Set-BtThemeResources $w
     $w.FindName('VerText').Text = "Version $($Ctx.Config.Version)  →  $($M.Version)" + $(if ($M.Date) { "   ·   $($M.Date)" } else { '' })
     $notes = $w.FindName('Notes')
     $list = if (@($M.Notes).Count) { @($M.Notes) } else { @('Améliorations et corrections.') }

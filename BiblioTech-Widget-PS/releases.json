@@ -1,4 +1,7 @@
 {
+    "1.1.20":  [
+                   "Thème clair / sombre : toute l'application (fenêtre, lecteur, tableau de bord) suit désormais le mode des applications de Windows, y compris si vous le changez pendant l'utilisation."
+               ],
     "1.1.19":  [
                    "Tableau de bord plus facile à trouver : un bouton « Tableau de bord » bien visible en haut de la fenêtre, et une tuile dans les accès rapides de l'accueil.",
                    "Déploiement par le service informatique : l'application complète (zip) peut être installée dans n'importe quel dossier, sans mise à jour automatique ni connexion à GitHub."

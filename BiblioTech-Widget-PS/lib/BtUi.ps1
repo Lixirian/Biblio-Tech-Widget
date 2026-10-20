@@ -4,25 +4,59 @@
 #  (pas de GetNewClosure : les fonctions du script restent visibles).
 # ============================================================================
 
-$script:BtTheme = @{
-    Bar        = '#0B1220'
-    Panel      = '#0F172A'
-    Card       = '#152038'
-    CardHover  = '#1B2947'
-    Border     = '#22314F'
-    Text       = '#E6EDF7'
-    Body       = '#B8C4D8'
-    Muted      = '#8193B2'
-    Faint      = '#5D6F8F'
-    Accent     = '#0088CE'
-    AccentSoft = '#1A0088CE'
-    Highlight  = '#FFD166'
-    HighlightBg = '#26FFD166'
-    Ok         = '#22C55E'
-    Warn       = '#F59E0B'
-    Error      = '#EF4444'
+# --- Thème : suit le « mode des applications » de Windows (clair / sombre) ---------------
+# Deux palettes aux MÊMES clés (rôles). Le code passe un nom de rôle à Get-BtBrush ; le XAML
+# utilise {DynamicResource Bt<Rôle>} (ressources posées par Set-BtThemeResources). Changer de
+# palette (Set-BtPalette) puis réappliquer les ressources et redessiner suffit à basculer.
+$script:BtPalettes = @{
+    Dark = @{
+        Bar = '#0B1220'; Panel = '#0F172A'; Card = '#152038'; CardHover = '#1B2947'; Border = '#22314F'; RootBorder = '#22314F'
+        Text = '#E6EDF7'; Body = '#B8C4D8'; Muted = '#8193B2'; Faint = '#5D6F8F'
+        Accent = '#0088CE'; AccentSoft = '#1A0088CE'; AccentLine = '#330088CE'; Link = '#4FB3FF'; LinkHoverBg = '#1A4FB3FF'
+        Highlight = '#FFD166'; HighlightBg = '#26FFD166'; Ok = '#22C55E'; Warn = '#F59E0B'; Error = '#EF4444'
+        IconFg = '#C9D4E5'; IconFgHover = '#FFFFFF'; HoverBg = '#2AFFFFFF'; PressBg = '#40FFFFFF'
+        SearchBg = '#16213A'; SearchBorder = '#2B3A5C'; KeyBg = '#1F2C47'; Caret = '#FFFFFF'; Divider = '#1E2A44'; Thumb = '#3A4D70'
+        TipBg = '#1B2947'; TipFg = '#E6EDF7'; TipBorder = '#2F5C8A'; LabelBg = '#1F3355'; LabelFg = '#9CC3FF'; CardHoverBorder = '#2F5C8A'
+    }
+    Light = @{
+        Bar = '#FFFFFF'; Panel = '#F3F6FA'; Card = '#FFFFFF'; CardHover = '#EAF2FB'; Border = '#D3DCE8'; RootBorder = '#C9D3E0'
+        Text = '#14213D'; Body = '#334155'; Muted = '#5B6B82'; Faint = '#8592A6'
+        Accent = '#0088CE'; AccentSoft = '#140088CE'; AccentLine = '#4D0088CE'; Link = '#0068A3'; LinkHoverBg = '#140068A3'
+        Highlight = '#7A4E00'; HighlightBg = '#4DFFD166'; Ok = '#15803D'; Warn = '#B45309'; Error = '#DC2626'
+        IconFg = '#3A4A63'; IconFgHover = '#0B1220'; HoverBg = '#140B1220'; PressBg = '#260B1220'
+        SearchBg = '#FFFFFF'; SearchBorder = '#C3CEDC'; KeyBg = '#EEF2F7'; Caret = '#0B1220'; Divider = '#DCE3EC'; Thumb = '#B4C0D0'
+        TipBg = '#FFFFFF'; TipFg = '#14213D'; TipBorder = '#C3CEDC'; LabelBg = '#E3EEFB'; LabelFg = '#1D4F91'; CardHoverBorder = '#8DB7E2'
+    }
 }
+$script:BtIsDark = $true
+$script:BtTheme = $script:BtPalettes.Dark.Clone()
 $script:BtIconFont = 'Segoe Fluent Icons, Segoe MDL2 Assets'
+
+# Change la palette active (les pinceaux en cache sont recalculés).
+function Set-BtPalette {
+    param([bool]$Dark)
+    $script:BtIsDark = $Dark
+    $script:BtTheme = $(if ($Dark) { $script:BtPalettes.Dark } else { $script:BtPalettes.Light }).Clone()
+    $script:BtBrushCache = @{}
+}
+
+# Pose les pinceaux de la palette active dans les ressources d'une fenêtre ({DynamicResource Bt<Rôle>}).
+function Set-BtThemeResources {
+    param($Window)
+    if (-not $Window) { return }
+    # Conversion explicite en [Brush] : sinon PowerShell passe un PSObject (refusé par WPF).
+    foreach ($k in @($script:BtTheme.Keys)) { $Window.Resources["Bt$k"] = [System.Windows.Media.Brush](Get-BtBrush $k) }
+}
+
+# Couleur vive (tuiles, types) : telle quelle en thème sombre, assombrie en thème clair pour
+# rester lisible sur fond blanc.
+function Get-BtTone {
+    param([string]$Hex)
+    if ($script:BtIsDark -or $Hex -notmatch '^#[0-9A-Fa-f]{6}$') { return $Hex }
+    $c = [System.Windows.Media.ColorConverter]::ConvertFromString($Hex)
+    $f = 0.68
+    return ('#{0:X2}{1:X2}{2:X2}' -f [int]($c.R * $f), [int]($c.G * $f), [int]($c.B * $f))
+}
 
 # Image chargée entièrement en mémoire (CacheOption OnLoad) : aucun verrou ne reste
 # sur le fichier, sinon l'updater ne pourrait pas remplacer la copie locale.
@@ -109,9 +143,9 @@ function Format-BtDate {
 function Get-BtTypeVisual {
     param([string]$Type)
     switch ($Type) {
-        'blogpost'   { return @{ Glyph = [string][char]0xE70B; Color = '#A78BFA'; Label = 'Blog' } }
-        'attachment' { return @{ Glyph = [string][char]0xE723; Color = '#F59E0B'; Label = 'Pièce jointe' } }
-        default      { return @{ Glyph = [string][char]0xE8A5; Color = '#4FB3FF'; Label = 'Page' } }
+        'blogpost'   { return @{ Glyph = [string][char]0xE70B; Color = (Get-BtTone '#A78BFA'); Label = 'Blog' } }
+        'attachment' { return @{ Glyph = [string][char]0xE723; Color = (Get-BtTone '#F59E0B'); Label = 'Pièce jointe' } }
+        default      { return @{ Glyph = [string][char]0xE8A5; Color = (Get-BtTone '#4FB3FF'); Label = 'Page' } }
     }
 }
 
@@ -254,10 +288,10 @@ function New-BtResultCard {
     foreach ($l in @($Item.labels | Where-Object { $_ } | Select-Object -First 4)) {
         $lb = New-Object System.Windows.Controls.Border
         $lb.CornerRadius = New-Object System.Windows.CornerRadius 4
-        $lb.Background = Get-BtBrush '#1F3355'
+        $lb.Background = Get-BtBrush 'LabelBg'
         $lb.Padding = New-BtThickness 6 1 6 1
         $lb.Margin = New-BtThickness 0 0 4 2
-        $lb.Child = (New-BtText -Text ([string]$l) -Size 10.5 -Color '#9CC3FF')
+        $lb.Child = (New-BtText -Text ([string]$l) -Size 10.5 -Color 'LabelFg')
         [void]$meta.Children.Add($lb)
     }
     if ($meta.Children.Count) { [void]$col.Children.Add($meta) }
@@ -283,7 +317,7 @@ function New-BtResultCard {
 
     $card.Child = $grid
     $card.Add_MouseEnter({ param($s, $e)
-        $s.Background = Get-BtBrush 'CardHover'; $s.BorderBrush = Get-BtBrush '#2F5C8A'
+        $s.Background = Get-BtBrush 'CardHover'; $s.BorderBrush = Get-BtBrush 'CardHoverBorder'
         try { $s.Child.Children[2].Opacity = 1 } catch { } })
     $card.Add_MouseLeave({ param($s, $e)
         $s.Background = Get-BtBrush 'Card'; $s.BorderBrush = Get-BtBrush 'Border'
@@ -307,7 +341,7 @@ function New-BtSkeletonCard {
     foreach ($w in @(0.55, 0.3, 0.92, 0.75)) {
         $r = New-Object System.Windows.Shapes.Rectangle
         $r.Height = 10; $r.RadiusX = 4; $r.RadiusY = 4
-        $r.Fill = Get-BtBrush '#22314F'
+        $r.Fill = Get-BtBrush 'Border'
         $r.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Left
         $r.Width = 600 * $w
         $r.Margin = New-BtThickness 0 0 0 8
@@ -328,7 +362,7 @@ function New-BtUnderstandingCard {
     $card = New-Object System.Windows.Controls.Border
     $card.CornerRadius = New-Object System.Windows.CornerRadius 10
     $card.Background = Get-BtBrush 'AccentSoft'
-    $card.BorderBrush = Get-BtBrush '#330088CE'
+    $card.BorderBrush = Get-BtBrush 'AccentLine'
     $card.BorderThickness = New-BtThickness 1
     $card.Padding = New-BtThickness 12 8 8 8
     $card.Margin = New-BtThickness 0 4 0 6

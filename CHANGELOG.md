@@ -1,5 +1,19 @@
 # Historique des versions
 
+## 1.1.20 — 2026-10-20
+
+- **Toute l'interface suit le thème Windows** (« mode des applications », `AppsUseLightTheme`) :
+  la fenêtre principale était toujours sombre alors que le tableau de bord et le lecteur suivaient
+  déjà le système (incohérence signalée). `BtUi` : deux palettes (`$script:BtPalettes.Dark/Light`)
+  aux mêmes rôles ; `Set-BtPalette`, `Set-BtThemeResources` (pinceaux posés en ressources
+  `Bt<Rôle>`, convertis en `[Brush]` : sinon PSObject refusé par WPF), `Get-BtTone` (couleurs
+  vives des tuiles assombries en clair). XAML des fenêtres principale / lecteur / mise à jour /
+  tableau de bord : couleurs -> `{DynamicResource Bt<Rôle>}` ; restent fixes les couleurs
+  identiques dans les deux thèmes (boutons bleus, pastille jaune, fermer rouge, logo).
+  `Step-BtTheme` : bascule EN DIRECT (palette, ressources de toutes les fenêtres, statut,
+  filtres, liste, lecteur). Tests : `BT_THEME=light|dark`, `BT_THEME_FLIP_SEC=n` ; captures
+  (BT_TEST_SHOT) clair, sombre, bascule et résultats de recherche en clair vérifiées.
+
 ## 1.1.19 — 2026-10-20
 
 - **Accès au tableau de bord** : l'icône de la barre devient un bouton libellé « Tableau de bord »

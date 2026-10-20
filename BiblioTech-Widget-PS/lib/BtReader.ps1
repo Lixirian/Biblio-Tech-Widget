@@ -7,10 +7,10 @@
 $script:BtReaderXaml = @'
 <Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="Biblio-Tech · Lecteur" Width="1180" Height="860" MinWidth="640" MinHeight="420"
-        WindowStartupLocation="CenterScreen" Background="#0F172A" FontFamily="Segoe UI" FontSize="13" UseLayoutRounding="True">
+        WindowStartupLocation="CenterScreen" Background="{DynamicResource BtPanel}" FontFamily="Segoe UI" FontSize="13" UseLayoutRounding="True">
   <Window.Resources>
     <Style x:Key="TbBtn" TargetType="Button">
-      <Setter Property="Foreground" Value="#C9D4E5"/>
+      <Setter Property="Foreground" Value="{DynamicResource BtIconFg}"/>
       <Setter Property="Background" Value="Transparent"/>
       <Setter Property="Height" Value="32"/>
       <Setter Property="MinWidth" Value="32"/>
@@ -23,7 +23,7 @@ $script:BtReaderXaml = @'
               <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
             </Border>
             <ControlTemplate.Triggers>
-              <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="bd" Property="Background" Value="#2AFFFFFF"/><Setter Property="Foreground" Value="#FFFFFF"/></Trigger>
+              <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="bd" Property="Background" Value="{DynamicResource BtHoverBg}"/><Setter Property="Foreground" Value="{DynamicResource BtIconFgHover}"/></Trigger>
             </ControlTemplate.Triggers>
           </ControlTemplate>
         </Setter.Value>
@@ -31,7 +31,7 @@ $script:BtReaderXaml = @'
     </Style>
   </Window.Resources>
   <DockPanel>
-    <Border DockPanel.Dock="Top" Background="#0B1220" BorderBrush="#0088CE" BorderThickness="0,0,0,2" Padding="8,7">
+    <Border DockPanel.Dock="Top" Background="{DynamicResource BtBar}" BorderBrush="#0088CE" BorderThickness="0,0,0,2" Padding="8,7">
       <DockPanel>
         <StackPanel DockPanel.Dock="Left" Orientation="Horizontal">
           <Button x:Name="BackBtn" Style="{StaticResource TbBtn}" ToolTip="Précédent"><TextBlock Text="&#xE72B;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets"/></Button>
@@ -49,8 +49,8 @@ $script:BtReaderXaml = @'
           </Button>
         </StackPanel>
         <StackPanel Margin="12,0" VerticalAlignment="Center">
-          <TextBlock x:Name="TitleText" Foreground="#E6EDF7" FontSize="14" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/>
-          <TextBlock x:Name="SubText" Foreground="#8193B2" FontSize="11" TextTrimming="CharacterEllipsis"/>
+          <TextBlock x:Name="TitleText" Foreground="{DynamicResource BtText}" FontSize="14" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/>
+          <TextBlock x:Name="SubText" Foreground="{DynamicResource BtMuted}" FontSize="11" TextTrimming="CharacterEllipsis"/>
         </StackPanel>
       </DockPanel>
     </Border>
@@ -76,6 +76,7 @@ function Get-BtReaderNavPolicy {
 function New-BtReaderWindow {
     param($Ctx)
     $win = [System.Windows.Markup.XamlReader]::Parse($script:BtReaderXaml)
+    Set-BtThemeResources $win
     $r = $Ctx.Reader
     $r.Window = $win
     $r.Ui = @{}
@@ -172,7 +173,7 @@ function Update-BtReaderPin {
     if (-not $r.Window -or -not $r.Item) { return }
     $p = Test-BtPinned $Ctx.State $r.Item
     $r.Ui.PinIcon.Text = if ($p) { [string][char]0xE840 } else { [string][char]0xE718 }
-    $r.Ui.PinIcon.Foreground = Get-BtBrush $(if ($p) { 'Accent' } else { '#C9D4E5' })
+    $r.Ui.PinIcon.Foreground = Get-BtBrush $(if ($p) { 'Accent' } else { 'IconFg' })
 }
 
 # Applique (ou retire) le CSS du mode lecture sur la page courante du lecteur.
@@ -181,8 +182,8 @@ function Update-BtReaderMode {
     $r = $Ctx.Reader
     if (-not $r.Window) { return }
     $on = [bool]$Ctx.State.ReaderMode
-    $r.Ui.ReadText.Foreground = Get-BtBrush $(if ($on) { 'Accent' } else { '#C9D4E5' })
-    $r.Ui.ReadIcon.Foreground = Get-BtBrush $(if ($on) { 'Accent' } else { '#C9D4E5' })
+    $r.Ui.ReadText.Foreground = Get-BtBrush $(if ($on) { 'Accent' } else { 'IconFg' })
+    $r.Ui.ReadIcon.Foreground = Get-BtBrush $(if ($on) { 'Accent' } else { 'IconFg' })
     try {
         $cw = $r.WebView.CoreWebView2
         if ($cw -and ([uri]$cw.Source).Host -eq $Ctx.ConfHost) { $cw.ExecuteScriptAsync((Get-BtReaderCssJS $on)) | Out-Null }
