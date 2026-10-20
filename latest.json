@@ -1,12 +1,11 @@
 {
-    "version":  "1.1.19",
-    "zip":  "BiblioTech-Widget_version1.1.19.zip",
-    "url":  "https://github.com/Lixirian/Biblio-Tech-Widget/releases/download/v1.1.19/BiblioTech-Widget_version1.1.19.zip",
-    "sha256":  "11EA94E442E51010B9E0C964C8F5F8072E06E741952D5029499E2394217A3D79",
-    "sig":  "dtDGFdMgp+cYfQdq1BdzY8KHaKv1yFV7gCmUw70h48KLC77gNiXAX3Z+alpumRaeU3GEcsxBtwU7tzKOXFme9SkNWDmvJBSEfAOxtyU6/0o/yYpbpT5UziyqBJRtWJc1RZJTG5lMjY1Q5Q1hTCiDmK+eNYrHAXlZ6pYszfQ5TI5GBPL45OAItxuCBhwPeMW3Wd4Yp+x/46SjkP/Dx6IEbB+b4mwRnst0cpCf5qCqLZrW7Ukt4Ya9n7OKSOx9XcBa/2g1klWLnV4SRc353PHeSsJdk70OXxpQqhkn+W6w46+YjtT33zPQP7XENti1TeGCCbsCp6Dj7doDzFEAHDt3uFYdY5a06Qf1nBQiE5agrRX7vlskEzPtvAqSYZtVw1UF79vDW4tEJ7GkeGxPl9AmiThbqhxFclihuBijEEdqBQLRHlqdk34qmSxWmZjydSTPu/qQiotjI5gco3gR6dI/DujGIAecEI7Hln8bWysMvM5UI7dLRcj6gbeKHcN3920l",
+    "version":  "1.1.20",
+    "zip":  "BiblioTech-Widget_version1.1.20.zip",
+    "url":  "https://github.com/Lixirian/Biblio-Tech-Widget/releases/download/v1.1.20/BiblioTech-Widget_version1.1.20.zip",
+    "sha256":  "18AACF50AC7CDC754757923E407D9BEA628563FC2C9ED8FFFEF17D871A2914EC",
+    "sig":  "HWud2orEZbwf/2R2N5YVvM0FP1kvzZcc+Zb7rPJpySoIraLoAYB4mJSs7/MSKw75njB0F1KQ1BaDqbrTePSinrfgOgotHJncpPDfHdoiTfISpfwVAgtQ3/WMCHr/C6Zf6CWFmH5kctW3dzRbe8QpbUI/M9Tl7LjTHumCdViJYxHuQNc38FwFENaRll9bxwrFYJBXxGGF964KFjeB7X7K2caBD7JGg7SMU6bGI9gsbXMkbNvLz6djnjHQNtc3iV+xwQjNXhfvwsuyIcEd8YllzSpOKwOatDyq72nV9b44P02k/GXWax7ycNjJeet32YoB/3rhSjFacI+IvKmyt12D9WlU9bDzNbmPvV/fNLjlCfdRknvcQqwc5DPU/GTD99V22Vnex0rXcxBW3flt/eC2TxIOz5WQHR7IDDSeO60AaYlf1hVUqAGptpWeTNxN6Z1DTDIFJjWMDeN/Dn+IiXA5Utpatk4jLJZTIRtwYQGv5Ye5Qq5EBAIsMUJx6x63vqUc",
     "date":  "2026-10-20",
     "notes":  [
-                  "Tableau de bord plus facile à trouver : un bouton « Tableau de bord » bien visible en haut de la fenêtre, et une tuile dans les accès rapides de l\u0027accueil.",
-                  "Déploiement par le service informatique : l\u0027application complète (zip) peut être installée dans n\u0027importe quel dossier, sans mise à jour automatique ni connexion à GitHub."
+                  "Thème clair / sombre : toute l\u0027application (fenêtre, lecteur, tableau de bord) suit désormais le mode des applications de Windows, y compris si vous le changez pendant l\u0027utilisation."
               ]
 }
