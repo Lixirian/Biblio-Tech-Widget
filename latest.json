@@ -1,11 +1,12 @@
 {
-    "version":  "1.1.12",
-    "zip":  "BiblioTech-Widget_version1.1.12.zip",
-    "url":  "https://github.com/Lixirian/Biblio-Tech-Widget/releases/download/v1.1.12/BiblioTech-Widget_version1.1.12.zip",
-    "sha256":  "1A5FC74EEA7F4358731E36974C817D8CBE039C39E3CF0E78F1E0B68978208C86",
+    "version":  "1.1.13",
+    "zip":  "BiblioTech-Widget_version1.1.13.zip",
+    "url":  "https://github.com/Lixirian/Biblio-Tech-Widget/releases/download/v1.1.13/BiblioTech-Widget_version1.1.13.zip",
+    "sha256":  "6DE4DEE8C722957A18A637588575D751AAF3EDE83C62A872E5167A05F5968F51",
     "date":  "2026-10-20",
     "notes":  [
-                  "Tuiles de l\u0027accueil : la rubrique s\u0027ouvre immédiatement au clic (en 1.1.11 rien ne s\u0027ouvrait et l\u0027appli semblait figée).",
-                  "Connexion : une fois validée, la session SSO est conservée même si vous quittez et relancez Biblio-Tech, jusqu\u0027à son expiration (12 h au plus). Plus de validation à chaque lancement."
+                  "Connexion : après la validation SSO, la fenêtre de connexion disparaît aussitôt ; la page Confluence n\u0027apparaît plus brièvement à l\u0027écran.",
+                  "Tuiles : quand le titre d\u0027une rubrique commence par un émoji (ex. le haut-parleur de « u-DOM »), il devient l\u0027icône de la tuile au lieu de chevaucher le texte.",
+                  "Fluidité : l\u0027analyse des catégories (des milliers de fiches) tourne désormais en arrière-plan et ne fige plus la fenêtre ; les résultats s\u0027affichent par lots de 25 (« Afficher plus » pour la suite)."
               ]
 }
