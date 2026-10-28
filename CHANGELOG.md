@@ -1,5 +1,18 @@
 # Historique des versions
 
+## 1.1.26 — 2026-10-28
+
+- **Lancement des processus par chemin absolu** (comme Arrivée Collab) : `powershell.exe`,
+  `wscript.exe`, `notepad.exe` et `explorer.exe` ne sont plus appelés par leur nom (résolu par
+  l'ordre de recherche de Windows : dossier courant, PATH…) mais par leur chemin sous
+  `%SystemRoot%` — en-tête de `Biblio-Tech.cmd` (build-release), `launcher\Biblio-Tech.vbs`,
+  `Start-BiblioTech.vbs` / `.cmd`, relance de `bootstrap.ps1`, updater et relance (`BtUpdate`),
+  journaux et dossier de données (`BtWindow`, `BtCategories`). Ferme le risque de détournement
+  par un exécutable homonyme placé plus tôt dans le chemin de recherche. `Biblio-Tech.cmd` change
+  (nouvelle empreinte SHA-256). Les postes en 1.1.25 appliquent cette MAJ avec leur updater actuel.
+- **Documents DSI** : dossier technique et fiche données / accès ajoutés (générés par
+  `..\Biblio-Tech - Note DSI\Sources\*.ps1`) ; le contrôle du build ignore les sauvegardes.
+
 ## 1.1.25 — 2026-10-20
 
 - **Accueil : « Les dernières news de Biblio-TECH »** (encadrés « Biblio-TECH met en avant » du site) passe

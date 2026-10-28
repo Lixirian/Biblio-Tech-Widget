@@ -173,7 +173,7 @@ function Step-BtCategScan {
             $c.Tree = $o.Result.Tree
             if ($Ctx.Browse -and -not $Ctx.Search.ShownQuery) { Render-BtResults $Ctx }
         }
-        if ($job.Name -eq 'catégories (fusion)' -and $c.Manual) { try { Start-Process notepad.exe -ArgumentList ('"' + (Join-Path $Ctx.DataDir 'categories-journal.log') + '"') } catch { } }
+        if ($job.Name -eq 'catégories (fusion)' -and $c.Manual) { try { Start-Process (Join-Path $env:WINDIR 'System32\notepad.exe') -ArgumentList ('"' + (Join-Path $Ctx.DataDir 'categories-journal.log') + '"') } catch { } }
         return
     }
     # Index lu (gros fichier JSON) et arborescence construite hors de la fenêtre, une fois.

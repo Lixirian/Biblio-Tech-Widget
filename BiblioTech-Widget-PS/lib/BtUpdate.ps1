@@ -343,13 +343,13 @@ try {
 finally {
     if ($lock) { $lock.Dispose() }
     $vbs = Join-Path $AppDir 'Start-BiblioTech.vbs'
-    if (Test-Path $vbs) { Start-Process -FilePath 'wscript.exe' -ArgumentList ('"' + $vbs + '"') -WorkingDirectory $AppDir }
+    if (Test-Path $vbs) { Start-Process -FilePath (Join-Path $env:WINDIR 'System32\wscript.exe') -ArgumentList ('"' + $vbs + '"') -WorkingDirectory $AppDir }
 }
 '@
     $path = Join-Path (Join-Path $Ctx.DataDir 'update') 'updater.ps1'
     [System.IO.File]::WriteAllText($path, $updater, (New-Object System.Text.UTF8Encoding $true))
     $args_ = '-NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File "{0}" -WaitPid {1} -Zip "{2}" -AppDir "{3}" -Version "{4}" -Sha {5}' -f $path, $PID, $Zip, $Ctx.AppRoot, $Version, $Sha
-    Start-Process -FilePath 'powershell.exe' -ArgumentList $args_ -WindowStyle Hidden
+    Start-Process -FilePath (Join-Path $env:WINDIR 'System32\WindowsPowerShell\v1.0\powershell.exe') -ArgumentList $args_ -WindowStyle Hidden
     Write-BtLog "[MAJ] Updater lancé (version $Version) : fermeture de l'application."
     Stop-BtApp $Ctx
 }

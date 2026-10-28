@@ -11,7 +11,7 @@ setlocal
 set "BT_SELF=%~f0"
 set "BTARGS="
 if /i "%~1"=="/repair" set "BTARGS=-Repair"
-powershell.exe -NoProfile -ExecutionPolicy Bypass -Command "$s=[IO.File]::ReadAllText($env:BT_SELF,[Text.Encoding]::UTF8); $i=$s.IndexOf('#'+'#BIBLIOTECH-PS#'+'#'); & ([ScriptBlock]::Create($s.Substring($i))) %BTARGS%"
+"%SystemRoot%\System32\WindowsPowerShell\v1.0\powershell.exe" -NoProfile -ExecutionPolicy Bypass -Command "$s=[IO.File]::ReadAllText($env:BT_SELF,[Text.Encoding]::UTF8); $i=$s.IndexOf('#'+'#BIBLIOTECH-PS#'+'#'); & ([ScriptBlock]::Create($s.Substring($i))) %BTARGS%"
 exit /b
 ##BIBLIOTECH-PS##
 # ============================================================================
@@ -235,7 +235,7 @@ try {
     try { Install-Launcher } catch { L "Lanceur non mis à jour : $($_.Exception.Message)" }
 
     if (Test-Path -LiteralPath $entry) {
-        Start-Process -FilePath 'wscript.exe' -ArgumentList ('"' + $entry + '"') -WorkingDirectory $appDir
+        Start-Process -FilePath (Join-Path $env:WINDIR 'System32\wscript.exe') -ArgumentList ('"' + $entry + '"') -WorkingDirectory $appDir
         L 'Application lancée (raccourci clavier : Ctrl+Alt+K).'
     } else { throw "aucune version installée dans $appDir" }
 } catch {

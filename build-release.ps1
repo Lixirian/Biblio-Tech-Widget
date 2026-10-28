@@ -135,14 +135,15 @@ try {
 } catch { Write-Host "Avertissement : releases.json illisible ($($_.Exception.Message))" -ForegroundColor Yellow }
 if (-not $notes.Count) { Write-Host "Avertissement : aucune note pour $ver dans releases.json." -ForegroundColor Yellow }
 
-# Note DSI et fiche cybersécurité (hors dépôt, ..\Biblio-Tech - Note DSI) : elles doivent
+# Documents DSI (hors dépôt, ..\Biblio-Tech - Note DSI : Note DSI, fiche cybersécurité,
+# dossier technique, fiche données et accès ; sauvegardes ignorées) : ils doivent
 # décrire la version publiée. Simple avertissement en essai ; publication refusée sinon
 # (-SkipDocCheck pour passer outre, ex. depuis un poste sans ces documents).
 $docDir = Join-Path (Split-Path -Parent $PSScriptRoot) 'Biblio-Tech - Note DSI'
 $docLate = @()
 if (Test-Path -LiteralPath $docDir) {
     Add-Type -AssemblyName System.IO.Compression, System.IO.Compression.FileSystem
-    foreach ($doc in Get-ChildItem -LiteralPath $docDir -Filter '*.docx' | Where-Object { $_.Name -notlike '~$*' }) {
+    foreach ($doc in Get-ChildItem -LiteralPath $docDir -Filter '*.docx' | Where-Object { $_.Name -notlike '~$*' -and $_.Name -notmatch '\(sauvegarde ' }) {
         $docVer = ''
         try {
             $fs = [IO.File]::Open($doc.FullName, 'Open', 'Read', 'ReadWrite')   # lisible même ouvert dans Word
@@ -215,7 +216,7 @@ setlocal
 set "BT_SELF=%~f0"
 set "BTARGS="
 if /i "%~1"=="/repair" set "BTARGS=-Repair"
-powershell.exe -NoProfile -ExecutionPolicy Bypass -Command "$s=[IO.File]::ReadAllText($env:BT_SELF,[Text.Encoding]::UTF8); $i=$s.IndexOf('#'+'#BIBLIOTECH-PS#'+'#'); & ([ScriptBlock]::Create($s.Substring($i))) %BTARGS%"
+"%SystemRoot%\System32\WindowsPowerShell\v1.0\powershell.exe" -NoProfile -ExecutionPolicy Bypass -Command "$s=[IO.File]::ReadAllText($env:BT_SELF,[Text.Encoding]::UTF8); $i=$s.IndexOf('#'+'#BIBLIOTECH-PS#'+'#'); & ([ScriptBlock]::Create($s.Substring($i))) %BTARGS%"
 exit /b
 ##BIBLIOTECH-PS##
 '@

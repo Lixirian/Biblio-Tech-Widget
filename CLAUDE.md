@@ -83,7 +83,7 @@ latest.json             manifeste lu par les postes (écrit UNIQUEMENT par le bu
   La saisie est analysée par `Resolve-BtQuery` ; 0 résultat en strict (≥ 2 notions) →
   relance automatique `-Relaxed` (OR des notions). Le scraping DOM reçoit `Keywords`.
 - **Fenêtre** : X / Alt+F4 = `Hide-BtMainWindow` (zone de notification) ; une 2e instance
-  signale `Global\BiblioTechWidgetShow` à la 1re puis s'arrête.
+  signale `Local\BiblioTechWidgetShow_<SID>` à la 1re puis s'arrête.
 - **MAJ** : uniquement si `AppRoot` = `%LOCALAPPDATA%\BiblioTech-Widget\app`
   (`Test-BtInstalledCopy`) et `AutoUpdate` ≠ `$false` (`Test-BtAutoUpdate`) — sinon AUCUN contact
   GitHub (déploiement autonome du zip par la DSI, dossier de dev). Les requêtes GitHub passent
@@ -94,11 +94,20 @@ latest.json             manifeste lu par les postes (écrit UNIQUEMENT par le bu
 ## Publication
 
 1. `Version` ++ dans `config.ps1` ; 2. notes dans `releases.json` ;
-3. **Note DSI + fiche cybersécurité** (`..\Biblio-Tech - Note DSI\`, HORS dépôt) : à CHAQUE
-   version, relire ce que la version change (sécurité, flux, données, installation) et les mettre
-   à jour — numéro de version (« Version de l'outil » / « Version analysée ») et contenu.
-   Uniquement via Word COM, en place, après sauvegarde (jamais régénérées : retouches manuelles).
-   Le build refuse de publier si leur version ≠ `Version` (`-SkipDocCheck` pour passer outre) ;
+3. **Documents DSI** (`..\Biblio-Tech - Note DSI\`, HORS dépôt, 4 .docx) : à CHAQUE version,
+   relire ce que la version change (sécurité, flux, données, installation, lanceur) et les mettre
+   à jour — numéro de version (« Version de l'outil » / « Version analysée ») et contenu :
+   - **Note DSI** et **Fiche cybersécurité** (diffusion restreinte) : via Word COM, EN PLACE,
+     après sauvegarde (jamais régénérées : retouches manuelles) ;
+   - **Dossier technique** (fonctionnement détaillé) et **Fiche données et accès** (pour le
+     guichet Cyber / SOC, soc@sncf.fr : données stockées + accès utilisés) : GÉNÉRÉS par Word COM
+     depuis `Sources\dossier-technique.ps1` et `Sources\fiche-donnees-acces.ps1` (moteur commun
+     `Sources\moteur-word.ps1`, repris d'Arrivée Collab) — y mettre à jour `$ver`, `$date`, le
+     contenu (nombre de lignes des fichiers, endpoints, flux…) et `$hCmd` (SHA-256 de
+     `Biblio-Tech.cmd`) si le lanceur change, puis les relancer (l'ancien .docx part dans
+     `Sauvegardes\`).
+   Le build contrôle TOUS les .docx du dossier et refuse de publier si leur version ≠ `Version`
+   (`-SkipDocCheck` pour passer outre) ;
 4. `powershell -ExecutionPolicy Bypass -File build-release.ps1` (`-NoPublish` = essai).
 Le build commit + push le code, crée la release `v<X>` (assets : zip de version +
 `Biblio-Tech.cmd`), PUIS écrit/pousse `latest.json`.
@@ -130,6 +139,9 @@ et l'ajouter à la liste de `Step-BtTheme`. Tests : `BT_THEME=light|dark`,
 - Manifeste de MAJ non signé : ne s'en servir que pour la version (regex) et l'empreinte ; l'URL
   est reconstruite ; signature obligatoire ; une MAJ ratée ne doit jamais empêcher le lancement.
 - Jamais de valeur de cookie / jeton / contenu de page dans le journal.
+- Programmes Windows lancés par CHEMIN ABSOLU (1.1.26), jamais par leur nom : PowerShell
+  `Join-Path $env:WINDIR 'System32\…'`, batch `"%SystemRoot%\System32\…"`, VBS
+  `shell.ExpandEnvironmentStrings("%SystemRoot%")`.
 
 ## Points à valider sur le terrain (réseau SNCF)
 

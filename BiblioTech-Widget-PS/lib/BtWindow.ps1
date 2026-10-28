@@ -527,7 +527,7 @@ function Invoke-BtAction {
 function Open-BtDataFile {
     param($Ctx, [string]$Name)
     $f = Join-Path $Ctx.DataDir $Name
-    if (Test-Path -LiteralPath $f) { try { Start-Process notepad.exe -ArgumentList ('"' + $f + '"') } catch { } }
+    if (Test-Path -LiteralPath $f) { try { Start-Process (Join-Path $env:WINDIR 'System32\notepad.exe') -ArgumentList ('"' + $f + '"') } catch { } }
     else { Show-BtFlash $Ctx 'Pas encore d''analyse : elle se lance automatiquement après la connexion.' }
 }
 
@@ -696,8 +696,8 @@ function Initialize-BtTray {
     $null = & $add 'Reconstruire l''index des catégories (complet)' { Start-BtCategScan $script:Ctx -Manual -Full }
     $null = & $add 'Ouvrir l''analyse des catégories' { Open-BtDataFile $script:Ctx 'analyse-categories.txt' }
     $null = & $add 'Ouvrir le journal des catégories' { Open-BtDataFile $script:Ctx 'categories-journal.log' }
-    $null = & $add 'Ouvrir le journal' { try { Start-Process notepad.exe -ArgumentList ('"' + (Join-Path $script:Ctx.DataDir 'app_debug.log') + '"') } catch { } }
-    $null = & $add 'Ouvrir le dossier de données' { try { Start-Process explorer.exe -ArgumentList ('"' + $script:Ctx.DataDir + '"') } catch { } }
+    $null = & $add 'Ouvrir le journal' { try { Start-Process (Join-Path $env:WINDIR 'System32\notepad.exe') -ArgumentList ('"' + (Join-Path $script:Ctx.DataDir 'app_debug.log') + '"') } catch { } }
+    $null = & $add 'Ouvrir le dossier de données' { try { Start-Process (Join-Path $env:WINDIR 'explorer.exe') -ArgumentList ('"' + $script:Ctx.DataDir + '"') } catch { } }
     $null = & $add ("À propos (v" + $Ctx.Config.Version + ')') { Open-BtExternal ("https://github.com/" + $script:Ctx.Config.GitHubRepo) }
     [void]$m.Items.Add((New-Object System.Windows.Forms.ToolStripSeparator))
     $null = & $add 'Quitter' { Stop-BtApp $script:Ctx }

@@ -219,7 +219,7 @@ try {
     try { Install-Launcher } catch { L "Lanceur non mis à jour : $($_.Exception.Message)" }
 
     if (Test-Path -LiteralPath $entry) {
-        Start-Process -FilePath 'wscript.exe' -ArgumentList ('"' + $entry + '"') -WorkingDirectory $appDir
+        Start-Process -FilePath (Join-Path $env:WINDIR 'System32\wscript.exe') -ArgumentList ('"' + $entry + '"') -WorkingDirectory $appDir
         L 'Application lancée (raccourci clavier : Ctrl+Alt+K).'
     } else { throw "aucune version installée dans $appDir" }
 } catch {
