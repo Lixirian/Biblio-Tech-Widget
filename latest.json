@@ -1,12 +1,11 @@
 {
-    "version":  "1.1.25",
-    "zip":  "BiblioTech-Widget_version1.1.25.zip",
-    "url":  "https://github.com/Lixirian/Biblio-Tech-Widget/releases/download/v1.1.25/BiblioTech-Widget_version1.1.25.zip",
-    "sha256":  "F64A9E9331F3AA1385C54243D5D062A8EFAB68F4E7CB9C6A648F234522D7C2D5",
-    "sig":  "j1Q5uOMof462FzL+aJRGu69O4ih6BL6OyqCl4Y59oGcuDclH/nmgEliOHLuqdOCSBmC35LFY5r8LPflCQAaDQw/4YjaiFC2zxBcKyS/4e3Rnlv2LjUAKcU7+XE8mAKw5WYth+hBC5rGWheuj0v5zKtHfLAPibcUOK0BUBthB8W2dsx11f+MlTYi4unKMOJ1x2s3UBbjqCma665lSzMMyxYENzTdpaUoRPIz8kHdWtjQY3JTzh/Z7I0zUkJtLQWWjLbJvoJUoZH5P8i/9/lyxcMLVvOZpb+y2mqc64B5WuxQv++jA6Am6NAbeL8++GFjYkVW8jqCRfWaP6zlS3qAIFPJ6HAp2ccNV4KLkZVWacmW/OC1LhmSXs7e01DT4nToLF3ggdQXwoi0f+v6BVgkyLLsHP1D1eOpAKbYYK+H/2cXWX848/f9sPFx9lG2peCVgcgvEYNnJwzp4Pb8FrS7/cxCEzroUr5g2pzf25En5ubqzCh0qtFQBmHag0x78ksdE",
-    "date":  "2026-10-20",
+    "version":  "1.1.26",
+    "zip":  "BiblioTech-Widget_version1.1.26.zip",
+    "url":  "https://github.com/Lixirian/Biblio-Tech-Widget/releases/download/v1.1.26/BiblioTech-Widget_version1.1.26.zip",
+    "sha256":  "749CACC2D963BEB03B51438956C8D4FD5B18CCD9C6C54014EE140522231E9378",
+    "sig":  "WDWpk6EwpmNDSVb+az3ay4+mgwDloX5KXi5fKB9SQSGQCKHZsJHLLCd6hRWP+IUccGMFpC9HScDPyspLJEMcBDzVAxis1N0Z2aon22fNztSEmKX0jMuF3sBCY7zWbCCnnNMFVp+jylpjdPaFb3XNstg7lREaMTvVEoh0VaYKdrwgoEBTRtky9pQzWovkbcEknv8TGFRCJKiC08IBqCUfjh0Y7h3HmLY87IGdl+RxJuE14lblOGJCY1kxa+eZTiSxpRLSE+h1SqGtLEYqDlgA3gQv6eTJ4CQlCRLBKSII6DHRBX4gAkfs31ajkxdkyL7FRi6ZSFXTiLqh0CuGoudz4CipEL/hO57V34+YXikKrPPDtSVNyghPw1Ihi9DaoqHyh+z9qSnYggiU1oqx99qDNUPgydpC2643eneoSX67L+V4VmIGnlN2QWdb69oVEkWHBKtDHWM3K4K1duOwdKVPIwyCF4iUBbP05Npbnsu4kN+Bn9olD2XkttKPu7FTvzvW",
+    "date":  "2026-10-28",
     "notes":  [
-                  "Accueil : « Les dernières news de Biblio-TECH » (anciennement « Biblio-TECH met en avant ») s\u0027affichent désormais en tout premier, dans un bandeau bien visible, avant les rubriques de votre profil.",
-                  "Accueil : la rubrique « Commentaires de l\u0027espace Biblio-TECH » s\u0027intitule désormais « Derniers commentaires de l\u0027espace Biblio-TECH »."
+                  "Sécurité renforcée : Biblio-Tech lance désormais les programmes de Windows (PowerShell, Bloc-notes, Explorateur) par leur emplacement exact dans le dossier système, sans jamais les chercher ailleurs sur le poste."
               ]
 }
